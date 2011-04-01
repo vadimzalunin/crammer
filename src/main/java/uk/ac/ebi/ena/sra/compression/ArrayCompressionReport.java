@@ -29,6 +29,7 @@ public class ArrayCompressionReport {
 		// lzmaSize = lzmaBAOS.size();
 		// lzmaBAOS.close();
 		// lzmaBAOS = null;
+		
 
 		ByteArrayOutputStream gzipBAOS = new ByteArrayOutputStream();
 		GZIPOutputStream gzipOS = new GZIPOutputStream(gzipBAOS);
