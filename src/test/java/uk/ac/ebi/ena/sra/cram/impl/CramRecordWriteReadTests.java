@@ -464,7 +464,7 @@ public class CramRecordWriteReadTests {
 		writer.flush();
 	}
 
-	@Test(timeout = 2000)
+	@Test(timeout = 2500)
 	public void benchmark_Read() throws IOException {
 		int maxRecords = 1000000;
 

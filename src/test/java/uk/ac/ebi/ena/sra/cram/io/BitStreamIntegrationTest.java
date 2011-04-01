@@ -17,7 +17,7 @@ public class BitStreamIntegrationTest {
 		DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
 
 		byte value = 1 << 1;
-		bos.writeBits(value, 3);
+		bos.write(value, 3);
 		bos.flush();
 
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
@@ -34,7 +34,7 @@ public class BitStreamIntegrationTest {
 
 		for (byte value = Byte.MIN_VALUE; value < Byte.MAX_VALUE; value++) {
 			baos.reset();
-			bos.writeBits(value, 8);
+			bos.write(value, 8);
 			bos.flush();
 
 			ByteArrayInputStream bais = new ByteArrayInputStream(
@@ -52,7 +52,7 @@ public class BitStreamIntegrationTest {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
 			byte value = 1;
-			bos.writeBits(value, bit);
+			bos.write(value, bit);
 			bos.flush();
 
 			ByteArrayInputStream bais = new ByteArrayInputStream(

@@ -78,7 +78,12 @@ class BaseFlatCodec implements BitCodec<Byte> {
 		if (index < 0 || index > order.length)
 			throw new IllegalArgumentException("Invalid base byte: " + base);
 
-		bis.writeBits(index, 3);
+		bis.write(index, 3);
+		return 3;
+	}
+
+	@Override
+	public long numberOfBits(Byte object) {
 		return 3;
 	}
 }

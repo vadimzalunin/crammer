@@ -40,4 +40,9 @@ public class BaseCodec implements BitCodec<Byte> {
 		return delegate.write(bis, object);
 	}
 
+	@Override
+	public long numberOfBits(Byte object) {
+		return delegate.numberOfBits(object);
+	}
+
 }

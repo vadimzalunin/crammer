@@ -11,7 +11,7 @@ public class GolombRiceCodec implements BitCodec<Long> {
 
 	public GolombRiceCodec(int log_m) {
 		this.m = 1 << log_m;
-		this.log_m = log_m ;
+		this.log_m = log_m;
 	}
 
 	public final Long read(final BitInputStream bis) throws IOException {
@@ -48,23 +48,28 @@ public class GolombRiceCodec implements BitCodec<Long> {
 		long quotient = value / m;
 		if (quotient > 0x7fffffffL)
 			for (long i = 0; i < quotient; i++)
-				bos.writeBits(0, 1);
+				bos.write(0, 1);
 
 		else if (quotient > 0) {
 			final int qi = (int) quotient;
 			for (int i = 0; i < qi; i++)
-				bos.writeBits(0, 1);
+				bos.write(0, 1);
 		}
-		bos.writeBits(1, 1);
+		bos.write(1, 1);
 		long remainder = value % m;
 		long mask = 1 << (log_m - 1);
 		for (int i = log_m - 1; i >= 0; i--) {
 			final long b = remainder & mask;
-			bos.writeBits(b == 0L ? 0 : 1, 1);
+			bos.write(b == 0L ? 0 : 1, 1);
 			mask >>>= 1;
 		}
 		long bits = quotient + 1 + log_m;
 		return bits;
+	}
+
+	@Override
+	public long numberOfBits(Long value) {
+		return value / m + 1 + log_m;
 	}
 
 }

@@ -30,10 +30,15 @@ public class UnaryCodec implements BitCodec<Long> {
 		long bits = value + 1;
 
 		while (bits-- > 0)
-			bos.writeBits(stopBit ? 0 : 1, 1);
+			bos.write(stopBit ? 0 : 1, 1);
 
-		bos.writeBits(stopBit ? 1 : 0, 1);
+		bos.write(stopBit ? 1 : 0, 1);
 
+		return value + 1;
+	}
+
+	@Override
+	public long numberOfBits(Long value) {
 		return value + 1;
 	}
 

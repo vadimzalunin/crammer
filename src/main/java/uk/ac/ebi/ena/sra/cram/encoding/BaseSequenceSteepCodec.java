@@ -36,7 +36,7 @@ class BaseSequenceSteepCodec implements BitCodec<byte[]> {
 			int trueBitCounter = 0;
 			int bitsReadCounter = 0;
 
-			while (bitsReadCounter++ < order.length-1 && bis.readBit())
+			while (bitsReadCounter++ < order.length - 1 && bis.readBit())
 				trueBitCounter++;
 
 			if (order[trueBitCounter] == 'S')
@@ -44,7 +44,7 @@ class BaseSequenceSteepCodec implements BitCodec<byte[]> {
 			buffer.put(order[trueBitCounter]);
 		}
 
-		buffer.flip() ;
+		buffer.flip();
 		byte[] seq = new byte[buffer.limit()];
 		buffer.get(seq);
 		return seq;
@@ -58,11 +58,27 @@ class BaseSequenceSteepCodec implements BitCodec<byte[]> {
 				throw new IllegalArgumentException(
 						"Stop code is not allowed in a base sequence.");
 			BitCode code = codes[base];
-			bos.writeBits(code.value, code.bits);
+			bos.write(code.value, code.bits);
 			length += code.bits;
 		}
 
-		bos.writeBits(codes['S'].value, codes['S'].bits);
+		bos.write(codes['S'].value, codes['S'].bits);
+		length += codes['S'].bits;
+
+		return length;
+	}
+
+	@Override
+	public long numberOfBits(byte[] bases) {
+		int length = 0;
+		for (byte base : bases) {
+			if (base == 'S')
+				throw new IllegalArgumentException(
+						"Stop code is not allowed in a base sequence.");
+			BitCode code = codes[base];
+			length += code.bits;
+		}
+
 		length += codes['S'].bits;
 
 		return length;

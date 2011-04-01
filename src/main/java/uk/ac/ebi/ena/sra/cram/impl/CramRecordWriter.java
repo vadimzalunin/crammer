@@ -78,12 +78,12 @@ public class CramRecordWriter {
 	}
 
 	private void appendBit(boolean bit) throws IOException {
-		bitOutputStream.writeBits(bit ? 1 : 0, 1);
+		bitOutputStream.write(bit ? 1 : 0, 1);
 	}
 
 	private void appendSubstitution(SubstitutionVariation variation)
 			throws IOException {
-		bitOutputStream.writeBits(0, 1);
+		bitOutputStream.write(0, 1);
 		if (variation.getPosition() == 0)
 			throw new IllegalArgumentException("Variation position is zero.");
 
@@ -99,9 +99,9 @@ public class CramRecordWriter {
 
 	private void appendInsertion(InsertionVariation variation)
 			throws IOException {
-		bitOutputStream.writeBits(1, 1);
-		bitOutputStream.writeBits(1, 1);
-		bitOutputStream.writeBits(0, 1);
+		bitOutputStream.write(1, 1);
+		bitOutputStream.write(1, 1);
+		bitOutputStream.write(0, 1);
 		if (variation.getPosition() == 0)
 			throw new IllegalArgumentException("Variation position is zero.");
 
@@ -113,9 +113,9 @@ public class CramRecordWriter {
 	}
 
 	private void appendDeletion(DeletionVariation variation) throws IOException {
-		bitOutputStream.writeBits(1, 1);
-		bitOutputStream.writeBits(1, 1);
-		bitOutputStream.writeBits(1, 1);
+		bitOutputStream.write(1, 1);
+		bitOutputStream.write(1, 1);
+		bitOutputStream.write(1, 1);
 		if (variation.getPosition() == 0)
 			throw new IllegalArgumentException("Variation position is zero.");
 

@@ -72,11 +72,27 @@ class BaseSequenceRaisedCodec implements BitCodec<byte[]> {
 				throw new IllegalArgumentException(
 						"Stop code is not allowed in a base sequence.");
 			BitCode code = codes[base];
-			bos.writeBits(code.value, code.bits);
+			bos.write(code.value, code.bits);
 			length += code.bits;
 		}
 
-		bos.writeBits(codes['S'].value, codes['S'].bits);
+		bos.write(codes['S'].value, codes['S'].bits);
+		length += codes['S'].bits;
+
+		return length;
+	}
+
+	@Override
+	public long numberOfBits(byte[] bases) {
+		int length = 0;
+		for (byte base : bases) {
+			if (base == 'S')
+				throw new IllegalArgumentException(
+						"Stop code is not allowed in a base sequence.");
+			BitCode code = codes[base];
+			length += code.bits;
+		}
+
 		length += codes['S'].bits;
 
 		return length;

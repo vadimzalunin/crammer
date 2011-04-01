@@ -13,8 +13,13 @@ public class BaseChangeCodec implements BitCodec<BaseChange> {
 	}
 
 	@Override
-	public long write(BitOutputStream bis, BaseChange bases) throws IOException {
-		bis.writeBits(bases.getChange(), 2);
+	public long write(BitOutputStream bis, BaseChange baseChange) throws IOException {
+		bis.write(baseChange.getChange(), 2);
+		return 2;
+	}
+
+	@Override
+	public long numberOfBits(BaseChange baseChange) {
 		return 2;
 	}
 

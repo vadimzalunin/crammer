@@ -18,7 +18,14 @@ import uk.ac.ebi.ena.sra.cram.io.DefaultBitOutputStream;
 public class UnaryCodecTest {
 
 	@Test
-	public void test1() throws IOException {
+	public void test_numberOfBits() {
+		UnaryCodec codec = new UnaryCodec(true, 0);
+		for (long value = 0; value < 1000; value++)
+			assertThat(codec.numberOfBits(value), is(value + 1));
+	}
+
+	@Test
+	public void test_write_read_0() throws IOException {
 		UnaryCodec codec = new UnaryCodec(false, 0);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
@@ -40,7 +47,7 @@ public class UnaryCodecTest {
 	}
 
 	@Test
-	public void test2() throws IOException {
+	public void test_write_read_20() throws IOException {
 		UnaryCodec codec = new UnaryCodec(false, 0);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
@@ -62,7 +69,7 @@ public class UnaryCodecTest {
 	}
 
 	@Test
-	public void test3() throws IOException {
+	public void test_write_read_0_to_1000() throws IOException {
 		UnaryCodec codec = new UnaryCodec(false, 0);
 
 		for (long i = 0; i < 1000; i++) {
@@ -81,26 +88,26 @@ public class UnaryCodecTest {
 			assertThat(readValue, equalTo(i));
 		}
 	}
-	
-	@Test
-	public void test4() throws IOException {
-		long maxValues = 1000000 ;
-		
+
+	@Test(timeout = 1000)
+	public void benchmark_write_read() throws IOException {
+		long maxValues = 1000000;
+
 		UnaryCodec codec = new UnaryCodec(false, 0);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
 
-		for (long i = 0; i < 1000000; i++) 
+		for (long i = 0; i < maxValues; i++)
 			codec.write(bos, 20L);
-		
+
 		bos.flush();
 		byte[] buf = baos.toByteArray();
-		
+
 		BitInputStream bis = new DefaultBitInputStream(
 				new ByteArrayInputStream(buf));
-		
-		
-		Long readValue = codec.read(bis);
-		assertThat(readValue, equalTo(i));
+
+		for (long i = 0; i < maxValues; i++) {
+			codec.read(bis);
+		}
 	}
 }

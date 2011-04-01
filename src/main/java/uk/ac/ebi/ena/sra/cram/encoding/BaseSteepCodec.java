@@ -78,11 +78,18 @@ class BaseSteepCodec implements BitCodec<Byte> {
 		if (index < 0 || index > order.length)
 			throw new IllegalArgumentException("Invalid base byte: " + base);
 
-		bis.writeBits(0xff, index);
+		bis.write(0xff, index);
 		if (index < order.length) {
-			bis.writeBits(0, 1);
+			bis.write(0, 1);
 			return index + 1;
 		}
 		return index;
+	}
+
+	@Override
+	public long numberOfBits(Byte base) {
+		int index = base2indexArray[base];
+		if (index < order.length) return index+1 ;
+		return index ;
 	}
 }

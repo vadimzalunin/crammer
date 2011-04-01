@@ -39,34 +39,34 @@ public class DefaultBitOutputStream extends OutputStream implements
 		if (nofBitsToWrite < 1 || nofBitsToWrite > 32)
 			throw new IOException("Expecting 1 to 32 bits.");
 
-		if (nofBitsToWrite < 8)
-			writeBits(value, nofBitsToWrite);
+		if (nofBitsToWrite <= 8)
+			write((byte)value, nofBitsToWrite);
 		else {
 			for (int i = 0;; i += 8) {
 				final int v = value >>> (24 - i);
 				if (i >= nofBitsToWrite) {
-					writeBits(v, i % 8);
+					write((byte)v, i % 8);
 					break;
 				} else
-					writeBits(v, 8);
+					write((byte)v, 8);
 			}
 		}
 	}
 
 	public void writeByte(int value) throws IOException {
 		if (bufferedNumberOfBits == 0)
-			putByte(value);
+			out.write(value);
 		else {
 			bufferByte = (value & 0xFF >>> bufferedNumberOfBits) | bufferByte;
-			putByte(bufferByte);
+			out.write(bufferByte);
 			bufferByte = (value << (8 - bufferedNumberOfBits)) & 0xFF;
 		}
 	}
 
-	public void writeBits(int value, int nofBitsToWrite) throws IOException {
-		if (nofBitsToWrite < 0 || nofBitsToWrite > 8) 
+	public void write(byte value, int nofBitsToWrite) throws IOException {
+		if (nofBitsToWrite < 0 || nofBitsToWrite > 8)
 			throw new IOException("Expecting 0 to 8 bits.");
-		
+
 		if (nofBitsToWrite == 8)
 			writeByte(value);
 		else {
@@ -79,18 +79,33 @@ public class DefaultBitOutputStream extends OutputStream implements
 				if (bits < 0) {
 					bits = -bits;
 					bufferByte |= (value >>> bits);
-					putByte(bufferByte);
+					out.write(bufferByte);
 					bufferByte = (value << (8 - bits)) & 0xFF;
 					bufferedNumberOfBits = bits;
 				} else if (bits == 0) {
 					bufferByte = bufferByte | value;
-					putByte(bufferByte);
+					out.write(bufferByte);
 					bufferedNumberOfBits = 0;
 				} else {
 					bufferByte = bufferByte | (value << bits);
 					bufferedNumberOfBits = 8 - bits;
 				}
 			}
+		}
+	}
+
+	public void write(long value, int nofBitsToWrite) throws IOException {
+		if (nofBitsToWrite < 1 || nofBitsToWrite > 64)
+			throw new IOException("Expecting 1 to 64 bits.");
+
+		if (nofBitsToWrite < 33)
+			write((int) value, nofBitsToWrite);
+		else {
+			int highBits = (int) (value >>> 32);
+			int lowBits = (int) value;
+
+			write(highBits, nofBitsToWrite - 32);
+			write(lowBits, 32);
 		}
 	}
 
@@ -103,12 +118,10 @@ public class DefaultBitOutputStream extends OutputStream implements
 	@Override
 	public void flush() throws IOException {
 		if (bufferedNumberOfBits > 0)
-			putByte(bufferByte);
+			out.write(bufferByte);
 
 		out.flush();
 	}
 
-	private void putByte(int value) throws IOException {
-		out.write(value);
-	}
+
 }

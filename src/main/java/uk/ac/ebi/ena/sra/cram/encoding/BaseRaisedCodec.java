@@ -81,24 +81,36 @@ class BaseRaisedCodec implements BitCodec<Byte> {
 
 		switch (index) {
 		case 0:
-			bis.writeBits(0, 2);
+			bis.write(0, 2);
 			return 2;
 		case 1:
-			bis.writeBits(1, 2);
+			bis.write(1, 2);
 			return 2;
 		case 2:
-			bis.writeBits(2, 2);
+			bis.write(2, 2);
 			return 2;
 		case 3:
-			bis.writeBits(6, 3);
+			bis.write(6, 3);
 			return 3;
 		case 4:
-			bis.writeBits(7, 3);
+			bis.write(7, 3);
 			return 3;
 
 		default:
 			throw new RuntimeException("Unkown base: " + base);
 		}
 
+	}
+
+	@Override
+	public long numberOfBits(Byte base) {
+		int index = base2indexArray[base];
+		if (index < 0 || index > order.length)
+			throw new IllegalArgumentException("Invalid base byte: " + base);
+
+		if (index < 3)
+			return 2L;
+		else
+			return 3L;
 	}
 }

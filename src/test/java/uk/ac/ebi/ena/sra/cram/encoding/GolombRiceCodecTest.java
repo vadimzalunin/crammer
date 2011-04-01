@@ -25,6 +25,13 @@ import uk.ac.ebi.ena.sra.cram.io.DefaultBitOutputStream;
 public class GolombRiceCodecTest {
 
 	@Test
+	public void test_numberOfBits() {
+		GolombRiceCodec codec = new GolombRiceCodec(2);
+		for (long value = 0; value < 1000; value++)
+			assertThat(codec.numberOfBits(value), is(value / 4 + 3));
+	}
+
+	@Test
 	@Ignore
 	public void printCodes_1_to_256() throws IOException {
 		int golombRiceLogM = 2;

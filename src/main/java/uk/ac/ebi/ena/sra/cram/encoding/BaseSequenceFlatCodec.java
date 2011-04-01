@@ -54,9 +54,14 @@ class BaseSequenceFlatCodec implements BitCodec<byte[]> {
 	@Override
 	public long write(BitOutputStream bis, byte[] bases) throws IOException {
 		for (byte base : bases)
-			bis.writeBits(base2indexArray[base], 3);
+			bis.write(base2indexArray[base], 3);
 
-		bis.writeBits(base2indexArray['S'], 3);
+		bis.write(base2indexArray['S'], 3);
+		return (bases.length + 1) * 3;
+	}
+
+	@Override
+	public long numberOfBits(byte[] bases) {
 		return (bases.length + 1) * 3;
 	}
 }
