@@ -45,5 +45,23 @@ public class DefaultBitInputStream extends DataInputStream implements
 	private static final int rightBits(int n, int x) {
 		return x & ((1 << n) - 1);
 	}
+	
+
+	// alternative reading method:
+	private long readBits(final long len)
+			throws IOException {
+		if (len > 64)
+			throw new RuntimeException(
+					"More then 64 bits are requested in one read from bit stream.");
+
+		long result = 0;
+		final long last = len - 1;
+		for (long bi = 0; bi <= last; bi++) {
+			final boolean frag = readBit();
+			if (frag)
+				result |= 1L << (last - bi);
+		}
+		return result;
+	}
 
 }

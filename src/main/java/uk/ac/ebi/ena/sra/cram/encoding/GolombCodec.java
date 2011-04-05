@@ -7,73 +7,68 @@ import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 
 public class GolombCodec implements BitCodec<Long> {
 	private long m;
-	private int log_m;
-	private boolean quotientBit = false ;
+	private boolean quotientBit = true;
+	private Long offset = 0L;
 
-	public GolombCodec(int log_m) {
-		this.m = 1 << log_m;
-		this.log_m = log_m;
+	public GolombCodec(int m) {
+		this.m = m;
 	}
 
 	public final Long read(final BitInputStream bis) throws IOException {
-
-		long unary = 0;
+		long quotient = 0L;
 		while (bis.readBit() == quotientBit)
-			unary++;
+			quotient++;
 
-		long remainder = readBits(bis, log_m);
-
-		long result = unary * m + remainder;
-		return result;
-	}
-
-	private static final long readBits(final BitInputStream bis, final long len)
-			throws IOException {
-		if (len > 64)
-			throw new RuntimeException(
-					"More then 64 bits are requested in one read from bit stream.");
-
-		long result = 0;
-		final long last = len - 1;
-		for (long bi = 0; bi <= last; bi++) {
-			final boolean frag = bis.readBit();
-			if (frag)
-				result |= 1L << (last - bi);
+		long numbits = quotient + 1;
+		long ceiling = (long) Math.ceil(Math.log(m) / Math.log(2));
+		long reminder = bis.readBits((int) (ceiling - 1));
+		numbits += ceiling - 1;
+		if (reminder >= Math.pow(2, ceiling) - m) {
+			reminder <<= 1;
+			reminder |= bis.readBits(1);
+			reminder -= Math.pow(2, ceiling) - m;
 		}
-		return result;
+
+		return (quotient * m + reminder) - offset;
 	}
 
 	@Override
 	public long write(final BitOutputStream bos, final Long value)
 			throws IOException {
-		long quotient = value / m;
-		if (quotient > 0x7fffffffL)
-			for (long i = 0; i < quotient; i++)
-//				bos.write(false);
-		bos.write(quotientBit);
+		long newValue = value + offset;
+		long quotient = (long) Math.floor(newValue / m);
+		long reminder = newValue % m;
+		long ceiling = (long) Math.ceil(Math.log(m) / Math.log(2));
 
-		else if (quotient > 0) {
-			final int qi = (int) quotient;
-			for (int i = 0; i < qi; i++)
-//				bos.write(false);
-			bos.write(quotientBit);
-		}
-//		bos.write((byte) 1, 1);
+		long len = quotient + 1;
+		bos.write(quotientBit, quotient);
 		bos.write(!quotientBit);
-		long remainder = value % m;
-		long mask = 1 << (log_m - 1);
-		for (int i = log_m - 1; i >= 0; i--) {
-			final long b = remainder & mask;
-			bos.write(b != 0L);
-			mask >>>= 1;
+
+		if (reminder < Math.pow(2, ceiling) - m) {
+			bos.write(reminder, (int) ceiling - 1);
+			len += ceiling - 1;
+		} else {
+			bos.write((int) (reminder + Math.pow(2, ceiling) - m),
+					(int) ceiling);
+			len += ceiling;
 		}
-		long bits = quotient + 1 + log_m;
-		return bits;
+		return len;
 	}
 
 	@Override
 	public long numberOfBits(Long value) {
-		return value / m + 1 + log_m;
+		long newValue = value + offset;
+		long quotient = (long) Math.floor(newValue / m);
+		long reminder = newValue % m;
+		long ceiling = (long) Math.ceil(Math.log(m) / Math.log(2));
+		long l = quotient + 1;
+
+		if (reminder < Math.pow(2, ceiling) - m)
+			l += ceiling - 1;
+		else
+			l += ceiling;
+
+		return l;
 	}
 
 }

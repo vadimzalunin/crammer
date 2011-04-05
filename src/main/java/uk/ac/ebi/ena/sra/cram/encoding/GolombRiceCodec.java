@@ -21,25 +21,9 @@ public class GolombRiceCodec implements BitCodec<Long> {
 		while (bis.readBit() == quotientBit)
 			unary++;
 
-		long remainder = readBits(bis, log_m);
+		long remainder = bis.readBits(log_m);
 
 		long result = unary * m + remainder;
-		return result;
-	}
-
-	private static final long readBits(final BitInputStream bis, final long len)
-			throws IOException {
-		if (len > 64)
-			throw new RuntimeException(
-					"More then 64 bits are requested in one read from bit stream.");
-
-		long result = 0;
-		final long last = len - 1;
-		for (long bi = 0; bi <= last; bi++) {
-			final boolean frag = bis.readBit();
-			if (frag)
-				result |= 1L << (last - bi);
-		}
 		return result;
 	}
 
@@ -49,16 +33,13 @@ public class GolombRiceCodec implements BitCodec<Long> {
 		long quotient = value / m;
 		if (quotient > 0x7fffffffL)
 			for (long i = 0; i < quotient; i++)
-//				bos.write(false);
 		bos.write(quotientBit);
 
 		else if (quotient > 0) {
 			final int qi = (int) quotient;
 			for (int i = 0; i < qi; i++)
-//				bos.write(false);
 			bos.write(quotientBit);
 		}
-//		bos.write((byte) 1, 1);
 		bos.write(!quotientBit);
 		long remainder = value % m;
 		long mask = 1 << (log_m - 1);

@@ -165,6 +165,12 @@ public class DefaultBitOutputStream extends OutputStream implements
 		write(bit ? (byte) 1 : (byte) 0, 1);
 	}
 
+	public void write(boolean bit, long repeat) throws IOException {
+		// optimise later:
+		for (long i = 0; i < repeat; i++)
+			write(bit);
+	}
+
 	@Override
 	public void close() throws IOException {
 		flush();
