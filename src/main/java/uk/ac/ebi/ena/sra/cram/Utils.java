@@ -23,6 +23,13 @@ public class Utils {
 		return bytes;
 	}
 
+	public final static byte[] toBytes(long value) {
+		final byte[] bytes = new byte[8];
+		for (int i = 0; i < 8; i++)
+			bytes[i] = (byte) (value >>> (64 - 8 - i * 8));
+		return bytes;
+	}
+
 	public static String toBitString(final byte[] b) {
 		final char[] bits = new char[8 * b.length];
 		for (int i = 0; i < b.length; i++) {

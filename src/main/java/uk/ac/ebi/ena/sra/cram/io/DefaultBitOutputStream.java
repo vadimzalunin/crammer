@@ -3,6 +3,8 @@ package uk.ac.ebi.ena.sra.cram.io;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import uk.ac.ebi.ena.sra.cram.Utils;
+
 public class DefaultBitOutputStream extends OutputStream implements
 		BitOutputStream {
 
@@ -35,29 +37,93 @@ public class DefaultBitOutputStream extends OutputStream implements
 		return bytes;
 	}
 
-	public void write(int value, int nofBitsToWrite) throws IOException {
-		if (nofBitsToWrite < 1 || nofBitsToWrite > 32)
-			throw new IOException("Expecting 1 to 32 bits.");
+	@Override
+	public String toString() {
+		return "DefaultBitOutputStream: "
+				+ Utils.toBitString(new byte[] { (byte) bufferByte })
+						.substring(0, bufferedNumberOfBits);
+	}
+
+	public static void main(String[] args) throws IOException {
+		long value = 1L;
+		byte[] buf = Utils.toBytes(value);
+		System.out.println(Utils.toBitString(buf));
+
+		System.out.println(Utils.toBitString(Utils.toBytes(2)));
+		System.out.println(Utils.toBitString(Utils.toBytes(-2)));
+		System.out.println(Utils.toBitString(Utils.toBytes(-2 >> 1)));
+		System.out.println(Utils.toBitString(Utils.toBytes(-2 >>> 1)));
+		System.out.println(Utils.toBitString(Utils.toBytes((-2 >>> 1) << 1)));
+
+	}
+
+	public void write(long value, int nofBitsToWrite) throws IOException {
+		if (nofBitsToWrite == 0)
+			return;
+
+		if (nofBitsToWrite < 1 || nofBitsToWrite > 64)
+			throw new IOException("Expecting 1 to 64 bits.");
 
 		if (nofBitsToWrite <= 8)
-			write((byte)value, nofBitsToWrite);
+			write((byte) value, nofBitsToWrite);
 		else {
-			for (int i = 0;; i += 8) {
-				final int v = value >>> (24 - i);
-				if (i >= nofBitsToWrite) {
-					write((byte)v, i % 8);
-					break;
-				} else
-					write((byte)v, 8);
+			for (int i = nofBitsToWrite - 8; i >= 0; i -= 8) {
+				final byte v = (byte) (value >>> i);
+				writeByte(v);
+			}
+			if (nofBitsToWrite % 8 != 0) {
+				final byte v = (byte) value;
+				write(v, nofBitsToWrite % 8);
 			}
 		}
 	}
 
-	public void writeByte(int value) throws IOException {
+	public void write_int_LSB_0(int value, int nofBitsToWrite)
+			throws IOException {
+		if (nofBitsToWrite == 0)
+			return;
+
+		if (nofBitsToWrite < 1 || nofBitsToWrite > 32)
+			throw new IOException("Expecting 1 to 32 bits.");
+
+		if (nofBitsToWrite <= 8)
+			write((byte) value, nofBitsToWrite);
+		else {
+			for (int i = nofBitsToWrite - 8; i >= 0; i -= 8) {
+				final byte v = (byte) (value >>> i);
+				writeByte(v);
+			}
+			if (nofBitsToWrite % 8 != 0) {
+				final byte v = (byte) value;
+				write(v, nofBitsToWrite % 8);
+			}
+		}
+	}
+
+	public void write(int value, int nofBitsToWrite) throws IOException {
+		write_int_LSB_0(value, nofBitsToWrite);
+		// if (nofBitsToWrite < 1 || nofBitsToWrite > 32)
+		// throw new IOException("Expecting 1 to 32 bits.");
+		//
+		// if (nofBitsToWrite <= 8)
+		// write((byte) value, nofBitsToWrite);
+		// else {
+		// for (int i = 0;; i += 8) {
+		// final int v = value >>> (24 - i);
+		// if (i >= nofBitsToWrite) {
+		// write((byte) v, i % 8);
+		// break;
+		// } else
+		// write((byte) v, 8);
+		// }
+		// }
+	}
+
+	private void writeByte(int value) throws IOException {
 		if (bufferedNumberOfBits == 0)
 			out.write(value);
 		else {
-			bufferByte = (value & 0xFF >>> bufferedNumberOfBits) | bufferByte;
+			bufferByte = ((value & 0xFF) >>> bufferedNumberOfBits) | bufferByte;
 			out.write(bufferByte);
 			bufferByte = (value << (8 - bufferedNumberOfBits)) & 0xFF;
 		}
@@ -94,19 +160,9 @@ public class DefaultBitOutputStream extends OutputStream implements
 		}
 	}
 
-	public void write(long value, int nofBitsToWrite) throws IOException {
-		if (nofBitsToWrite < 1 || nofBitsToWrite > 64)
-			throw new IOException("Expecting 1 to 64 bits.");
-
-		if (nofBitsToWrite < 33)
-			write((int) value, nofBitsToWrite);
-		else {
-			int highBits = (int) (value >>> 32);
-			int lowBits = (int) value;
-
-			write(highBits, nofBitsToWrite - 32);
-			write(lowBits, 32);
-		}
+	@Override
+	public void write(boolean bit) throws IOException {
+		write(bit ? (byte) 1 : (byte) 0, 1);
 	}
 
 	@Override
@@ -122,6 +178,5 @@ public class DefaultBitOutputStream extends OutputStream implements
 
 		out.flush();
 	}
-
 
 }

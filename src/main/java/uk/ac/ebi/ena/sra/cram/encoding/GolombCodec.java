@@ -5,12 +5,12 @@ import java.io.IOException;
 import uk.ac.ebi.ena.sra.cram.io.BitInputStream;
 import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 
-public class GolombRiceCodec implements BitCodec<Long> {
+public class GolombCodec implements BitCodec<Long> {
 	private long m;
 	private int log_m;
 	private boolean quotientBit = false ;
 
-	public GolombRiceCodec(int log_m) {
+	public GolombCodec(int log_m) {
 		this.m = 1 << log_m;
 		this.log_m = log_m;
 	}

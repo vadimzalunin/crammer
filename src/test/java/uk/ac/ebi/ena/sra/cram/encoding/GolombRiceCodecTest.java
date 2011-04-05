@@ -205,7 +205,7 @@ public class GolombRiceCodecTest {
 		}
 	}
 
-	@Test(timeout = 3500)
+	@Test(timeout = 3600)
 	public void benchmark_exponential_distr() throws IOException, MathException {
 		int maxNumbers = 1000000;
 		for (int log2m = 1; log2m < 6; log2m++) {
