@@ -25,7 +25,7 @@ public class SubexpCodec implements BitCodec<Long> {
 		long n = 0;
 		if (u == 0) {
 			b = k;
-			n = bis.readBits(2);
+			n = bis.readBits((int) b);
 		} else {
 			b = u + k - 1;
 			n = (1 << b) | bis.readBits((int) b);
@@ -37,7 +37,7 @@ public class SubexpCodec implements BitCodec<Long> {
 
 	@Override
 	public long write(BitOutputStream bos, Long value) throws IOException {
-		if (value + offset < 1)
+		if (value + offset < 0)
 			throw new IllegalArgumentException("Value is less then offset: "
 					+ value);
 

@@ -78,22 +78,117 @@ public class BitInputStreamTest {
 		}
 	}
 
-	@Test(timeout = 300)
+	@Test(timeout = 350)
 	public void becnhmar_ReadBits_32() throws IOException {
 		int maxValues = 1000000;
 		byte[] buf = new byte[maxValues * 4];
 		byte fillByte = (byte) (64 + 16 + 4 + 1);
-		Arrays.fill(buf, (byte) (64 + 16 + 4 + 1));
+		Arrays.fill(buf, fillByte);
 		int value = 0;
-		value = (value << 8) + fillByte;
-		value = (value << 8) + fillByte;
-		value = (value << 8) + fillByte;
-		value = (value << 8) + fillByte;
+		for (int i = 0; i < 4; i++)
+			value = (value << 8) + fillByte;
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
 		BitInputStream bis = new DefaultBitInputStream(bais);
 		for (int i = 0; i < maxValues; i++)
 			bis.readBits(32);
 
+	}
+
+	@Test(timeout = 1500)
+	public void becnhmar_ReadLongBits_64() throws IOException {
+		int maxValues = 1000000;
+		byte[] buf = new byte[maxValues * 8];
+		byte fillByte = (byte) (64 + 16 + 4 + 1);
+		Arrays.fill(buf, fillByte);
+		int value = 0;
+		for (int i = 0; i < 8; i++)
+			value = (value << 8) + fillByte;
+		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+		for (int i = 0; i < maxValues; i++)
+			bis.readLongBits(64);
+	}
+
+	@Test(timeout = 750)
+	public void becnhmar_ReadLongBits_32() throws IOException {
+		int maxValues = 1000000;
+		byte[] buf = new byte[maxValues * 4];
+		byte fillByte = (byte) (64 + 16 + 4 + 1);
+		Arrays.fill(buf, fillByte);
+		int value = 0;
+		for (int i = 0; i < 4; i++)
+			value = (value << 8) + fillByte;
+		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+		for (int i = 0; i < maxValues; i++)
+			bis.readLongBits(32);
+	}
+
+	@Test
+	public void test_ReadBits_long_3_bits_of_01000000() throws IOException {
+		byte value = (byte) (1 << 7);
+		byte[] buf = new byte[] { value };
+		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+		long readBits = bis.readLongBits(3);
+
+		assertThat(readBits, is(4L));
+	}
+
+	@Test
+	public void test_ReadBits_int_range() throws IOException {
+		for (int i = 1; i < 1000000; i++) {
+			int len = (int) (1 + Math.log(i) / Math.log(2));
+			byte[] buf = Utils.toBytes(i << 32 - len);
+			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			int readBits = bis.readBits(len);
+
+			assertThat(readBits, is(i));
+		}
+
+		for (int i = Integer.MAX_VALUE - 1000; i < Integer.MAX_VALUE; i++) {
+			int len = (int) (1 + Math.log(i) / Math.log(2));
+			byte[] buf = Utils.toBytes(i << 64 - len);
+			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			int readBits = bis.readBits(len);
+
+			assertThat(readBits, is(i));
+		}
+	}
+
+	@Test
+	public void test_ReadBits_long_range() throws IOException {
+		for (long i = 1L; i < 1000000L; i++) {
+			int len = (int) (1 + Math.log(i) / Math.log(2));
+			byte[] buf = Utils.toBytes(i << 64 - len);
+			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			long readBits = bis.readLongBits(len);
+
+			assertThat(readBits, is(i));
+		}
+
+		for (long i = Integer.MAX_VALUE - 1000L; i < Integer.MAX_VALUE + 1000L; i++) {
+			int len = (int) (1 + Math.log(i) / Math.log(2));
+			byte[] buf = Utils.toBytes(i << 64 - len);
+			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			long readBits = bis.readLongBits(len);
+
+			assertThat(readBits, is(i));
+		}
+
+		for (long i = Long.MAX_VALUE - 1000L; i < Long.MAX_VALUE; i++) {
+			int len = (int) (1 + Math.log(i) / Math.log(2));
+			byte[] buf = Utils.toBytes(i << 64 - len);
+			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			long readBits = bis.readLongBits(len);
+
+			assertThat(readBits, is(i));
+		}
 	}
 
 }

@@ -16,14 +16,14 @@ public class DefaultBitInputStream extends DataInputStream implements
 	}
 
 	public final boolean readBit() throws IOException {
-		if (--leftBits >= 0) 
+		if (--leftBits >= 0)
 			return ((byteBuffer >>> leftBits) & 1) == 1;
-		
+
 		leftBits = 7;
 		byteBuffer = in.read();
-		if (byteBuffer == -1) 
+		if (byteBuffer == -1)
 			throw new EOFException("End of stream.");
-		
+
 		return ((byteBuffer >>> 7) & 1) == 1;
 	}
 
@@ -33,9 +33,9 @@ public class DefaultBitInputStream extends DataInputStream implements
 			n -= leftBits;
 			x |= rightBits(leftBits, byteBuffer) << n;
 			byteBuffer = in.read();
-			if (byteBuffer == -1) 
+			if (byteBuffer == -1)
 				throw new EOFException("End of stream.");
-			
+
 			leftBits = 8;
 		}
 		leftBits -= n;
@@ -45,11 +45,8 @@ public class DefaultBitInputStream extends DataInputStream implements
 	private static final int rightBits(int n, int x) {
 		return x & ((1 << n) - 1);
 	}
-	
 
-	// alternative reading method:
-	private long readBits(final long len)
-			throws IOException {
+	public final long readLongBits(int len) throws IOException {
 		if (len > 64)
 			throw new RuntimeException(
 					"More then 64 bits are requested in one read from bit stream.");
@@ -63,5 +60,4 @@ public class DefaultBitInputStream extends DataInputStream implements
 		}
 		return result;
 	}
-
 }

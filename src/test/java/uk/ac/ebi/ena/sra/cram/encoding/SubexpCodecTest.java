@@ -27,6 +27,36 @@ public class SubexpCodecTest {
 	}
 	
 	@Test
+	public void test_write_0_3() throws IOException {
+		SubexpCodec codec = new SubexpCodec(3);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		BitOutputStream bos = new DefaultBitOutputStream(baos);
+		long value = 0L;
+		int len = (int) codec.write(bos, value);
+		assertThat(len, is(4));
+		bos.flush();
+
+		byte[] buf = baos.toByteArray();
+		assertThat(Utils.toBitString(buf).substring(0, len), equalTo("0000"));
+		assertThat(Utils.toBitString(buf), equalTo("00000000"));
+	}
+	
+	@Test
+	public void test_write_1_3() throws IOException {
+		SubexpCodec codec = new SubexpCodec(3);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		BitOutputStream bos = new DefaultBitOutputStream(baos);
+		long value = 1L;
+		int len = (int) codec.write(bos, value);
+		assertThat(len, is(4));
+		bos.flush();
+
+		byte[] buf = baos.toByteArray();
+		assertThat(Utils.toBitString(buf).substring(0, len), equalTo("0001"));
+		assertThat(Utils.toBitString(buf), equalTo("00010000"));
+	}
+	
+	@Test
 	public void test_write_14_3() throws IOException {
 		SubexpCodec codec = new SubexpCodec(3);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -73,7 +103,7 @@ public class SubexpCodecTest {
 	}
 	
 	@Test
-	public void test_read_14_43() throws IOException {
+	public void test_read_14_4() throws IOException {
 		int m = 4;
 		long value = 14L;
 		// 01110:
