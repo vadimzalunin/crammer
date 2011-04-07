@@ -11,7 +11,13 @@ public class GolombCodec implements BitCodec<Long> {
 	private Long offset = 0L;
 
 	public GolombCodec(int m) {
+		this(m, true, 0L);
+	}
+
+	public GolombCodec(long m, boolean quotientBit, Long offset) {
 		this.m = m;
+		this.quotientBit = quotientBit;
+		this.offset = offset;
 	}
 
 	public final Long read(final BitInputStream bis) throws IOException {
@@ -33,7 +39,7 @@ public class GolombCodec implements BitCodec<Long> {
 	}
 
 	@Override
-	public long write(final BitOutputStream bos, final Long value)
+	public final long write(final BitOutputStream bos, final Long value)
 			throws IOException {
 		long newValue = value + offset;
 		long quotient = (long) Math.floor(newValue / m);
@@ -56,7 +62,7 @@ public class GolombCodec implements BitCodec<Long> {
 	}
 
 	@Override
-	public long numberOfBits(Long value) {
+	public final long numberOfBits(Long value) {
 		long newValue = value + offset;
 		long quotient = (long) Math.floor(newValue / m);
 		long reminder = newValue % m;
@@ -69,6 +75,30 @@ public class GolombCodec implements BitCodec<Long> {
 			l += ceiling;
 
 		return l;
+	}
+
+	public long getM() {
+		return m;
+	}
+
+	public boolean isQuotientBit() {
+		return quotientBit;
+	}
+
+	public Long getOffset() {
+		return offset;
+	}
+
+	public void setM(long m) {
+		this.m = m;
+	}
+
+	public void setQuotientBit(boolean quotientBit) {
+		this.quotientBit = quotientBit;
+	}
+
+	public void setOffset(Long offset) {
+		this.offset = offset;
 	}
 
 }

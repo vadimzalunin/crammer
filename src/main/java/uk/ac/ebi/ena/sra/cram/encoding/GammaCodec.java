@@ -17,8 +17,12 @@ public class GammaCodec implements BitCodec<Long> {
 		this.lenCodingBit = lenCodingBit;
 	}
 
+	public GammaCodec() {
+		this(0L, false);
+	}
+
 	@Override
-	public Long read(BitInputStream bis) throws IOException {
+	public final Long read(BitInputStream bis) throws IOException {
 		int len = 1;
 		while (bis.readBit() == lenCodingBit)
 			len++;
@@ -28,7 +32,7 @@ public class GammaCodec implements BitCodec<Long> {
 	}
 
 	@Override
-	public long write(BitOutputStream bos, Long value) throws IOException {
+	public final long write(BitOutputStream bos, Long value) throws IOException {
 		if (value + offset < 1)
 			throw new IllegalArgumentException("Value is less then offset: "
 					+ value);
@@ -43,9 +47,26 @@ public class GammaCodec implements BitCodec<Long> {
 	}
 
 	@Override
-	public long numberOfBits(Long value) {
-		int betaCodeLength = 1 + (int) MathUtils.log(2, value);
+	public final long numberOfBits(Long value) {
+		long newValue = value + offset;
+		int betaCodeLength = 1 + (int) MathUtils.log(2, newValue);
 		return betaCodeLength * 2 - 1;
+	}
+
+	public long getOffset() {
+		return offset;
+	}
+
+	public boolean isLenCodingBit() {
+		return lenCodingBit;
+	}
+
+	public void setOffset(long offset) {
+		this.offset = offset;
+	}
+
+	public void setLenCodingBit(boolean lenCodingBit) {
+		this.lenCodingBit = lenCodingBit;
 	}
 
 }

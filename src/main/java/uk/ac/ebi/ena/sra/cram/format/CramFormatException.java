@@ -1,6 +1,8 @@
 package uk.ac.ebi.ena.sra.cram.format;
 
-public class CramFormatException extends Exception {
+import uk.ac.ebi.ena.sra.cram.CramException;
+
+public class CramFormatException extends CramException {
 
 	public CramFormatException() {
 		super();
@@ -22,5 +24,4 @@ public class CramFormatException extends Exception {
 		// TODO Auto-generated constructor stub
 	}
 
-	
 }

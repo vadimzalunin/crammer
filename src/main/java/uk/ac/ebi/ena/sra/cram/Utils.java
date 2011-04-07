@@ -13,7 +13,7 @@ import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
 import uk.ac.ebi.ena.sra.cram.format.Variation;
 
 public class Utils {
-
+	
 	public final static byte[] toBytes(int value) {
 		final byte[] bytes = new byte[4];
 		bytes[0] = (byte) (value >>> 24);

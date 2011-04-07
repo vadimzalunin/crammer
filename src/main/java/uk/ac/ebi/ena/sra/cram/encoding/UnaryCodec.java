@@ -7,17 +7,19 @@ import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 
 public class UnaryCodec implements BitCodec<Long> {
 	private boolean stopBit = false;
+	private long offset = 0L;
+
+	public UnaryCodec() {
+		this(false, 0L);
+	}
 
 	public UnaryCodec(boolean stopBit, long offset) {
-		super();
 		this.stopBit = stopBit;
 		this.offset = offset;
 	}
 
-	private long offset = 0;
-
 	@Override
-	public Long read(BitInputStream bis) throws IOException {
+	public final Long read(BitInputStream bis) throws IOException {
 		long bits = 0;
 		while (bis.readBit() != stopBit)
 			bits++;
@@ -26,7 +28,7 @@ public class UnaryCodec implements BitCodec<Long> {
 	}
 
 	@Override
-	public long write(BitOutputStream bos, Long value) throws IOException {
+	public final long write(BitOutputStream bos, Long value) throws IOException {
 		long bits = value + 1;
 
 		while (bits-- > 0)
@@ -38,8 +40,24 @@ public class UnaryCodec implements BitCodec<Long> {
 	}
 
 	@Override
-	public long numberOfBits(Long value) {
+	public final long numberOfBits(Long value) {
 		return value + 1;
+	}
+
+	public boolean isStopBit() {
+		return stopBit;
+	}
+
+	public long getOffset() {
+		return offset;
+	}
+
+	public void setStopBit(boolean stopBit) {
+		this.stopBit = stopBit;
+	}
+
+	public void setOffset(long offset) {
+		this.offset = offset;
 	}
 
 }

@@ -10,12 +10,19 @@ public class SubexpCodec implements BitCodec<Long> {
 	private long k = 2;
 	private boolean unaryBit = true;
 
+	public SubexpCodec(long offset, long k, boolean unaryBit) {
+		super();
+		this.offset = offset;
+		this.k = k;
+		this.unaryBit = unaryBit;
+	}
+
 	public SubexpCodec(long k) {
 		this.k = k;
 	}
 
 	@Override
-	public Long read(BitInputStream bis) throws IOException {
+	public final Long read(BitInputStream bis) throws IOException {
 		long u = 0L;
 		while (bis.readBit() == unaryBit)
 			u++;
@@ -36,7 +43,7 @@ public class SubexpCodec implements BitCodec<Long> {
 	}
 
 	@Override
-	public long write(BitOutputStream bos, Long value) throws IOException {
+	public final long write(BitOutputStream bos, Long value) throws IOException {
 		if (value + offset < 0)
 			throw new IllegalArgumentException("Value is less then offset: "
 					+ value);
@@ -60,7 +67,7 @@ public class SubexpCodec implements BitCodec<Long> {
 	}
 
 	@Override
-	public long numberOfBits(Long value) {
+	public final long numberOfBits(Long value) {
 		long newValue = value + offset;
 		long b = 0;
 		long u = 0;
@@ -72,6 +79,30 @@ public class SubexpCodec implements BitCodec<Long> {
 			u = b - k + 1;
 		}
 		return u + 1 + b;
+	}
+
+	public long getOffset() {
+		return offset;
+	}
+
+	public void setOffset(long offset) {
+		this.offset = offset;
+	}
+
+	public long getK() {
+		return k;
+	}
+
+	public void setK(long k) {
+		this.k = k;
+	}
+
+	public boolean isUnaryBit() {
+		return unaryBit;
+	}
+
+	public void setUnaryBit(boolean unaryBit) {
+		this.unaryBit = unaryBit;
 	}
 
 }
