@@ -1,7 +1,6 @@
 package uk.ac.ebi.ena.sra.cram.encoding;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayInputStream;

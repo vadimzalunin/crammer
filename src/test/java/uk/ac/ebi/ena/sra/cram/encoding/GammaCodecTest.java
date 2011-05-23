@@ -43,7 +43,6 @@ public class GammaCodecTest {
 		bos.flush();
 		byte[] buf = baos.toByteArray();
 		String bitString = Utils.toBitString(buf);
-		System.out.println(bitString);
 
 		assertThat(bitString, equalTo("10000000"));
 		
@@ -131,7 +130,44 @@ public class GammaCodecTest {
 
 			bos.flush();
 			byte[] buf = baos.toByteArray();
-			System.out.println(i + "\t" + Utils.toBitString(buf));
+
+			BitInputStream bis = new DefaultBitInputStream(
+					new ByteArrayInputStream(buf));
+			Long readValue = codec.read(bis);
+			assertThat(readValue, equalTo(i));
+		}
+	}
+	
+	@Test
+	public void test_write_read_0_to_1000_offset_1() throws IOException {
+		GammaCodec codec = new GammaCodec(1, false);
+
+		for (long i = 0; i < 1000; i++) {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			BitOutputStream bos = new DefaultBitOutputStream(baos);
+			codec.write(bos, i);
+
+			bos.flush();
+			byte[] buf = baos.toByteArray();
+
+			BitInputStream bis = new DefaultBitInputStream(
+					new ByteArrayInputStream(buf));
+			Long readValue = codec.read(bis);
+			assertThat(readValue, equalTo(i));
+		}
+	}
+	
+	@Test
+	public void test_write_read_0_to_1000_offset_1_true() throws IOException {
+		GammaCodec codec = new GammaCodec(1, true);
+
+		for (long i = 0; i < 1000; i++) {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			BitOutputStream bos = new DefaultBitOutputStream(baos);
+			codec.write(bos, i);
+
+			bos.flush();
+			byte[] buf = baos.toByteArray();
 
 			BitInputStream bis = new DefaultBitInputStream(
 					new ByteArrayInputStream(buf));

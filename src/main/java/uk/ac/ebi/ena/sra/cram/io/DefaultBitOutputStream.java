@@ -62,7 +62,7 @@ public class DefaultBitOutputStream extends OutputStream implements
 			return;
 
 		if (nofBitsToWrite < 1 || nofBitsToWrite > 64)
-			throw new IOException("Expecting 1 to 64 bits.");
+			throw new IOException("Expecting 1 to 64 bits, got: value=" + value + ", nofBits=" + nofBitsToWrite);
 
 		if (nofBitsToWrite <= 8)
 			write((byte) value, nofBitsToWrite);

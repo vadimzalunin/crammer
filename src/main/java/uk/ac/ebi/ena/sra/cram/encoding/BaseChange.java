@@ -1,6 +1,5 @@
 package uk.ac.ebi.ena.sra.cram.encoding;
 
-import uk.ac.ebi.ena.sra.cram.impl.BaseTransitions;
 
 public class BaseChange {
 	private int change;

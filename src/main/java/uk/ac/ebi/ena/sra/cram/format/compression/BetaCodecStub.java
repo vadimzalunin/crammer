@@ -5,8 +5,8 @@ import uk.ac.ebi.ena.sra.cram.encoding.BetaCodec;
 class BetaCodecStub extends BetaCodec implements NumberCodecStub {
 
 	@Override
-	public NumberEncoding getEncoding() {
-		return NumberEncoding.BETA;
+	public EncodingAlgorithm getEncoding() {
+		return EncodingAlgorithm.BETA;
 	}
 
 	@Override
@@ -25,7 +25,7 @@ class BetaCodecStub extends BetaCodec implements NumberCodecStub {
 			setOffset(offset);
 			int readNofBits = StringRepresentation.toInt(params[1]);
 			setReadNofBits(readNofBits);
-			break ;
+			break;
 		default:
 			throw new CramCompressionException(
 					"Not supported number of parameters to beta codec: "
@@ -33,4 +33,14 @@ class BetaCodecStub extends BetaCodec implements NumberCodecStub {
 		}
 	}
 
+	@Override
+	public Object[] getParameters() {
+		return new Object[] { getOffset(), getReadNofBits() };
+	}
+
+	@Override
+	public void setParameters(Object[] params) {
+		setOffset((Long) params[0]);
+		setReadNofBits((Integer) params[1]);
+	}
 }

@@ -1,0 +1,33 @@
+cramtools, version 0.2
+Author: vadim@ebi.ac.uk
+
+This is a set of Java tools and APIs for efficient compression of SRA data.
+
+
+Usage. 
+There is some help available by running cramtools <command> without arguments.
+
+To convert a BAM file to CRAM: 
+cramtools cram --input-bam-file <bam file>
+		--reference-fasta <reference fasta file>
+		[--output-cram-file <output cram file>]
+		
+To convert a CRAM file to BAM: 		
+cramtools bam --input-cram <input cram file> 
+		--reference <reference fasta file>
+		--output-file <output bam file>
+
+Notes:
+1. reference fasta file must be indexed: 
+samtools faidx <fasta file>
+2. input bam file must be sorted by coordinate.
+3. input bam file must be indexed.
+
+Release notes.
+Although this should be a stable version the code is released only as early access. 
+A big part of the project is still experimental and will not be supported in the future.   
+ 
+In this version there are a number of limitations: 
+- unampped reads are ignored
+- paired reads are treated as single
+- input BAM file is read twice during conversion (first-pass is to collect statistics) 

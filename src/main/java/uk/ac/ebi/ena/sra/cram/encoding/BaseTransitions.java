@@ -1,6 +1,6 @@
-package uk.ac.ebi.ena.sra.cram.impl;
+package uk.ac.ebi.ena.sra.cram.encoding;
 
-public class BaseTransitions {
+class BaseTransitions {
 	public static byte getBaseForTransition(byte reference, int transition) {
 		switch (reference) {
 		case 'A':

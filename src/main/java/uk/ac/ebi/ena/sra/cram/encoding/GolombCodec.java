@@ -9,17 +9,22 @@ public class GolombCodec implements BitCodec<Long> {
 	private long m;
 	private boolean quotientBit = true;
 	private Long offset = 0L;
+	private boolean deltaCodec = false;
+	private long previousValue = 0L;
 
 	public GolombCodec(int m) {
 		this(m, true, 0L);
 	}
 
 	public GolombCodec(long m, boolean quotientBit, Long offset) {
+		if (m < 2)
+			throw new IllegalArgumentException("M parameter must be at least 2.");
 		this.m = m;
 		this.quotientBit = quotientBit;
 		this.offset = offset;
 	}
 
+	@Override
 	public final Long read(final BitInputStream bis) throws IOException {
 		long quotient = 0L;
 		while (bis.readBit() == quotientBit)
@@ -100,5 +105,11 @@ public class GolombCodec implements BitCodec<Long> {
 	public void setOffset(Long offset) {
 		this.offset = offset;
 	}
+
+	// @Override
+	// public void reset() {
+	// // TODO Auto-generated method stub
+	//
+	// }
 
 }

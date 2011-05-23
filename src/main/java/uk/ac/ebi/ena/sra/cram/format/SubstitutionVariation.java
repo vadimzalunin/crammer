@@ -2,15 +2,21 @@ package uk.ac.ebi.ena.sra.cram.format;
 
 import java.io.Serializable;
 
-public class SubstitutionVariation implements Serializable, Variation{
+import uk.ac.ebi.ena.sra.cram.encoding.BaseChange;
+
+public class SubstitutionVariation implements Serializable, ReadFeature {
 
 	private int position;
 	private byte base;
 	private byte refernceBase;
-	
+	private byte qualityScore;
+	private BaseChange baseChange;
+
+	public static final byte operator = 'S';
+
 	@Override
 	public byte getOperator() {
-		return 'S';
+		return operator;
 	}
 
 	public int getPosition() {
@@ -59,8 +65,25 @@ public class SubstitutionVariation implements Serializable, Variation{
 		StringBuffer sb = new StringBuffer(getClass().getSimpleName() + "[");
 		sb.append("position=").append(position);
 		sb.append("; base=").append((char) base);
+		sb.append("; quality score=").append(qualityScore);
 		sb.append("; referenceBase=").append((char) refernceBase);
 		sb.append("] ");
 		return sb.toString();
+	}
+
+	public byte getQualityScore() {
+		return qualityScore;
+	}
+
+	public void setQualityScore(byte qualityScore) {
+		this.qualityScore = qualityScore;
+	}
+
+	public BaseChange getBaseChange() {
+		return baseChange;
+	}
+
+	public void setBaseChange(BaseChange baseChange) {
+		this.baseChange = baseChange;
 	}
 }

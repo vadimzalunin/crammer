@@ -3,16 +3,26 @@ package uk.ac.ebi.ena.sra.cram.format;
 import java.io.Serializable;
 import java.util.Arrays;
 
-public class InsertionVariation implements Serializable, Variation{
+public class InsertionVariation implements Serializable, ReadFeature {
 
 	private int position;
 	private byte[] sequence;
 
-	
+	public InsertionVariation() {
+	}
+
+	public InsertionVariation(int position, byte[] sequence) {
+		this.position = position;
+		this.sequence = sequence;
+	}
+
+	public static final byte operator = 'I';
+
 	@Override
 	public byte getOperator() {
-		return 'I';
+		return operator;
 	}
+
 	public int getPosition() {
 		return position;
 	}

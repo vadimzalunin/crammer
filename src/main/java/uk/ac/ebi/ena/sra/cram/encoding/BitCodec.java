@@ -10,6 +10,14 @@ public interface BitCodec<T> {
 	public T read(BitInputStream bis) throws IOException;
 
 	public long write(BitOutputStream bos, T object) throws IOException;
-	
-	public long numberOfBits (T object) ;
+
+	public long numberOfBits(T object);
+
+//	/**
+//	 * Resets any state information, for example information about previously
+//	 * seen values.
+//	 * 
+//	 */
+//	public void reset();
+
 }

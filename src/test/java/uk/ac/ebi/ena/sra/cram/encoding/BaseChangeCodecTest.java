@@ -58,8 +58,8 @@ public class BaseChangeCodecTest {
 			BaseChange change = new BaseChange(refBaseArray[i],
 					readBaseArray[i]);
 			codec.write(bitOutputStream, change);
-			System.out.printf("%c\t%c\t%d\n", (char) refBaseArray[i],
-					(char) readBaseArray[i], change.getChange());
+//			System.out.printf("%c\t%c\t%d\n", (char) refBaseArray[i],
+//					(char) readBaseArray[i], change.getChange());
 		}
 		bitOutputStream.flush();
 

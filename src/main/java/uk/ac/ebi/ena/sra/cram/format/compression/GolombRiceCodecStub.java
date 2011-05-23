@@ -9,8 +9,8 @@ class GolombRiceCodecStub extends GolombRiceCodec implements NumberCodecStub {
 	}
 
 	@Override
-	public NumberEncoding getEncoding() {
-		return NumberEncoding.GOLOMB_RICE;
+	public EncodingAlgorithm getEncoding() {
+		return EncodingAlgorithm.GOLOMB_RICE;
 	}
 
 	@Override
@@ -41,5 +41,15 @@ class GolombRiceCodecStub extends GolombRiceCodec implements NumberCodecStub {
 							+ params.length);
 		}
 	}
-
+	
+	@Override
+	public Object[] getParameters() {
+		return new Object[]{getLog2m(), getOffset(), isQuotientBit()};
+	}
+	@Override
+	public void setParameters(Object[] params) {
+		setLog2m((Integer) params[0]);
+		setOffset((Long) params[1]);
+		setQuotientBit((Boolean) params[2]);
+	}
 }

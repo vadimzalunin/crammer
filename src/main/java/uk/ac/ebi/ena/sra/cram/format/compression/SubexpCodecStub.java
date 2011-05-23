@@ -9,8 +9,8 @@ class SubexpCodecStub extends SubexpCodec implements NumberCodecStub {
 	}
 
 	@Override
-	public NumberEncoding getEncoding() {
-		return NumberEncoding.SUBEXP;
+	public EncodingAlgorithm getEncoding() {
+		return EncodingAlgorithm.SUBEXP;
 	}
 
 	@Override
@@ -34,7 +34,7 @@ class SubexpCodecStub extends SubexpCodec implements NumberCodecStub {
 			setOffset(offset);
 			boolean quotientBit = StringRepresentation.toBoolean(params[2]);
 			setUnaryBit(quotientBit);
-			break ;
+			break;
 		default:
 			throw new CramCompressionException(
 					"Not supported number of parameters to golomb-rice codec: "
@@ -42,4 +42,15 @@ class SubexpCodecStub extends SubexpCodec implements NumberCodecStub {
 		}
 	}
 
+	@Override
+	public Object[] getParameters() {
+		return new Object[] { getK(), getOffset(), isUnaryBit() };
+	}
+
+	@Override
+	public void setParameters(Object[] params) {
+		setK((Long) params[0]);
+		setOffset((Long) params[1]);
+		setUnaryBit((Boolean) params[2]);
+	}
 }

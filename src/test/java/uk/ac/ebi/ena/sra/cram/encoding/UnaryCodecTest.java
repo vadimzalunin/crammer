@@ -38,7 +38,7 @@ public class UnaryCodecTest {
 		byte[] buf = baos.toByteArray();
 		String bitString = Utils.toBitString(buf);
 
-		assertThat(bitString, equalTo("10000000"));
+		assertThat(bitString, equalTo("00000000"));
 
 		BitInputStream bis = new DefaultBitInputStream(
 				new ByteArrayInputStream(buf));
@@ -60,7 +60,7 @@ public class UnaryCodecTest {
 		byte[] buf = baos.toByteArray();
 		String bitString = Utils.toBitString(buf);
 
-		assertThat(bitString, equalTo("111111111111111111111000"));
+		assertThat(bitString, equalTo("111111111111111111110000"));
 
 		BitInputStream bis = new DefaultBitInputStream(
 				new ByteArrayInputStream(buf));
@@ -72,7 +72,7 @@ public class UnaryCodecTest {
 	public void test_write_read_0_to_1000() throws IOException {
 		UnaryCodec codec = new UnaryCodec(false, 0);
 
-		for (long i = 0; i < 1000; i++) {
+		for (long i = 0; i < 10000; i++) {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			BitOutputStream bos = new DefaultBitOutputStream(baos);
 			long len = codec.write(bos, i);
@@ -80,7 +80,8 @@ public class UnaryCodecTest {
 
 			bos.flush();
 			byte[] buf = baos.toByteArray();
-			assertThat((long) buf.length, is(1 + (len >> 3)));
+			assertThat("i=" + i + "; " + "buf len=" + buf.length + "; len="
+					+ len, (long) buf.length, is(1 + (len - 1 >> 3)));
 
 			BitInputStream bis = new DefaultBitInputStream(
 					new ByteArrayInputStream(buf));

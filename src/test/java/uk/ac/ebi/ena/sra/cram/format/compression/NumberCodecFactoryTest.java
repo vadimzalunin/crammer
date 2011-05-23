@@ -9,7 +9,7 @@ public class NumberCodecFactoryTest {
 
 	@Test
 	public void test_all_encodings_have_codec() throws CramCompressionException {
-		for (NumberEncoding encoding : NumberEncoding.values()) {
+		for (EncodingAlgorithm encoding : EncodingAlgorithm.values()) {
 			NumberCodecStub stub = NumberCodecFactory.createStub(encoding);
 			assertThat(stub, is(notNullValue()));
 			assertThat(stub.getEncoding(), equalTo(encoding));
@@ -19,7 +19,7 @@ public class NumberCodecFactoryTest {
 	@Test
 	public void test_string_representation_round_trip()
 			throws CramCompressionException {
-		for (NumberEncoding encoding : NumberEncoding.values()) {
+		for (EncodingAlgorithm encoding : EncodingAlgorithm.values()) {
 			NumberCodecStub stub = NumberCodecFactory.createStub(encoding);
 			String stringRepresentation = stub.getStringRepresentation();
 			stub.initFromString(stringRepresentation);

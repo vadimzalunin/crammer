@@ -1,6 +1,6 @@
 package uk.ac.ebi.ena.sra.cram.format.compression;
 
-public class StringRepresentation {
+class StringRepresentation {
 
 	public static String[] parse(String spec) {
 		return spec.split(",");
@@ -51,7 +51,7 @@ public class StringRepresentation {
 	}
 	
 
-	public static String numberEncodingToString(NumberEncoding encoding)
+	public static String encodingToString(EncodingAlgorithm encoding)
 			throws CramCompressionException {
 		switch (encoding) {
 		case UNARY:
@@ -73,14 +73,14 @@ public class StringRepresentation {
 		}
 	}
 
-	public static NumberEncoding stringToNumberEncoding(String string)
+	public static EncodingAlgorithm stringToNumberEncoding(String string)
 			throws CramCompressionException {
 		if (string.length() != 2)
 			throw new CramCompressionException(
 					"Expecting a two-letter string: " + string);
 
-		for (NumberEncoding encoding : NumberEncoding.values())
-			if (string.equals(numberEncodingToString(encoding)))
+		for (EncodingAlgorithm encoding : EncodingAlgorithm.values())
+			if (string.equals(encodingToString(encoding)))
 				return encoding;
 
 		throw new CramCompressionException("Unkown number encoding: " + string);

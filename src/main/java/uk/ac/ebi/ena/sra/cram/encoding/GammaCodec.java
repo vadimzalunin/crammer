@@ -34,8 +34,8 @@ public class GammaCodec implements BitCodec<Long> {
 	@Override
 	public final long write(BitOutputStream bos, Long value) throws IOException {
 		if (value + offset < 1)
-			throw new IllegalArgumentException("Value is less then offset: "
-					+ value);
+			throw new IllegalArgumentException(
+					"Gamma codec handles only positive values: " + value);
 
 		long newValue = value + offset;
 		int betaCodeLength = 1 + (int) MathUtils.log(2, newValue);

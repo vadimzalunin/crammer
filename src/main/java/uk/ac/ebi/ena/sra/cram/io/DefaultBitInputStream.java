@@ -5,6 +5,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
+/** Must not read from delegate unless not bits left in the buffer!!!
+ * @author vadim
+ *
+ */
 public class DefaultBitInputStream extends DataInputStream implements
 		BitInputStream {
 
@@ -25,6 +29,13 @@ public class DefaultBitInputStream extends DataInputStream implements
 			throw new EOFException("End of stream.");
 
 		return ((byteBuffer >>> 7) & 1) == 1;
+	}
+
+	public final void alignToByte() throws IOException {
+		if (leftBits == 0)
+			return;
+		while (leftBits > 0)
+			readBit();
 	}
 
 	public final int readBits(int n) throws IOException {

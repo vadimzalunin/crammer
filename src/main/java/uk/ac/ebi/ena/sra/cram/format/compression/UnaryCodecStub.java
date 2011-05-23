@@ -9,8 +9,8 @@ class UnaryCodecStub extends UnaryCodec implements NumberCodecStub {
 	}
 
 	@Override
-	public NumberEncoding getEncoding() {
-		return NumberEncoding.UNARY;
+	public EncodingAlgorithm getEncoding() {
+		return EncodingAlgorithm.UNARY;
 	}
 
 	@Override
@@ -29,7 +29,7 @@ class UnaryCodecStub extends UnaryCodec implements NumberCodecStub {
 			setStopBit(stopBit);
 			long offset = StringRepresentation.toLong(params[1]);
 			setOffset(offset);
-			break ;
+			break;
 		default:
 			throw new CramCompressionException(
 					"Not supported number of parameters to unary codec: "
@@ -37,4 +37,14 @@ class UnaryCodecStub extends UnaryCodec implements NumberCodecStub {
 		}
 	}
 
+	@Override
+	public Object[] getParameters() {
+		return new Object[] { getOffset(), isStopBit() };
+	}
+
+	@Override
+	public void setParameters(Object[] params) {
+		setOffset((Long) params[0]);
+		setStopBit((Boolean) params[1]);
+	}
 }

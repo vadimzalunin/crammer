@@ -4,12 +4,15 @@ import java.io.Serializable;
 import java.util.Collection;
 
 public class CramRecordBlock implements Serializable {
-	String sequenceName;
-	transient Collection<CramRecord> records;
-	int firstRecordPosition;
-	int recordCount;
-	int readLength;
-	CramCompression compression ;
+	private transient Collection<CramRecord> records;
+	private String sequenceName;
+	private int sequenceLength;
+	private long firstRecordPosition;
+	private long recordCount;
+	private int readLength;
+	private CramCompression compression;
+	private boolean positiveStrandBasePositionReversed = false;
+	private boolean negativeStrandBasePositionReversed = !positiveStrandBasePositionReversed;
 
 	public String getSequenceName() {
 		return sequenceName;
@@ -27,19 +30,19 @@ public class CramRecordBlock implements Serializable {
 		this.records = records;
 	}
 
-	public int getFirstRecordPosition() {
+	public long getFirstRecordPosition() {
 		return firstRecordPosition;
 	}
 
-	public void setFirstRecordPosition(int firstRecordPosition) {
+	public void setFirstRecordPosition(long firstRecordPosition) {
 		this.firstRecordPosition = firstRecordPosition;
 	}
 
-	public int getRecordCount() {
+	public long getRecordCount() {
 		return recordCount;
 	}
 
-	public void setRecordCount(int recordCount) {
+	public void setRecordCount(long recordCount) {
 		this.recordCount = recordCount;
 	}
 
@@ -57,5 +60,81 @@ public class CramRecordBlock implements Serializable {
 
 	public void setCompression(CramCompression compression) {
 		this.compression = compression;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof CramRecordBlock))
+			return false;
+
+		CramRecordBlock foe = (CramRecordBlock) obj;
+
+		if (sequenceName == null)
+			if (foe.sequenceName != null)
+				return false;
+		if (!sequenceName.equals(foe.sequenceName))
+			return false;
+		if (sequenceLength != foe.sequenceLength)
+			return false;
+		if (firstRecordPosition != foe.firstRecordPosition)
+			return false;
+		if (recordCount != foe.recordCount)
+			return false;
+		if (recordCount != foe.recordCount)
+			return false;
+		if (readLength != foe.readLength)
+			return false;
+		if (positiveStrandBasePositionReversed != foe.positiveStrandBasePositionReversed)
+			return false;
+		if (negativeStrandBasePositionReversed != foe.negativeStrandBasePositionReversed)
+			return false;
+
+		if (!compression.equals(foe.compression))
+			return false;
+
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(getClass().getSimpleName()).append(" [");
+		sb.append("sequenceName=").append(sequenceName).append(", ");
+		sb.append("sequenceLength=").append(sequenceLength).append(", ");
+		sb.append("firstRecordPosition=").append(firstRecordPosition)
+				.append(", ");
+		sb.append("recordCount=").append(recordCount).append(", ");
+		sb.append("readLength=").append(readLength).append(", ");
+		sb.append("in-read pos reversed=(")
+				.append(positiveStrandBasePositionReversed).append(",")
+				.append(negativeStrandBasePositionReversed).append("), ");
+		sb.append("compression=").append(compression).append("]");
+		return sb.toString();
+	}
+
+	public boolean isPositiveStrandBasePositionReversed() {
+		return positiveStrandBasePositionReversed;
+	}
+
+	public void setPositiveStrandBasePositionReversed(
+			boolean positiveStrandBasePositionReversed) {
+		this.positiveStrandBasePositionReversed = positiveStrandBasePositionReversed;
+	}
+
+	public boolean isNegativeStrandBasePositionReversed() {
+		return negativeStrandBasePositionReversed;
+	}
+
+	public void setNegativeStrandBasePositionReversed(
+			boolean negativeStrandBasePositionReversed) {
+		this.negativeStrandBasePositionReversed = negativeStrandBasePositionReversed;
+	}
+
+	public int getSequenceLength() {
+		return sequenceLength;
+	}
+
+	public void setSequenceLength(int sequenceLength) {
+		this.sequenceLength = sequenceLength;
 	}
 }

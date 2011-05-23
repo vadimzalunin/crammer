@@ -24,24 +24,27 @@ public class UnaryCodec implements BitCodec<Long> {
 		while (bis.readBit() != stopBit)
 			bits++;
 
-		return bits - offset - 1;
+		return bits - offset;
 	}
 
 	@Override
 	public final long write(BitOutputStream bos, Long value) throws IOException {
-		long bits = value + 1;
+		long newValue = value + offset;
+		if (newValue < 0)
+			throw new IllegalArgumentException(
+					"Unary codec, negative values not allowed: " + newValue);
 
-		while (bits-- > 0)
-			bos.write(stopBit ? 0 : 1, 1);
+		long bits = newValue + 1;
 
-		bos.write(stopBit ? 1 : 0, 1);
+		bos.write(!stopBit, bits - 1);
+		bos.write(stopBit, 1);
 
 		return value + 1;
 	}
 
 	@Override
 	public final long numberOfBits(Long value) {
-		return value + 1;
+		return value + offset + 1;
 	}
 
 	public boolean isStopBit() {

@@ -26,8 +26,8 @@ import org.apache.commons.math.stat.Frequency;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
-import uk.ac.ebi.ena.sra.cram.format.CramRecordFactory;
 import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
+import uk.ac.ebi.ena.sra.cram.impl.CramRecordStaticFactory;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -201,7 +201,7 @@ public class BamStats {
 					posInRead += ce.getLength();
 				}
 
-				CramRecord cramRecord = CramRecordFactory.newRecord3(record,
+				CramRecord cramRecord = CramRecordStaticFactory.newRecord3(record,
 						refSequence);
 
 				if (cramRecord.getSubstitutionVariations() != null) {

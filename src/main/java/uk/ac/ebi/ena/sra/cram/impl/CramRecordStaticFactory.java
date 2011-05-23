@@ -1,4 +1,4 @@
-package uk.ac.ebi.ena.sra.cram.format;
+package uk.ac.ebi.ena.sra.cram.impl;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -9,34 +9,70 @@ import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.Cigar;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.SAMRecord;
+import uk.ac.ebi.ena.sra.cram.format.CramRecord;
+import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
+import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
+import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
 
-public class CramRecordFactory {
+public class CramRecordStaticFactory {
 
 	private static void addVariations(CramRecord cramRecord,
-			List<CigarElement> cigarElements, byte[] bases, byte[] refBases) {
+			List<CigarElement> cigarElements, byte[] bases,
+			byte[] qualityScore, byte[] refBases) {
+		long readLength = cramRecord.getReadLength();
 		int posInRead = 0;
 		int posInSeq = 0;
 		boolean perfectMatch = true;
 		int ceLen = 0;
 		for (CigarElement ce : cigarElements) {
+
 			ceLen = ce.getLength();
+
 			switch (ce.getOperator()) {
 			case D:
 				perfectMatch = false;
 				DeletionVariation dv = new DeletionVariation();
 				dv.setLength(ceLen);
-				dv.setPosition(posInRead + 1);
+				if (!cramRecord.isNegativeStrand())
+					dv.setPosition((int) (readLength - (posInRead)));
+				else
+					dv.setPosition(posInRead + 1);
 				posInSeq += ceLen;
 				if (cramRecord.getDeletionVariations() == null)
 					cramRecord
 							.setDeletionVariations(new LinkedList<DeletionVariation>());
 				cramRecord.getDeletionVariations().add(dv);
 				break;
-			case I:
 			case S:
+				posInRead += ceLen;
+//				for (int i = 0; i < ceLen; i++) {
+//					if (bases[posInRead] != refBases[(int) (cramRecord
+//							.getAlignmentStart() + posInSeq) - 1]) {
+//						perfectMatch = false;
+//						SubstitutionVariation sv = new SubstitutionVariation();
+//						if (!cramRecord.isNegativeStrand())
+//							sv.setPosition((int) (readLength - (posInRead)));
+//						else
+//							sv.setPosition(posInRead + 1);
+//						sv.setBase(bases[posInRead]);
+//						sv.setRefernceBase(refBases[(int) (cramRecord
+//								.getAlignmentStart() + posInSeq) - 1]);
+//						sv.setQualityScore(qualityScore[posInRead]);
+//						if (cramRecord.getSubstitutionVariations() == null)
+//							cramRecord
+//									.setSubstitutionVariations(new LinkedList<SubstitutionVariation>());
+//						cramRecord.getSubstitutionVariations().add(sv);
+//					}
+//					posInRead++;
+//				}
+				break;
+			case I:
 				perfectMatch = false;
 				InsertionVariation iv = new InsertionVariation();
-				iv.setPosition(posInRead + 1);
+				if (!cramRecord.isNegativeStrand())
+					iv.setPosition((int) (readLength - (posInRead)));
+				else
+					iv.setPosition(posInRead + 1);
 				iv.setSequence(Arrays.copyOfRange(bases, posInRead, posInRead
 						+ ceLen));
 				posInRead += ceLen;
@@ -47,16 +83,20 @@ public class CramRecordFactory {
 				break;
 			case M:
 			case X:
-
+				// case S:
 				for (int i = 0; i < ceLen; i++) {
 					if (bases[posInRead] != refBases[(int) (cramRecord
-							.getAlignmentStart() + posInSeq)]) {
+							.getAlignmentStart() + posInSeq) - 1]) {
 						perfectMatch = false;
 						SubstitutionVariation sv = new SubstitutionVariation();
-						sv.setPosition(posInRead + 1);
+						if (!cramRecord.isNegativeStrand())
+							sv.setPosition((int) (readLength - (posInRead)));
+						else
+							sv.setPosition(posInRead + 1);
 						sv.setBase(bases[posInRead]);
 						sv.setRefernceBase(refBases[(int) (cramRecord
-								.getAlignmentStart() + posInSeq)]);
+								.getAlignmentStart() + posInSeq) - 1]);
+						sv.setQualityScore(qualityScore[posInRead]);
 						if (cramRecord.getSubstitutionVariations() == null)
 							cramRecord
 									.setSubstitutionVariations(new LinkedList<SubstitutionVariation>());
@@ -75,12 +115,12 @@ public class CramRecordFactory {
 
 	public static CramRecord newRecord2(int alilgnmetStart,
 			boolean negativeStrand, List<CigarElement> cigarElements,
-			byte[] bases, byte[] refBases) {
+			byte[] bases, byte[] qualityScore, byte[] refBases) {
 		CramRecord cramRecord = new CramRecord();
 		cramRecord.setAlignmentStart(alilgnmetStart);
 		cramRecord.setNegativeStrand(negativeStrand);
 
-		addVariations(cramRecord, cigarElements, bases, refBases);
+		addVariations(cramRecord, cigarElements, bases, qualityScore, refBases);
 		return cramRecord;
 	}
 
@@ -88,9 +128,23 @@ public class CramRecordFactory {
 		CramRecord cramRecord = new CramRecord();
 		cramRecord.setAlignmentStart(record.getAlignmentStart());
 		cramRecord.setNegativeStrand(record.getReadNegativeStrandFlag());
+		cramRecord.setReadMapped(!record.getReadUnmappedFlag());
+		cramRecord.setReadLength(record.getReadLength());
+		if (!record.getReadPairedFlag())
+			cramRecord.setLastFragment(false);
+		else {
+			if (record.getFirstOfPairFlag())
+				cramRecord.setLastFragment(false);
+			else if (record.getSecondOfPairFlag())
+				cramRecord.setLastFragment(true);
+			else
+				throw new IllegalArgumentException(
+						"Could not determine if the read is last fragment in the template: "
+								+ record.toString());
+		}
 
 		addVariations(cramRecord, record.getCigar().getCigarElements(),
-				record.getReadBases(), refBases);
+				record.getReadBases(), record.getBaseQualities(), refBases);
 		return cramRecord;
 	}
 

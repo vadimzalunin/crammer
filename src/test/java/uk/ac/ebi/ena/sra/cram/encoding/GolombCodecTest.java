@@ -88,6 +88,11 @@ public class GolombCodecTest {
 		Long readValue = codec.read(bis);
 		assertThat(readValue, is(value));
 	}
+	
+	@Test (expected=IllegalArgumentException.class)
+	public void test_write_read_1() throws IOException {
+		new GolombCodec(1);
+	}
 
 	@Test
 	@Ignore

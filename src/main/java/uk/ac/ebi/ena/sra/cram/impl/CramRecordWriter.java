@@ -12,8 +12,8 @@ import uk.ac.ebi.ena.sra.cram.encoding.GolombRiceCodec;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
 import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
+import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
-import uk.ac.ebi.ena.sra.cram.format.Variation;
 import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 
 public class CramRecordWriter {
@@ -45,8 +45,8 @@ public class CramRecordWriter {
 		if (!record.isPerfectMatch()) {
 			appendBit(true);
 
-			List<Variation> vars = Utils.sortVariationsByPosition(record);
-			for (Variation v : vars) {
+			List<ReadFeature> vars = Utils.sortVariationsByPosition(record);
+			for (ReadFeature v : vars) {
 				switch (v.getOperator()) {
 				case 'I':
 					appendInsertion((InsertionVariation) v);

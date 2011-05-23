@@ -1,11 +1,11 @@
 package uk.ac.ebi.ena.sra.cram.format;
 
 import java.io.Serializable;
-import java.util.Collection;
+import java.util.List;
 
-public class CramHeader implements Serializable{
-	String version;
-	Collection<CramRecordBlock> blocks;
+public class CramHeader implements Serializable {
+	private String version;
+	private List<CramReferenceSequence> referenceSequences;
 
 	public String getVersion() {
 		return version;
@@ -15,12 +15,26 @@ public class CramHeader implements Serializable{
 		this.version = version;
 	}
 
-	public Collection<CramRecordBlock> getBlocks() {
-		return blocks;
+	public List<CramReferenceSequence> getReferenceSequences() {
+		return referenceSequences;
 	}
 
-	public void setBlocks(Collection<CramRecordBlock> blocks) {
-		this.blocks = blocks;
+	public void setReferenceSequences(
+			List<CramReferenceSequence> referenceSequences) {
+		this.referenceSequences = referenceSequences;
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("version=").append(version);
+		if (referenceSequences == null || referenceSequences.isEmpty())
+			return sb.toString();
+
+		for (CramReferenceSequence s : referenceSequences) {
+			sb.append(", ");
+			sb.append(s.toString());
+		}
+		return sb.toString();
+	}
 }

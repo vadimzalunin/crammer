@@ -9,8 +9,8 @@ class GolombCodecStub extends GolombCodec implements NumberCodecStub {
 	}
 
 	@Override
-	public NumberEncoding getEncoding() {
-		return NumberEncoding.GOLOMB;
+	public EncodingAlgorithm getEncoding() {
+		return EncodingAlgorithm.GOLOMB;
 	}
 
 	@Override
@@ -41,5 +41,15 @@ class GolombCodecStub extends GolombCodec implements NumberCodecStub {
 							+ params.length);
 		}
 	}
-
+	
+	@Override
+	public Object[] getParameters() {
+		return new Object[]{getM(), getOffset(), isQuotientBit()};
+	}
+	@Override
+	public void setParameters(Object[] params) {
+		setM((Long) params[0]);
+		setOffset((Long) params[1]);
+		setQuotientBit((Boolean) params[2]);
+	}
 }

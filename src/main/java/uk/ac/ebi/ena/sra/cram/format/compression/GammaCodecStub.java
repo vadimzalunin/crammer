@@ -9,14 +9,13 @@ class GammaCodecStub extends GammaCodec implements NumberCodecStub {
 	}
 
 	@Override
-	public NumberEncoding getEncoding() {
-		return NumberEncoding.GAMMA;
+	public EncodingAlgorithm getEncoding() {
+		return EncodingAlgorithm.GAMMA;
 	}
 
 	@Override
 	public String getStringRepresentation() {
-		return String.format("%d,%d", getOffset(),
-				isLenCodingBit() ? 1 : 0);
+		return String.format("%d,%d", getOffset(), isLenCodingBit() ? 1 : 0);
 	}
 
 	@Override
@@ -26,11 +25,11 @@ class GammaCodecStub extends GammaCodec implements NumberCodecStub {
 		case 0:
 			break;
 		case 2:
-			boolean lenCodingBit = StringRepresentation.toBoolean(params[0]);
-			setLenCodingBit(lenCodingBit) ;
-			long offset = StringRepresentation.toLong(params[1]);
+			long offset = StringRepresentation.toLong(params[0]);
 			setOffset(offset);
-			break ;
+			boolean lenCodingBit = StringRepresentation.toBoolean(params[1]);
+			setLenCodingBit(lenCodingBit);
+			break;
 		default:
 			throw new CramCompressionException(
 					"Not supported number of parameters to unary codec: "
@@ -38,4 +37,14 @@ class GammaCodecStub extends GammaCodec implements NumberCodecStub {
 		}
 	}
 
+	@Override
+	public Object[] getParameters() {
+		return new Object[] { getOffset(), isLenCodingBit() };
+	}
+
+	@Override
+	public void setParameters(Object[] params) {
+		setOffset((Long) params[0]);
+		setLenCodingBit((Boolean) params[1]);
+	}
 }

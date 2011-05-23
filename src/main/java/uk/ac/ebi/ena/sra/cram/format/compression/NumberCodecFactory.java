@@ -2,7 +2,7 @@ package uk.ac.ebi.ena.sra.cram.format.compression;
 
 public class NumberCodecFactory {
 
-	public static NumberCodecStub createStub(NumberEncoding encoding)
+	public static NumberCodecStub createStub(EncodingAlgorithm encoding)
 			throws CramCompressionException {
 		switch (encoding) {
 		case GOLOMB:

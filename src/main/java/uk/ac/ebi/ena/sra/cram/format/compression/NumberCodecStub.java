@@ -4,7 +4,9 @@ import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
 
 public interface NumberCodecStub extends BitCodec<Long>{
 
-	public NumberEncoding getEncoding () ;
+	public EncodingAlgorithm getEncoding () ;
 	public String getStringRepresentation () ;
 	public void initFromString (String spec) throws CramCompressionException ;
+	public Object[] getParameters () ;
+	public void setParameters (Object [] params) ;
 }
