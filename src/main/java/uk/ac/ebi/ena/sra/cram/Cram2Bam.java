@@ -60,6 +60,15 @@ public class Cram2Bam {
 		Params params = new Params();
 		JCommander jc = new JCommander(params);
 		jc.parse(args);
+		
+		if (args.length == 0 || params.help) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("\n");
+			jc.usage(sb);
+
+			System.out.println(sb.toString());
+			return;
+		}
 
 		ReferenceSequenceFile referenceSequenceFile = ReferenceSequenceFileFactory
 				.getReferenceSequenceFile(new File(
@@ -113,6 +122,7 @@ public class Cram2Bam {
 			byte[] refBases = referenceSequenceFile.getSubsequenceAt(
 					nextSequence.getName(), 1, nextSequence.length())
 					.getBases();
+			Utils.capitaliseAndCheckBases(refBases) ;
 			ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
 					refBases);
 			reader.setReferenceBaseProvider(provider);
@@ -163,7 +173,7 @@ public class Cram2Bam {
 		log.info("Decoded in: " + (time2 - time1) + " millis");
 	}
 
-	@Parameters(commandDescription = "CRAM printing and conversion")
+	@Parameters(commandDescription = "CRAM to BAM conversion")
 	static class Params {
 		@Parameter(names = { "--input-cram" }, converter = FileConverter.class)
 		File cramFile;
@@ -179,5 +189,8 @@ public class Cram2Bam {
 
 		@Parameter(names = { "--output-file" }, converter = FileConverter.class)
 		File outputFile;
+		
+		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
+		boolean help = false;
 	}
 }

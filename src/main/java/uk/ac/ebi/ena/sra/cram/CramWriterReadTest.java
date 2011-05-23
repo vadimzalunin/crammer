@@ -69,6 +69,15 @@ public class CramWriterReadTest {
 		Params params = new Params();
 		JCommander jc = new JCommander(params);
 		jc.parse(args);
+		
+		if (args.length == 0 || params.help) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("\n");
+			jc.usage(sb);
+
+			System.out.println(sb.toString());
+			return;
+		}
 
 		File bamFile = params.bamFile;
 		File refFile = params.referenceFasta;
@@ -145,6 +154,7 @@ public class CramWriterReadTest {
 					.getSequence(seqName);
 			byte[] refBases = referenceSequenceFile.getSubsequenceAt(
 					sequence.getName(), 1, sequence.length()).getBases();
+			Utils.capitaliseAndCheckBases(refBases) ;
 			byte[] refStart = new byte[50];
 			System.arraycopy(refBases, 0, refStart, 0, refStart.length);
 			log.info("Reference sequence " + seqName + ", starts with "
@@ -413,7 +423,7 @@ public class CramWriterReadTest {
 		log.info("Decoded in: " + (time2 - time1) + " millis");
 	}
 
-	@Parameters(commandDescription = "BAM to CRAM converter.")
+	@Parameters(commandDescription = "BAM to CRAM converter, test and development.")
 	static class Params {
 		@Parameter(names = { "--input-bam-file" }, converter = FileConverter.class, required = true)
 		File bamFile;
@@ -441,5 +451,8 @@ public class CramWriterReadTest {
 
 		@Parameter
 		List<String> sequences;
+		
+		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
+		boolean help = false;
 	}
 }

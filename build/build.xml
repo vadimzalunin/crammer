@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project basedir="../" default="help" name="cramtools">
+
+	<property environment="env" />
+
+	<property name="src" value="${basedir}/src" />
+	<property name="build.home" value="${basedir}/build" />
+	<property name="lib.home" value="${basedir}/lib" />
+	<property name="target.dir" value="${basedir}/target" />
+	<property name="classes" value="${target.dir}/classes" />
+	<property name="jar.file.name" value="cramtools.jar" />
+
+	<path id="classpath">
+		<fileset dir="${lib.home}" includes="*.jar" />
+	</path>
+
+	<target name="setup">
+		<mkdir dir="${classes}" />
+		<mkdir dir="${target.dir}" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${target.dir}" includeEmptyDirs="true" />
+	</target>
+
+	<target name="compile" depends="setup">
+		<javac debug="true" fork="true" destdir="${classes}">
+			<src path="${src}/main/java" />
+			<classpath refid="classpath" />
+		</javac>
+		<copy todir="${classes}">
+			<fileset dir="${basedir}/src/main/resources" includes="**/*">
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="jar" depends="clean,compile">
+		<delete file="${target.dir}/${jar.file.name}" />
+		<jar jarfile="${target.dir}/${jar.file.name}" basedir="${classes}">
+			<manifest>
+				<attribute name="Main-Class" value="uk.ac.ebi.ena.sra.cram.CramTools" />
+				<attribute name="Class-Path" value="." />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="help">
+		<echo message="cramtools" />
+		<echo message="${target.dir}" />
+		<echo message="${classes}" />
+	</target>
+
+	<target name="build_project" depends="setup" description="build project">
+		<antcall target="jar" />
+	</target>
+
+</project>

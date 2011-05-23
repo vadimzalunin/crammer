@@ -47,6 +47,15 @@ public class Bam2Cram {
 		Params params = new Params();
 		JCommander jc = new JCommander(params);
 		jc.parse(args);
+		
+		if (args.length == 0 || params.help) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("\n");
+			jc.usage(sb);
+
+			System.out.println(sb.toString());
+			return;
+		}
 
 		File bamFile = params.bamFile;
 		File refFile = params.referenceFasta;
@@ -120,25 +129,12 @@ public class Bam2Cram {
 					.getSequence(seqName);
 			byte[] refBases = referenceSequenceFile.getSubsequenceAt(
 					sequence.getName(), 1, sequence.length()).getBases();
+			Utils.capitaliseAndCheckBases(refBases) ;
+			
 			byte[] refStart = new byte[50];
 			System.arraycopy(refBases, 0, refStart, 0, refStart.length);
 			log.info("Reference sequence " + seqName + ", starts with "
 					+ new String(refStart));
-
-			for (int i = 0; i < refBases.length; i++) {
-				switch (refBases[i]) {
-				case 'A':
-				case 'C':
-				case 'G':
-				case 'T':
-				case 'N':
-					break;
-
-				default:
-					throw new RuntimeException("Illegal base at " + i + ": "
-							+ refBases[i]);
-				}
-			}
 
 			ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
 					refBases);
@@ -292,5 +288,8 @@ public class Bam2Cram {
 
 		@Parameter
 		List<String> sequences;
+		
+		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
+		boolean help = false;
 	}
 }

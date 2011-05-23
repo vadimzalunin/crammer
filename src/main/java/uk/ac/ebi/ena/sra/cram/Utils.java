@@ -314,4 +314,38 @@ public class Utils {
 				sequence.getName(), from, from + length).getBases();
 		return bases;
 	}
+	
+	public static void capitaliseAndCheckBases (byte[] bases) {
+		for (int i=0; i<bases.length; i++) {
+			switch (bases[i]) {
+			case 'A':
+			case 'C':
+			case 'G':
+			case 'T':
+			case 'N':
+				break ;
+			case 'a':
+				bases[i] = 'A' ;
+				break;
+			case 'c':
+				bases[i] = 'C' ;
+				break;
+			case 'g':
+				bases[i] = 'G' ;
+				break;
+			case 't':
+				bases[i] = 'T' ;
+				break;
+			case 'n':
+				bases[i] = 'N' ;
+				break;
+
+			default:
+				bases[i]='N' ;
+//				throw new RuntimeException("Illegal base at " + i + ": "
+//						+ bases[i]);
+				break ;
+			}
+		}
+	}
 }
