@@ -4,6 +4,13 @@ Author: vadim@ebi.ac.uk
 This is a set of Java tools and APIs for efficient compression of SRA data.
 
 
+Build.
+cd build
+ant jar
+
+Run.
+cramtools
+
 Usage. 
 There is some help available by running cramtools <command> without arguments.
 
