@@ -11,6 +11,7 @@ import com.beust.jcommander.Parameter;
 public class CramTools {
 	public static final String CRAM2BAM_COMMAND = "bam";
 	public static final String BAM2CRAM_COMMAND = "cram";
+	public static final String BAM2CRAM_TEST_COMMAND = "cram-test";
 
 	private static void setupLogger() {
 		PatternLayout layout = new PatternLayout(
@@ -30,12 +31,13 @@ public class CramTools {
 		JCommander jc = new JCommander(params);
 		jc.setProgramName("cramtools");
 
-		BamStats.Params bamStatsParams = new BamStats.Params();
 		Cram2Bam.Params cram2BamParams = new Cram2Bam.Params();
-		CramWriterReadTest.Params bam2CramParams = new CramWriterReadTest.Params();
+		Bam2Cram.Params bam2CramParams = new Bam2Cram.Params();
+		CramWriterReadTest.Params bam2CramTestParams = new CramWriterReadTest.Params();
 
 		jc.addCommand(CRAM2BAM_COMMAND, cram2BamParams);
 		jc.addCommand(BAM2CRAM_COMMAND, bam2CramParams);
+		jc.addCommand(BAM2CRAM_TEST_COMMAND, bam2CramTestParams);
 
 		jc.parse(args);
 		String command = jc.getParsedCommand();
@@ -55,6 +57,8 @@ public class CramTools {
 		if (CRAM2BAM_COMMAND.equals(command))
 			Cram2Bam.main(commandArgs);
 		else if (BAM2CRAM_COMMAND.equals(command))
+			Bam2Cram.main(commandArgs);
+		else if (BAM2CRAM_TEST_COMMAND.equals(command))
 			CramWriterReadTest.main(commandArgs);
 
 	}

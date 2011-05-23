@@ -76,9 +76,9 @@ public class CramWriterReadTest {
 
 		long maxRecords = params.maxRecords;
 		List<String> seqNames = params.sequences;
-		long dumpRecords = 3;
+		long dumpRecords = params.dumpRecords;
 		int maxReadLength = params.maxRecordLength;
-		double coverageModifier = 1.0;
+		double coverageModifier = params.coverageModifier;
 		boolean skipPerfectMatch = false;
 		boolean testAllRecords = params.roundTripCheck;
 
@@ -423,6 +423,12 @@ public class CramWriterReadTest {
 
 		@Parameter(names = { "--max-record-length" })
 		int maxRecordLength = Integer.MAX_VALUE;
+		
+		@Parameter(names = { "--dump-records" })
+		int dumpRecords = Integer.MAX_VALUE;
+		
+		@Parameter(names = { "--coverage-modifier" })
+		float coverageModifier = 1.0F;
 
 		@Parameter(names = { "--reference-fasta" }, converter = FileConverter.class, required = true)
 		File referenceFasta;

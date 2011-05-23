@@ -11,7 +11,7 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
-        <javaElement handleIdentifier="=CRAM/src\/main\/java"/>
         <javaElement handleIdentifier="=CRAM/src\/test\/java"/>
+        <javaElement handleIdentifier="=CRAM/src\/main\/java"/>
     </selectedElements>
 </jardesc>

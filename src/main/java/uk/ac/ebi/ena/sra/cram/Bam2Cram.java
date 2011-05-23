@@ -42,6 +42,8 @@ public class Bam2Cram {
 	private static Logger log;
 
 	public static void main(String[] args) throws Exception {
+		log = Logger.getLogger(Bam2Cram.class) ;
+		
 		Params params = new Params();
 		JCommander jc = new JCommander(params);
 		jc.parse(args);
@@ -50,13 +52,12 @@ public class Bam2Cram {
 		File refFile = params.referenceFasta;
 		File outputCramFile = params.outputFile;
 
-		long maxRecords = params.maxRecords;
+		long maxRecords = Long.MAX_VALUE ;
 		List<String> seqNames = params.sequences;
-		long dumpRecords = 3;
-		int maxReadLength = params.maxRecordLength;
+		long dumpRecords = 0;
+		int maxReadLength = Integer.MAX_VALUE;
 		double coverageModifier = 1.0;
 		boolean skipPerfectMatch = false;
-		boolean testAllRecords = params.roundTripCheck;
 
 		log.info("Input BAM file: " + bamFile);
 		SAMFileReader
@@ -99,8 +100,6 @@ public class Bam2Cram {
 
 		long failingRecord = Long.MAX_VALUE;
 		long skipRecords = 0;
-		List<CramRecord> readCramRecords = new ArrayList<CramRecord>();
-		List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
 		CramHeader cramHeader = new CramHeader();
 		cramHeader.setVersion("0.2");
 		cramHeader
@@ -194,10 +193,6 @@ public class Bam2Cram {
 				if (skipPerfectMatch && cramRecord.isPerfectMatch())
 					continue;
 				cramRecord.setLastFragment(true);
-				if (testAllRecords) {
-					readCramRecords.add(cramRecord);
-					samRecords.add(samRecord);
-				}
 				stats.addRecord(cramRecord);
 				if (counter++ >= maxRecords)
 					break;
@@ -289,20 +284,11 @@ public class Bam2Cram {
 		@Parameter(names = { "--input-bam-file" }, converter = FileConverter.class, required = true)
 		File bamFile;
 
-		@Parameter(names = { "--max-records" })
-		long maxRecords = Long.MAX_VALUE;
-
-		@Parameter(names = { "--max-record-length" })
-		int maxRecordLength = Integer.MAX_VALUE;
-
 		@Parameter(names = { "--reference-fasta" }, converter = FileConverter.class, required = true)
 		File referenceFasta;
 
 		@Parameter(names = { "--output-cram-file" }, converter = FileConverter.class)
 		File outputFile = null;
-
-		@Parameter(names = { "--round-trip-check" })
-		boolean roundTripCheck = false;
 
 		@Parameter
 		List<String> sequences;
