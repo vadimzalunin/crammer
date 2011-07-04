@@ -8,7 +8,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
 
-public class CramRecordBlockWriter {
+class CramRecordBlockWriter {
 	private OutputStream delegate;
 
 	public CramRecordBlockWriter(OutputStream delegate) {

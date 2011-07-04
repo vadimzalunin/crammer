@@ -9,7 +9,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
 import uk.ac.ebi.ena.sra.cram.format.compression.EncodingAlgorithm;
 
-public class CramRecordBlockReader {
+class CramRecordBlockReader {
 	private DataInputStream dis;
 
 	public CramRecordBlockReader(DataInputStream os) {

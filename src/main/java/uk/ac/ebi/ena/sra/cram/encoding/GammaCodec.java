@@ -11,10 +11,14 @@ public class GammaCodec implements BitCodec<Long> {
 	private long offset = 0L;
 	private boolean lenCodingBit = false;
 
-	public GammaCodec(long offset, boolean lenCodingBit) {
+	private GammaCodec(long offset, boolean lenCodingBit) {
 		super();
 		this.offset = offset;
 		this.lenCodingBit = lenCodingBit;
+	}
+	
+	public GammaCodec(long offset) {
+		this(offset, false) ;
 	}
 
 	public GammaCodec() {

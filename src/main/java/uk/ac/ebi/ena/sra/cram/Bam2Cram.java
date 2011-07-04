@@ -4,15 +4,15 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.zip.GZIPOutputStream;
 
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.picard.reference.ReferenceSequenceFileFactory;
-import net.sf.samtools.CigarElement;
-import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
 import net.sf.samtools.SAMRecord;
@@ -22,15 +22,10 @@ import net.sf.samtools.SAMSequenceRecord;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
-import uk.ac.ebi.ena.sra.cram.format.CramCompression;
-import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
-import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
-import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
-import uk.ac.ebi.ena.sra.cram.impl.CramHeaderIO;
-import uk.ac.ebi.ena.sra.cram.impl.SequentialCramWriter;
-import uk.ac.ebi.ena.sra.cram.stats.CramStats;
+import uk.ac.ebi.ena.sra.cram.impl.CramWriter;
+import uk.ac.ebi.ena.sra.cram.spot.PairedTemplateAssembler;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -39,15 +34,188 @@ import com.beust.jcommander.converters.FileConverter;
 
 public class Bam2Cram {
 
-	private static Logger log;
+	private static Logger log = Logger.getLogger(Bam2Cram.class);
+
+	private File bamFile;
+	private File refFile;
+	private SAMFileReader samReader;
+	private CramWriter cramWriter;
+	private PairedTemplateAssembler assembler;
+	private Sam2CramRecordFactory cramRecordFactory;
+	private List<CramReferenceSequence> sequences;
+	private OutputStream os;
+	private SequenceBaseProvider provider;
+
+	private final boolean roundTripCheck;
+	private final int spotAssemblyAlignmentHorizon;
+	private final int spotAssemblyRecordsHorizon;
+
+	private ReferenceSequenceFile referenceSequenceFile;
+
+	private final long maxRecords;
+	private long recordCount;
+	private long unmappedRecordCount;
+	private long baseCount;
+
+	private final int maxBlockSize;
+	private long recordsBitLength;
+
+	public Bam2Cram(File bamFile, OutputStream os, File refFile,
+			long maxRecords, boolean roundTripCheck,
+			int spotAssemblyAlignmentHorizon, int spotAssemblyRecordsHorizon,
+			int maxBlockSize) {
+		this.bamFile = bamFile;
+		this.os = os;
+		this.refFile = refFile;
+		this.maxRecords = maxRecords;
+		this.roundTripCheck = roundTripCheck;
+		this.spotAssemblyAlignmentHorizon = spotAssemblyAlignmentHorizon;
+		this.spotAssemblyRecordsHorizon = spotAssemblyRecordsHorizon;
+		this.maxBlockSize = maxBlockSize;
+	}
+
+	public void init() throws IOException {
+		samReader = new SAMFileReader(bamFile);
+		sequences = new ArrayList<CramReferenceSequence>();
+		for (SAMSequenceRecord seq : samReader.getFileHeader()
+				.getSequenceDictionary().getSequences()) {
+			CramReferenceSequence cramSeq = new CramReferenceSequence(
+					seq.getSequenceName(), seq.getSequenceLength());
+			sequences.add(cramSeq);
+		}
+		referenceSequenceFile = ReferenceSequenceFileFactory
+				.getReferenceSequenceFile(refFile);
+		assembler = new PairedTemplateAssembler(spotAssemblyAlignmentHorizon,
+				spotAssemblyRecordsHorizon);
+
+		recordCount = 0;
+		unmappedRecordCount = 0;
+		baseCount = 0;
+		recordsBitLength = 0;
+	}
+
+	public void run() throws IOException, CramException {
+		for (CramReferenceSequence ref : sequences) {
+			if (recordCount >= maxRecords)
+				break;
+			compressAllRecordsForSequence(ref.getName());
+		}
+		cramWriter.close();
+		if (log.isDebugEnabled())
+			cramWriter.dump();
+
+		recordsBitLength = cramWriter.getRecordsBitLength();
+
+		log.info(String.format("Found SAM records: %d\tunmapped: %d",
+				recordCount, unmappedRecordCount));
+		log.info(String.format("Compressed bases: %d", baseCount));
+
+	}
+
+	private byte[] getReferenceSequenceBases(String seqName) {
+		ReferenceSequence sequence = referenceSequenceFile.getSequence(seqName);
+		byte[] refBases = referenceSequenceFile.getSubsequenceAt(
+				sequence.getName(), 1, sequence.length()).getBases();
+		Utils.capitaliseAndCheckBases(refBases);
+		return refBases;
+	}
+
+	private void compressAllRecordsForSequence(String name) throws IOException,
+			CramException {
+		assembler.clear();
+
+		cramWriter = new CramWriter(os, provider, sequences, roundTripCheck,
+				maxBlockSize);
+		cramWriter.init();
+		SAMRecordIterator iterator = samReader.query(name, 0, 0, false);
+		try {
+			if (!iterator.hasNext())
+				return;
+			byte[] refBases = getReferenceSequenceBases(name);
+			cramRecordFactory = new Sam2CramRecordFactory(refBases);
+			cramWriter.startSequence(name, refBases);
+			while (iterator.hasNext()) {
+				if (recordCount >= maxRecords)
+					break;
+
+				SAMRecord samRecord = iterator.next();
+
+				addSAMRecord(samRecord);
+				recordCount++;
+
+			}
+			flushSpotAssembler();
+			assembler.clear();
+		} finally {
+			iterator.close();
+		}
+	}
+
+	private void flushSpotAssembler() throws IOException, CramException {
+		SAMRecord assembledRecord = null;
+		while ((assembledRecord = assembler.fetchNextSAMRecord()) != null) {
+			writeSAMRecord(assembledRecord, -1);
+		}
+	}
+
+	private void addSAMRecord(SAMRecord samRecord) throws IOException,
+			CramException {
+		assembler.addSAMRecord(samRecord);
+		SAMRecord assembledRecord = null;
+		while ((assembledRecord = assembler.nextSAMRecord()) != null) {
+			writeSAMRecord(assembledRecord, assembler.distanceToNextFragment());
+		}
+	}
+
+	private void writeSAMRecord(SAMRecord record, int distanceToNextFragment)
+			throws IOException, CramException {
+		CramRecord cramRecord = buildCramRecord(record);
+		if (cramRecord.getAlignmentStart() < 1)
+			System.out.println("qwerqwer");
+
+		if (!cramRecord.isReadMapped())
+			unmappedRecordCount++;
+
+		if (distanceToNextFragment > 0) {
+			cramRecord.setLastFragment(false);
+			cramRecord.setRecordsToNextFragment(distanceToNextFragment);
+		} else
+			cramRecord.setLastFragment(true);
+		cramWriter.addRecord(cramRecord);
+		baseCount += record.getReadLength();
+	}
+
+	private CramRecord buildCramRecord(SAMRecord samRecord) {
+		return cramRecordFactory.createCramRecord(samRecord);
+	}
+
+	private static OutputStream createOutputStream(File outputCramFile,
+			boolean wrapInGzip) throws IOException {
+		OutputStream os = null;
+
+		if (outputCramFile != null) {
+			log.info("Output file: " + outputCramFile.getAbsolutePath());
+			FileOutputStream cramFOS = new FileOutputStream(outputCramFile);
+			if (wrapInGzip)
+				os = new BufferedOutputStream(new GZIPOutputStream(cramFOS));
+			else
+				os = new BufferedOutputStream(cramFOS);
+		} else {
+			ByteArrayOutputStream cramBAOS = new ByteArrayOutputStream();
+			if (wrapInGzip)
+				os = new BufferedOutputStream(new GZIPOutputStream(cramBAOS));
+			else
+				os = new BufferedOutputStream(cramBAOS);
+		}
+
+		return os;
+	}
 
 	public static void main(String[] args) throws Exception {
-		log = Logger.getLogger(Bam2Cram.class) ;
-		
 		Params params = new Params();
 		JCommander jc = new JCommander(params);
 		jc.parse(args);
-		
+
 		if (args.length == 0 || params.help) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("\n");
@@ -57,222 +225,27 @@ public class Bam2Cram {
 			return;
 		}
 
-		File bamFile = params.bamFile;
-		File refFile = params.referenceFasta;
-		File outputCramFile = params.outputFile;
-
-		long maxRecords = Long.MAX_VALUE ;
-		List<String> seqNames = params.sequences;
-		long dumpRecords = 0;
-		int maxReadLength = Integer.MAX_VALUE;
-		double coverageModifier = 1.0;
-		boolean skipPerfectMatch = false;
-
-		log.info("Input BAM file: " + bamFile);
+		log.info("Input BAM file: " + params.bamFile);
 		SAMFileReader
 				.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SAMFileReader samFileReader = new SAMFileReader(bamFile);
 
-		FileOutputStream cramFOS = null;
-		BufferedOutputStream bos = null;
-		ByteArrayOutputStream cramBAOS = null;
-		if (outputCramFile != null) {
-			log.info("Output file: " + outputCramFile.getAbsolutePath());
-			cramFOS = new FileOutputStream(outputCramFile);
-			bos = new BufferedOutputStream(cramFOS);
-		} else {
-			cramBAOS = new ByteArrayOutputStream();
-			bos = new BufferedOutputStream(cramBAOS);
-		}
+		OutputStream os = createOutputStream(params.outputFile, params.gzip);
 
-		SAMFileHeader header = samFileReader.getFileHeader();
+		Bam2Cram bam2Cram_2 = new Bam2Cram(params.bamFile, os,
+				params.referenceFasta, params.maxRecords,
+				params.roundTripCheck, params.spotAssemblyAlignmentHorizon,
+				params.spotAssemblyRecordsHorizon, params.maxBlockSize);
+		bam2Cram_2.init();
+		long time = System.currentTimeMillis();
+		bam2Cram_2.run();
+		log.info(String.format("Compression time: %.3f seconds",
+				(System.currentTimeMillis() - time) / (float) 1000));
+		log.info(String.format("Compression of records: %.4f bits per base.",
+				1f * bam2Cram_2.recordsBitLength / bam2Cram_2.baseCount));
+		log.info(String.format("Compression, total: %.4f bits per base.", 8f
+				* params.outputFile.length() / bam2Cram_2.baseCount));
 
-		if (seqNames == null)
-			seqNames = new ArrayList<String>();
-		if (seqNames.isEmpty()) {
-			int maxSequences = Integer.MAX_VALUE;
-			for (SAMSequenceRecord seq : header.getSequenceDictionary()
-					.getSequences()) {
-				seqNames.add(seq.getSequenceName());
-				if (seqNames.size() >= maxSequences)
-					break;
-			}
-		}
-
-		ReferenceSequenceFile referenceSequenceFile = ReferenceSequenceFileFactory
-				.getReferenceSequenceFile(refFile);
-
-		long counter = 1L;
-		long totalCounter = 1L;
-		long bases = 0L;
-		long time1 = System.currentTimeMillis();
-
-		long failingRecord = Long.MAX_VALUE;
-		long skipRecords = 0;
-		CramHeader cramHeader = new CramHeader();
-		cramHeader.setVersion("0.2");
-		cramHeader
-				.setReferenceSequences(new ArrayList<CramReferenceSequence>());
-
-		for (SAMSequenceRecord samRF : header.getSequenceDictionary()
-				.getSequences()) {
-			cramHeader.getReferenceSequences().add(
-					new CramReferenceSequence(samRF.getSequenceName(), samRF
-							.getSequenceLength()));
-		}
-
-		CramHeaderIO.write(cramHeader, bos);
-
-		for (String seqName : seqNames) {
-
-			ReferenceSequence sequence = referenceSequenceFile
-					.getSequence(seqName);
-			byte[] refBases = referenceSequenceFile.getSubsequenceAt(
-					sequence.getName(), 1, sequence.length()).getBases();
-			Utils.capitaliseAndCheckBases(refBases) ;
-			
-			byte[] refStart = new byte[50];
-			System.arraycopy(refBases, 0, refStart, 0, refStart.length);
-			log.info("Reference sequence " + seqName + ", starts with "
-					+ new String(refStart));
-
-			ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
-					refBases);
-			SequentialCramWriter writer = new SequentialCramWriter(bos,
-					provider);
-
-			CramRecordBlock block = new CramRecordBlock();
-			block.setPositiveStrandBasePositionReversed(false);
-			block.setNegativeStrandBasePositionReversed(true);
-			block.setSequenceName(seqName);
-			block.setSequenceLength(refBases.length);
-			block.setCompression(new CramCompression());
-
-			samFileReader = new SAMFileReader(bamFile);
-			SAMRecordIterator recordIterator = samFileReader.queryOverlapping(
-					seqName, 0, 0);
-			CramStats stats = new CramStats();
-
-			if (!recordIterator.hasNext())
-				continue;
-
-			counter = 1L;
-			long nofSoftClips = 0L;
-			long softClipLength = 0L;
-			long samRecordCounter = 0L;
-			Sam2CramRecordFactory cramRecordFactory = new Sam2CramRecordFactory(
-					refBases);
-			while (recordIterator.hasNext()) {
-				SAMRecord samRecord = recordIterator.next();
-				if (skipRecords > 0 && samRecordCounter++ < skipRecords)
-					continue;
-				if (samRecord.getReadUnmappedFlag())
-					continue;
-
-				if (samRecord.getReadLength() > maxReadLength)
-					Utils.changeReadLength(samRecord, maxReadLength);
-
-				for (CigarElement ce : samRecord.getCigar().getCigarElements()) {
-					switch (ce.getOperator()) {
-					case S:
-						nofSoftClips++;
-						softClipLength += ce.getLength();
-						break;
-
-					default:
-						break;
-					}
-				}
-
-				CramRecord cramRecord = cramRecordFactory
-						.createCramRecord(samRecord);
-				if (skipPerfectMatch && cramRecord.isPerfectMatch())
-					continue;
-				cramRecord.setLastFragment(true);
-				stats.addRecord(cramRecord);
-				if (counter++ >= maxRecords)
-					break;
-			}
-			log.info("Nof soft clips: " + nofSoftClips);
-			log.info("Nof of soft clipped bases: " + softClipLength);
-
-			stats.adjustBlock(block);
-			recordIterator.close();
-
-			log.info(block);
-			writer.write(block);
-			writer.flush();
-			if (cramBAOS != null)
-				log.info("Block size: " + cramBAOS.size());
-
-			counter = 1;
-			samRecordCounter = 0L;
-			SAMRecordIterator iterator = samFileReader.queryOverlapping(
-					seqName, 0, 0);
-			Random random = new Random();
-			while (iterator.hasNext()) {
-				SAMRecord samRecord = iterator.next();
-
-				CramRecord cramRecord;
-				if (skipRecords > 0 && samRecordCounter++ < skipRecords)
-					continue;
-				if (samRecord.getReadUnmappedFlag())
-					continue;
-
-				if (coverageModifier < 1.0
-						&& random.nextFloat() > coverageModifier)
-					continue;
-
-				if (samRecord.getReadLength() > maxReadLength)
-					Utils.changeReadLength(samRecord, maxReadLength);
-
-				cramRecord = cramRecordFactory.createCramRecord(samRecord);
-				if (skipPerfectMatch && cramRecord.isPerfectMatch())
-					continue;
-				cramRecord.setLastFragment(true);
-				try {
-					if (counter < dumpRecords
-							|| (counter > failingRecord - 5 && counter < failingRecord + 5)) {
-						byte[] ref = new byte[50];
-						System.arraycopy(refBases,
-								samRecord.getAlignmentStart() - 1, ref, 0,
-								ref.length);
-						log.info(new String(ref));
-						log.info(counter + ": " + cramRecord);
-						log.info(new String(Utils.restoreBases(cramRecord,
-								provider, seqName)));
-					}
-				} catch (Throwable e1) {
-					e1.printStackTrace();
-					break;
-				}
-				bases += cramRecord.getReadLength();
-
-				try {
-					writer.write(cramRecord);
-				} catch (Exception e) {
-					System.err.println(cramRecord);
-					e.printStackTrace();
-					throw e;
-				}
-				if (counter++ >= maxRecords)
-					break;
-			}
-			totalCounter += counter;
-			iterator.close();
-			writer.flush();
-		}
-
-		long time2 = System.currentTimeMillis();
-		bos.close();
-
-		log.info("Written " + totalCounter + " reads");
-		long cramLength = cramBAOS == null ? outputCramFile.length() : cramBAOS
-				.size();
-		log.info("File size: " + cramLength);
-		log.info("In: " + (time2 - time1) + " millis");
-		log.info("Bytes per read: " + (float) cramLength / totalCounter);
-		log.info("Bits per base: " + (float) cramLength * 8 / bases);
+		os.close();
 	}
 
 	@Parameters(commandDescription = "BAM to CRAM converter.")
@@ -280,16 +253,34 @@ public class Bam2Cram {
 		@Parameter(names = { "--input-bam-file" }, converter = FileConverter.class, required = true)
 		File bamFile;
 
-		@Parameter(names = { "--reference-fasta" }, converter = FileConverter.class, required = true)
+		@Parameter(names = { "--reference-fasta-file" }, converter = FileConverter.class, required = true)
 		File referenceFasta;
 
 		@Parameter(names = { "--output-cram-file" }, converter = FileConverter.class)
 		File outputFile = null;
 
+		@Parameter(names = { "--max-records" })
+		long maxRecords = Long.MAX_VALUE;
+
 		@Parameter
 		List<String> sequences;
-		
+
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
 		boolean help = false;
+
+		@Parameter(names = { "--round-trip-check" }, hidden = true)
+		boolean roundTripCheck = false;
+
+		@Parameter(names = { "--gzip" }, hidden = true)
+		boolean gzip = false;
+
+		@Parameter(names = { "--record-horizon" }, hidden = true)
+		int spotAssemblyRecordsHorizon = 10000;
+
+		@Parameter(names = { "--alignment-horizon" }, hidden = true)
+		int spotAssemblyAlignmentHorizon = 10000;
+
+		@Parameter(names = { "--max-block-size" }, hidden = true)
+		int maxBlockSize = 100000;
 	}
 }

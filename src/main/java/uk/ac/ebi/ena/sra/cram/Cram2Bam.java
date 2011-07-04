@@ -3,8 +3,11 @@ package uk.ac.ebi.ena.sra.cram;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
@@ -12,20 +15,17 @@ import net.sf.picard.reference.ReferenceSequenceFileFactory;
 import net.sf.samtools.BAMFileWriter;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
+import net.sf.samtools.SAMFileWriter;
+import net.sf.samtools.SAMFileWriterFactory;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 
-import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
-import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
 import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.impl.CramHeaderIO;
 import uk.ac.ebi.ena.sra.cram.impl.ReadFeatures2Cigar;
@@ -42,25 +42,24 @@ public class Cram2Bam {
 	private static Logger log;
 
 	private static void setupLogger() {
-		PatternLayout layout = new PatternLayout(
-				"%d{ABSOLUTE} %5p %c{1}:%L - %m%n");
-
-		ConsoleAppender appender = new ConsoleAppender(layout, "System.err");
-		appender.setThreshold(Level.INFO);
-
-		Logger.getRootLogger().addAppender(appender);
-		Logger.getRootLogger().setLevel(Level.ALL);
+		// PatternLayout layout = new PatternLayout(
+		// "%d{ABSOLUTE} %5p %c{1}:%L - %m%n");
+		//
+		// ConsoleAppender appender = new ConsoleAppender(layout, "System.err");
+		// appender.setThreshold(Level.INFO);
+		//
+		// Logger.getRootLogger().addAppender(appender);
+		// Logger.getRootLogger().setLevel(Level.ALL);
 		log = Logger.getLogger(Cram2Bam.class);
 	}
 
-	public static void main(String[] args) throws IOException,
-			CramFormatException, CramCompressionException {
+	public static void main(String[] args) throws Exception {
 		setupLogger();
 
 		Params params = new Params();
 		JCommander jc = new JCommander(params);
 		jc.parse(args);
-		
+
 		if (args.length == 0 || params.help) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("\n");
@@ -71,27 +70,26 @@ public class Cram2Bam {
 		}
 
 		ReferenceSequenceFile referenceSequenceFile = ReferenceSequenceFileFactory
-				.getReferenceSequenceFile(new File(
-						"y:/Data/psyringae/psyringae.fa"));
-		FileInputStream cramFIS = new FileInputStream(
-				"y:/Data/psyringae/psyringae.cram");
+				.getReferenceSequenceFile(params.reference);
+		FileInputStream cramFIS = new FileInputStream(params.cramFile);
 
-		cram2bam(referenceSequenceFile, cramFIS, new File(
-				"y:/Data/psyringae/cram2bam.bam"));
+		cram2bam(referenceSequenceFile, cramFIS, params.outputFile,
+				params.maxRecords);
 
 	}
 
 	public static void cram2bam(ReferenceSequenceFile referenceSequenceFile,
-			InputStream cramInputStream, File outputBamFile)
-			throws CramCompressionException, IOException {
+			InputStream cramInputStream, File outputBamFile, long maxRecords)
+			throws Exception {
 
 		DataInputStream cramDIS = new DataInputStream(cramInputStream);
 		CramHeader cramHeader = CramHeaderIO.read(cramDIS);
-		long maxRecords = Long.MAX_VALUE;
 
 		BAMFileWriter writer = new BAMFileWriter(outputBamFile);
 		writer.setSortOrder(SortOrder.coordinate, true);
 		SAMFileHeader header = new SAMFileHeader();
+//		SAMFileWriter out = new SAMFileWriterFactory().makeSAMWriter(header,
+//				true, System.out);
 		for (CramReferenceSequence cs : cramHeader.getReferenceSequences()) {
 			SAMSequenceRecord samSequenceRecord = new SAMSequenceRecord(
 					cs.getName(), cs.getLength());
@@ -122,12 +120,12 @@ public class Cram2Bam {
 			byte[] refBases = referenceSequenceFile.getSubsequenceAt(
 					nextSequence.getName(), 1, nextSequence.length())
 					.getBases();
-			Utils.capitaliseAndCheckBases(refBases) ;
+			Utils.capitaliseAndCheckBases(refBases);
 			ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
 					refBases);
 			reader.setReferenceBaseProvider(provider);
 
-			long counter = 1;
+			int counter = 1;
 			long start = 0L;
 			CramRecord cramRecord = null;
 			RestoreBases restoreBases = new RestoreBases();
@@ -135,39 +133,81 @@ public class Cram2Bam {
 			restoreBases.setSequenceName(seqName);
 			RestoreQualityScores restoreQualityScores = new RestoreQualityScores();
 			ReadFeatures2Cigar readFeatures2Cigar = new ReadFeatures2Cigar();
+
+			ArrayList<CramRecord> records = new ArrayList<CramRecord>(
+					(int) readBlock.getRecordCount());
+			readBlock.setRecords(records);
 			for (long i = 0; i < readBlock.getRecordCount(); i++) {
 				try {
 					cramRecord = reader.readRecord();
-
-					start += cramRecord.getAlignmentStart();
-
-					SAMRecord samRecord = new SAMRecord(header);
-					samRecord.setAlignmentStart((int) cramRecord
-							.getAlignmentStart());
-					samRecord.setReadBases(restoreBases
-							.restoreReadBases(cramRecord));
-					samRecord.setBaseQualities(restoreQualityScores
-							.restoreQualityScores(cramRecord));
-					samRecord.setReadName(String.valueOf(counter));
-					samRecord.setCigar(readFeatures2Cigar.getCigar(
-							cramRecord.getReadFeatures(),
-							(int) cramRecord.getReadLength()));
-					samRecord.setReadUnmappedFlag(false);
-					samRecord.setReferenceName(readBlock.getSequenceName()) ;
-					writer.addAlignment(samRecord);
+					records.add(cramRecord);
 
 					if (counter++ >= maxRecords)
-						break NEXT_BLOCK;
+						break;
+
 				} catch (Exception e) {
 					log.error("Failed to read record: " + i);
 					log.error(cramRecord.toString());
 					log.error(e);
-					break NEXT_BLOCK;
+					throw e;
 				}
+			}
+
+			counter = 1;
+			Map<Integer, Integer> indexes = new TreeMap<Integer, Integer>();
+			for (CramRecord record : records) {
+				cramRecord = record;
+				start += cramRecord.getAlignmentStart();
+				if (!cramRecord.isLastFragment()) {
+					if (cramRecord.getRecordsToNextFragment() + counter > records
+							.size())
+						cramRecord.setLastFragment(true);
+					else {
+						indexes.put((int) (counter + cramRecord
+								.getRecordsToNextFragment()), counter);
+
+					}
+				}
+
+				SAMRecord samRecord = new SAMRecord(header);
+
+				Integer index = indexes.remove(counter);
+				if (index != null) {
+					samRecord.setReadName(String.valueOf(index.intValue())
+							+ ".2");
+				} else {
+					if (cramRecord.isLastFragment())
+						samRecord.setReadName(String.valueOf(counter));
+					else {
+						samRecord.setReadName(String.valueOf(counter) + ".1");
+					}
+				}
+
+				samRecord.setAlignmentStart((int) cramRecord
+						.getAlignmentStart());
+				if (cramRecord.isReadMapped()) {
+					samRecord.setReadBases(restoreBases
+							.restoreReadBases(cramRecord));
+					samRecord.setBaseQualities(restoreQualityScores
+							.restoreQualityScores(cramRecord));
+				} else {
+					samRecord.setReadBases(cramRecord.getReadBases());
+					samRecord.setBaseQualities(cramRecord.getQualityScores());
+				}
+				samRecord.setCigar(readFeatures2Cigar.getCigar(
+						cramRecord.getReadFeatures(),
+						(int) cramRecord.getReadLength()));
+				samRecord.setReadUnmappedFlag(false);
+				samRecord.setReferenceName(readBlock.getSequenceName());
+				writer.addAlignment(samRecord);
+//				out.addAlignment(samRecord);
+				if (counter++ >= maxRecords)
+					break NEXT_BLOCK;
 			}
 			log.info(start);
 		}
 
+//		out.close();
 		writer.close();
 		long time2 = System.currentTimeMillis();
 		log.info("Decoded in: " + (time2 - time1) + " millis");
@@ -175,21 +215,21 @@ public class Cram2Bam {
 
 	@Parameters(commandDescription = "CRAM to BAM conversion")
 	static class Params {
-		@Parameter(names = { "--input-cram" }, converter = FileConverter.class)
+		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class)
 		File cramFile;
 
 		@Parameter(names = { "--max-sequences" })
-		int maxSequences = 0;
+		int maxSequences = Integer.MAX_VALUE;
 
-		@Parameter(names = { "--max-records-per-sequence" })
-		long maxRecordsPerSequence = 0;
+		@Parameter(names = { "--max-records" })
+		long maxRecords = Long.MAX_VALUE;
 
-		@Parameter(names = { "--reference" }, required = true, converter = FileConverter.class)
+		@Parameter(names = { "--reference-fasta-file" }, required = true, converter = FileConverter.class)
 		File reference;
 
-		@Parameter(names = { "--output-file" }, converter = FileConverter.class)
+		@Parameter(names = { "--output-bam-file" }, converter = FileConverter.class)
 		File outputFile;
-		
+
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
 		boolean help = false;
 	}

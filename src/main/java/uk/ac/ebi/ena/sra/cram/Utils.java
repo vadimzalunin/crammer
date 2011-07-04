@@ -1,10 +1,8 @@
 package uk.ac.ebi.ena.sra.cram;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import net.sf.picard.reference.ReferenceSequence;
@@ -14,10 +12,7 @@ import net.sf.samtools.Cigar;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.SAMRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
-import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
-import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
-import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
 
 public class Utils {
 
@@ -89,139 +84,6 @@ public class Utils {
 		default:
 			throw new RuntimeException("Unkown base: " + base);
 		}
-	}
-
-	public static String toString(String readName, byte[] readBases,
-			CramRecord cramRecord) {
-		// ERR005143.135209 342 1 CCCGCCCACGGCTGCTCCAGCTGCTGCTGTAGCGAC [(2, 'S',
-		// 'ct', None), (4, 'I', 'c', None), (35, 'D', 2, None)]
-		StringBuilder sb = new StringBuilder();
-		sb.append(readName);
-		sb.append("\t");
-		sb.append(cramRecord.getAlignmentStart());
-		sb.append("\t");
-		sb.append(cramRecord.isNegativeStrand() ? 1 : 0);
-		sb.append("\t");
-		sb.append(new String(readBases));
-
-		sb.append("\t[");
-		boolean firstVariation = true;
-		for (ReadFeature v : sortVariationsByPosition(cramRecord)) {
-			if (!firstVariation)
-				sb.append(", ");
-			sb.append("(");
-			sb.append(v.getPosition() - 1);
-			sb.append(", ");
-			if (v instanceof SubstitutionVariation) {
-				SubstitutionVariation sv = (SubstitutionVariation) v;
-				sb.append("'S'");
-				sb.append(", ");
-				sb.append("'")
-						.append(Character.toLowerCase((char) sv.getBase()))
-						.append(Character.toLowerCase((char) sv
-								.getRefernceBase())).append("'");
-				sb.append(", ");
-				if (sv.getQualityScore() > -1)
-					sb.append(sv.getQualityScore()).append(")");
-				else
-					sb.append("None)");
-			} else if (v instanceof InsertionVariation) {
-				InsertionVariation iv = (InsertionVariation) v;
-				sb.append("'I'");
-				sb.append(", ");
-				sb.append("'")
-						.append(new String(iv.getSequence()).toLowerCase())
-						.append("'");
-				sb.append(", ");
-				sb.append("None)");
-			} else if (v instanceof DeletionVariation) {
-				DeletionVariation dv = (DeletionVariation) v;
-				sb.append("'D'");
-				sb.append(", ");
-				sb.append(dv.getLength());
-				sb.append(", ");
-				sb.append("None)");
-			}
-
-			firstVariation = false;
-		}
-		sb.append("]");
-
-		return sb.toString();
-	}
-
-	public static List<ReadFeature> sortVariationsByPosition(CramRecord record) {
-		List<ReadFeature> list = new ArrayList<ReadFeature>();
-		if (record.getSubstitutionVariations() != null
-				&& !record.getSubstitutionVariations().isEmpty())
-			list.addAll(record.getSubstitutionVariations());
-
-		if (record.getInsertionVariations() != null
-				&& !record.getInsertionVariations().isEmpty())
-			list.addAll(record.getInsertionVariations());
-
-		if (record.getDeletionVariations() != null
-				&& !record.getDeletionVariations().isEmpty())
-			list.addAll(record.getDeletionVariations());
-
-		Collections.sort(list, variationPositionComparator);
-
-		return list;
-	}
-
-	private static Comparator<ReadFeature> variationPositionComparator = new Comparator<ReadFeature>() {
-
-		@Override
-		public int compare(ReadFeature o1, ReadFeature o2) {
-			int result = o1.getPosition() - o2.getPosition();
-			if (result != 0)
-				return result;
-
-			return o1.getOperator() - o2.getOperator();
-		}
-	};
-
-	public static byte[] restoreBases(CramRecord record,
-			SequenceBaseProvider provider, String seqName) throws IOException {
-		byte[] bases = new byte[(int) record.getReadLength()];
-
-		int posInRead = 1;
-		long posInSeq = record.getAlignmentStart() - 1;
-		List<ReadFeature> variations = sortVariationsByPosition(record);
-		variations = record.getReadFeatures();
-		for (ReadFeature v : variations) {
-			for (; posInRead <= v.getPosition(); posInRead++)
-				bases[posInRead - 1] = provider.getBaseAt(seqName, posInSeq++);
-
-			switch (v.getOperator()) {
-			case 'S':
-				SubstitutionVariation sv = (SubstitutionVariation) v;
-				// byte refBase = provider.getBaseAt(seqName, ++posInSeq) ;
-				// byte base = sv.getBaseChange().getBaseForReference(refBase) ;
-				// sv.setBase(base) ;
-				// sv.setRefernceBase(refBase) ;
-				bases[posInRead++ - 1] = sv.getBase();
-				posInSeq++;
-				break;
-			case 'I':
-				InsertionVariation iv = (InsertionVariation) v;
-				for (int i = 0; i < iv.getSequence().length; i++)
-					bases[posInRead++ - 1] = iv.getSequence()[i];
-
-				break;
-			case 'D':
-				DeletionVariation dv = (DeletionVariation) v;
-				posInSeq += dv.getLength();
-				break;
-
-			default:
-				throw new RuntimeException("Uknown variation operator: "
-						+ v.getOperator());
-			}
-		}
-		for (; posInRead <= record.getReadLength(); posInRead++)
-			bases[posInRead - 1] = provider.getBaseAt(seqName, posInSeq++);
-		return bases;
 	}
 
 	public static int mostSignificantBit(final long value) {
@@ -314,37 +176,37 @@ public class Utils {
 				sequence.getName(), from, from + length).getBases();
 		return bases;
 	}
-	
-	public static void capitaliseAndCheckBases (byte[] bases) {
-		for (int i=0; i<bases.length; i++) {
+
+	public static void capitaliseAndCheckBases(byte[] bases) {
+		for (int i = 0; i < bases.length; i++) {
 			switch (bases[i]) {
 			case 'A':
 			case 'C':
 			case 'G':
 			case 'T':
 			case 'N':
-				break ;
+				break;
 			case 'a':
-				bases[i] = 'A' ;
+				bases[i] = 'A';
 				break;
 			case 'c':
-				bases[i] = 'C' ;
+				bases[i] = 'C';
 				break;
 			case 'g':
-				bases[i] = 'G' ;
+				bases[i] = 'G';
 				break;
 			case 't':
-				bases[i] = 'T' ;
+				bases[i] = 'T';
 				break;
 			case 'n':
-				bases[i] = 'N' ;
+				bases[i] = 'N';
 				break;
 
 			default:
-				bases[i]='N' ;
-//				throw new RuntimeException("Illegal base at " + i + ": "
-//						+ bases[i]);
-				break ;
+				// bases[i]='N' ;
+				throw new RuntimeException("Illegal base at " + i + ": "
+						+ bases[i]);
+				// break ;
 			}
 		}
 	}

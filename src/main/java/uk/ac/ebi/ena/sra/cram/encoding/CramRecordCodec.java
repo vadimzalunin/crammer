@@ -18,44 +18,13 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	public BitCodec<Long> readlengthCodec;
 	public BitCodec<List<ReadFeature>> variationsCodec;
 	public SequenceBaseProvider sequenceBaseProvider;
+	public BitCodec<byte[]> basesCodec;
+	public BitCodec<byte[]> qualitiesCodec;
 	public String sequenceName;
 	public long prevPosInSeq = 1L;
 	public long defaultReadLength = 0L;
 
-	private long dumpInterval = 100000;
-	private long inSeqPosLen = 0L;
-	private long variationsLen = 0L;
-	private long readLenLen = 0L;
-	private long recordCounter = 0L;
-
 	private static Logger log = Logger.getLogger(CramRecordCodec.class);
-
-	private void dumpLengths() {
-		log.debug(toString());
-	}
-
-	private static final String getCodecReport(BitCodec<?> codec) {
-		if (codec instanceof MeasuringCodec) {
-			MeasuringCodec<?> mc = (MeasuringCodec<?>) codec;
-			return mc.toString();
-		}
-		return null;
-	}
-
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder("Cram record codec report: \n");
-		sb.append("inSeqPosCodec: ").append(getCodecReport(inSeqPosCodec))
-				.append("\n");
-		sb.append("readlengthCodec: ").append(getCodecReport(readlengthCodec))
-				.append("\n");
-		sb.append("recordsToNextFragmentCodec: ")
-				.append(getCodecReport(recordsToNextFragmentCodec))
-				.append("\n");
-		sb.append("variationsCodec: ").append(getCodecReport(variationsCodec))
-				.append("\n");
-		return sb.toString();
-	}
 
 	@Override
 	public CramRecord read(BitInputStream bis) throws IOException {
@@ -73,8 +42,10 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			if (imperfectMatch) {
 				List<ReadFeature> features = variationsCodec.read(bis);
 				record.setReadFeatures(features);
-				// populateFeatures(record, features);
 			}
+		} else {
+			record.setReadBases(basesCodec.read(bis));
+			record.setQualityScores(qualitiesCodec.read(bis));
 		}
 
 		record.setNegativeStrand(bis.readBit());
@@ -91,49 +62,6 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		return record;
 	}
 
-	// private final void populateFeatures(CramRecord record,
-	// Collection<ReadFeature> features) throws IOException {
-	// for (ReadFeature feature : features) {
-	// switch (feature.getOperator()) {
-	// case 'N':
-	// if (record.getReadBases() == null)
-	// record.setReadBases(new ArrayList<ReadBase>());
-	// ReadBase readBase = (ReadBase) feature;
-	// record.getReadBases().add(readBase);
-	// break;
-	// case 'S':
-	// if (record.getSubstitutionVariations() == null)
-	// record.setSubstitutionVariations(new ArrayList<SubstitutionVariation>());
-	//
-	// SubstitutionVariation v = (SubstitutionVariation) feature;
-	// record.getSubstitutionVariations().add(v);
-	// byte refBase = sequenceBaseProvider.getBaseAt(sequenceName,
-	// record.getAlignmentStart() + v.getPosition() - 2);
-	//
-	// byte base = v.getBaseChange().getBaseForReference(refBase);
-	//
-	// v.setRefernceBase(refBase);
-	// v.setBase(base);
-	// break;
-	// case 'I':
-	// if (record.getInsertionVariations() == null)
-	// record.setInsertionVariations(new ArrayList<InsertionVariation>());
-	// record.getInsertionVariations().add(
-	// (InsertionVariation) feature);
-	// break;
-	// case 'D':
-	// if (record.getDeletionVariations() == null)
-	// record.setDeletionVariations(new ArrayList<DeletionVariation>());
-	// record.getDeletionVariations().add((DeletionVariation) feature);
-	// break;
-	//
-	// default:
-	// throw new RuntimeException("Unknown read feature operator: "
-	// + (char) feature.getOperator());
-	// }
-	// }
-	// }
-
 	@Override
 	public long write(BitOutputStream bos, CramRecord record)
 			throws IOException {
@@ -141,7 +69,6 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		if (record.isReadMapped()) {
 			bos.write(true);
 			len++;
-			inSeqPosLen -= len;
 			if (record.getAlignmentStart() - prevPosInSeq < 0) {
 				log.error("Negative relative position in sequence: prev="
 						+ prevPosInSeq);
@@ -149,20 +76,23 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			}
 			len += inSeqPosCodec.write(bos, record.getAlignmentStart()
 					- prevPosInSeq);
-			inSeqPosLen += len;
 
 			prevPosInSeq = record.getAlignmentStart();
 			if (!record.isPerfectMatch()) {
 				bos.write(true);
-				len++;
-				variationsLen -= len;
 				List<ReadFeature> vars = record.getReadFeatures();
 				len += variationsCodec.write(bos, vars);
-				variationsLen += len;
 			} else
 				bos.write(false);
+			len++;
 		} else {
-			throw new RuntimeException("Unmapped reads are not supported.");
+			bos.write(false);
+			len++;
+
+			len += basesCodec.write(bos, record.getReadBases());
+			len += qualitiesCodec.write(bos, record.getQualityScores());
+
+			// throw new RuntimeException("Unmapped reads are not supported.");
 		}
 
 		bos.write(record.isNegativeStrand());
@@ -172,23 +102,15 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		if (!record.isLastFragment()) {
 			len += recordsToNextFragmentCodec.write(bos,
 					record.getRecordsToNextFragment());
-			throw new RuntimeException(
-					"Distance to next fragment not supported.");
 		}
 
 		if (record.getReadLength() != defaultReadLength) {
 			bos.write(true);
-			readLenLen -= len;
 			len += readlengthCodec.write(bos, record.getReadLength());
-			readLenLen += len;
 		} else
 			bos.write(false);
 		len++;
 
-		recordCounter++;
-		if (recordCounter >= dumpInterval) {
-			dumpLengths();
-		}
 		return len;
 	}
 
@@ -200,13 +122,4 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			throw new RuntimeException(e);
 		}
 	}
-
-	public long getDumpInterval() {
-		return dumpInterval;
-	}
-
-	public void setDumpInterval(long dumpInterval) {
-		this.dumpInterval = dumpInterval;
-	}
-
 }

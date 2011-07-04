@@ -23,28 +23,55 @@ public class RestoreBases {
 		this.sequenceName = sequenceName;
 	}
 
+	private static final long calcRefLength(CramRecord record) {
+		if (record.getReadFeatures() == null
+				|| record.getReadFeatures().isEmpty())
+			return record.getReadLength();
+		long len = record.getReadLength();
+		for (ReadFeature rf : record.getReadFeatures()) {
+			switch (rf.getOperator()) {
+			case DeletionVariation.operator:
+				len += ((DeletionVariation) rf).getLength();
+				break;
+			case InsertionVariation.operator:
+				len -= ((InsertionVariation) rf).getSequence().length;
+				break;
+			default:
+				break;
+			}
+		}
+
+		return len;
+	}
+
 	public byte[] restoreReadBases(CramRecord record) throws IOException {
-		byte[] bases = new byte[(int) record.getReadLength()];
+		int readLength = (int) record.getReadLength();
+		byte[] bases = new byte[readLength];
+		// byte[] refBases = new byte[readLength * 2];
+		byte[] refBases = new byte[(int) calcRefLength(record)];
 
 		int posInRead = 1;
-		long posInSeq = record.getAlignmentStart() - 1;
+		long alignmentStart = record.getAlignmentStart() - 1;
+		int posInSeq = 0;
+		provider.copyBases(sequenceName, alignmentStart, refBases.length,
+				refBases);
 		if (record.getReadFeatures() == null
 				|| record.getReadFeatures().isEmpty()) {
-			for (posInRead = 1; posInRead <= record.getReadLength(); posInRead++)
-				bases[posInRead - 1] = provider.getBaseAt(sequenceName,
-						posInSeq++);
+			for (posInRead = 1; posInRead <= readLength; posInRead++)
+				bases[posInRead - 1] = refBases[posInSeq++];
 			return bases;
 		}
 		List<ReadFeature> variations = record.getReadFeatures();
 		for (ReadFeature v : variations) {
 			for (; posInRead < v.getPosition(); posInRead++)
 				bases[posInRead - 1] = provider.getBaseAt(sequenceName,
-						posInSeq++);
+						alignmentStart + posInSeq++);
 
 			switch (v.getOperator()) {
 			case SubstitutionVariation.operator:
 				SubstitutionVariation sv = (SubstitutionVariation) v;
-				byte refBase = provider.getBaseAt(sequenceName, posInSeq);
+				byte refBase = provider.getBaseAt(sequenceName, alignmentStart
+						+ posInSeq);
 				byte base = sv.getBaseChange().getBaseForReference(refBase);
 				sv.setBase(base);
 				sv.setRefernceBase(refBase);
@@ -67,8 +94,9 @@ public class RestoreBases {
 						+ v.getOperator());
 			}
 		}
-		for (; posInRead <= record.getReadLength(); posInRead++)
-			bases[posInRead - 1] = provider.getBaseAt(sequenceName, posInSeq++);
+		for (; posInRead <= readLength; posInRead++)
+			bases[posInRead - 1] = provider.getBaseAt(sequenceName,
+					alignmentStart + posInSeq++);
 		return bases;
 	}
 

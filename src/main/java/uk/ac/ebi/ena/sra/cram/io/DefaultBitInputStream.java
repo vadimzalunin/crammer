@@ -5,7 +5,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
-/** Must not read from delegate unless not bits left in the buffer!!!
+/** Must not read from delegate unless no bits left in the buffer!!!
  * @author vadim
  *
  */
@@ -70,5 +70,10 @@ public class DefaultBitInputStream extends DataInputStream implements
 				result |= 1L << (last - bi);
 		}
 		return result;
+	}
+	
+	public void reset () {
+		leftBits = 0;
+		byteBuffer = 0;
 	}
 }

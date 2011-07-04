@@ -16,6 +16,10 @@ public class MeasuringCodec<T> implements BitCodec<T> {
 		this.delegate = delegate;
 		this.name = name;
 	}
+	
+	public BitCodec<T> getDelegate () {
+		return delegate ;
+	}
 
 	@Override
 	public T read(BitInputStream bis) throws IOException {

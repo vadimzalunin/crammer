@@ -8,13 +8,13 @@ import net.sf.samtools.Cigar;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMRecord;
+import uk.ac.ebi.ena.sra.cram.CramRecordFactory;
 import uk.ac.ebi.ena.sra.cram.encoding.BaseChange;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
 import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
-import uk.ac.ebi.ena.sra.cram.impl.CramRecordFactory;
 
 public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 	public enum TREAT_TYPE {
@@ -33,7 +33,7 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 		CramRecord cramRecord = new CramRecord();
 		cramRecord.setAlignmentStart(record.getAlignmentStart());
 		cramRecord.setNegativeStrand(record.getReadNegativeStrandFlag());
-		cramRecord.setReadMapped(!record.getReadUnmappedFlag());
+		cramRecord.setReadMapped(!record.getReadUnmappedFlag() || record.getAlignmentStart() > 0);
 		cramRecord.setReadLength(record.getReadLength());
 		if (!record.getReadPairedFlag())
 			cramRecord.setLastFragment(false);
@@ -64,6 +64,11 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 				if (f.getPosition() < 1)
 					System.out.println(cramRecord);
 			}
+		
+		if (!cramRecord.isReadMapped()) {
+			cramRecord.setReadBases(record.getReadBases()) ;
+			cramRecord.setQualityScores(record.getBaseQualities()) ;
+		}
 		return cramRecord;
 	}
 

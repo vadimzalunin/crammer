@@ -19,7 +19,7 @@ import uk.ac.ebi.ena.sra.cram.io.DefaultBitOutputStream;
 public class GammaCodecTest {
 	@Test
 	public void test_numberOfBits() {
-		GammaCodec codec = new GammaCodec(0, false);
+		GammaCodec codec = new GammaCodec(0);
 
 		assertThat(codec.numberOfBits((long) 1), is(1L));
 		assertThat(codec.numberOfBits((long) 2), is(3L));
@@ -33,7 +33,7 @@ public class GammaCodecTest {
 
 	@Test
 	public void test_write_read_1() throws IOException {
-		GammaCodec codec = new GammaCodec(0, false);
+		GammaCodec codec = new GammaCodec(0);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
 
@@ -45,16 +45,16 @@ public class GammaCodecTest {
 		String bitString = Utils.toBitString(buf);
 
 		assertThat(bitString, equalTo("10000000"));
-		
+
 		BitInputStream bis = new DefaultBitInputStream(
 				new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
 		assertThat(readValue, equalTo(value));
 	}
-	
+
 	@Test
 	public void test_write_read_2() throws IOException {
-		GammaCodec codec = new GammaCodec(0, false);
+		GammaCodec codec = new GammaCodec(0);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
 
@@ -66,7 +66,7 @@ public class GammaCodecTest {
 		String bitString = Utils.toBitString(buf);
 
 		assertThat(bitString, equalTo("01000000"));
-		
+
 		BitInputStream bis = new DefaultBitInputStream(
 				new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
@@ -75,7 +75,7 @@ public class GammaCodecTest {
 
 	@Test
 	public void test_write_read_20() throws IOException {
-		GammaCodec codec = new GammaCodec(0, false);
+		GammaCodec codec = new GammaCodec(0);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
 
@@ -89,16 +89,16 @@ public class GammaCodecTest {
 		// 20 is 10100 in unary, prepend it with 4 zeros and append with zero's
 		// to pad to whole bytes:
 		assertThat(bitString, equalTo("0000101000000000"));
-		
+
 		BitInputStream bis = new DefaultBitInputStream(
 				new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
 		assertThat(readValue, equalTo(value));
 	}
-	
+
 	@Test
 	public void test_write_read_128() throws IOException {
-		GammaCodec codec = new GammaCodec(0, false);
+		GammaCodec codec = new GammaCodec(0);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
 
@@ -109,10 +109,11 @@ public class GammaCodecTest {
 		byte[] buf = baos.toByteArray();
 		String bitString = Utils.toBitString(buf);
 
-		// 128 is 10000000 in unary, prepend it with 7 zeros and append with zero's
+		// 128 is 10000000 in unary, prepend it with 7 zeros and append with
+		// zero's
 		// to pad to whole bytes:
 		assertThat(bitString, equalTo("0000000100000000"));
-		
+
 		BitInputStream bis = new DefaultBitInputStream(
 				new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
@@ -120,8 +121,8 @@ public class GammaCodecTest {
 	}
 
 	@Test
-	public void test_write_read_0_to_1000() throws IOException {
-		GammaCodec codec = new GammaCodec(0, false);
+	public void test_write_read_1_to_1000_offset_0() throws IOException {
+		GammaCodec codec = new GammaCodec(0);
 
 		for (long i = 1; i < 1000; i++) {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -137,29 +138,10 @@ public class GammaCodecTest {
 			assertThat(readValue, equalTo(i));
 		}
 	}
-	
+
 	@Test
 	public void test_write_read_0_to_1000_offset_1() throws IOException {
-		GammaCodec codec = new GammaCodec(1, false);
-
-		for (long i = 0; i < 1000; i++) {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			BitOutputStream bos = new DefaultBitOutputStream(baos);
-			codec.write(bos, i);
-
-			bos.flush();
-			byte[] buf = baos.toByteArray();
-
-			BitInputStream bis = new DefaultBitInputStream(
-					new ByteArrayInputStream(buf));
-			Long readValue = codec.read(bis);
-			assertThat(readValue, equalTo(i));
-		}
-	}
-	
-	@Test
-	public void test_write_read_0_to_1000_offset_1_true() throws IOException {
-		GammaCodec codec = new GammaCodec(1, true);
+		GammaCodec codec = new GammaCodec(1);
 
 		for (long i = 0; i < 1000; i++) {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -180,7 +162,7 @@ public class GammaCodecTest {
 	public void benchmark_write_read() throws IOException {
 		long maxValues = 1000000;
 
-		GammaCodec codec = new GammaCodec(0, false);
+		GammaCodec codec = new GammaCodec(1);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
 

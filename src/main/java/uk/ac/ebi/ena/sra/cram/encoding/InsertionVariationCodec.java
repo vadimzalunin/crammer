@@ -9,6 +9,8 @@ import uk.ac.ebi.ena.sra.cram.io.NullBitOutputStream;
 
 public class InsertionVariationCodec implements BitCodec<InsertionVariation> {
 	public BitCodec<byte[]> insertBasesCodec;
+	private long byteCounter = 0 ;
+	private long totalLen = 0 ;
 
 	@Override
 	public InsertionVariation read(BitInputStream bis) throws IOException {
@@ -28,11 +30,11 @@ public class InsertionVariationCodec implements BitCodec<InsertionVariation> {
 			throws IOException {
 		long len = 0L;
 
-		long seqLen = 0L ;
-		seqLen -=len ;
 		len += insertBasesCodec.write(bos, v.getSequence());
-		seqLen += len ;
-//		System.out.println(new String(v.getSequence()) + " encoded in " +  seqLen + " bits.");
+//		System.out.println(new String(v.getSequence()) + " encoded in " +  len + " bits.");
+		
+		byteCounter += v.getSequence().length ;
+		totalLen += len ;
 
 		return len;
 	}
@@ -44,6 +46,11 @@ public class InsertionVariationCodec implements BitCodec<InsertionVariation> {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("Insertion codec: %d bases total, %d bits, %.2f bits per base.", byteCounter, totalLen, (float)totalLen/byteCounter) ;
 	}
 
 }

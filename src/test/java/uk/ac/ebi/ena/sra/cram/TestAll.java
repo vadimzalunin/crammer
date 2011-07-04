@@ -19,8 +19,8 @@ import uk.ac.ebi.ena.sra.cram.io.BitStreamIntegrationTest;
 @Suite.SuiteClasses({ BaseChangeCodecTest.class, BaseSequenceCodecTest.class,
 		UnaryCodecTest.class, GammaCodecTest.class, GolombRiceCodecTest.class,
 		GolombCodecTest.class, HuffmanCodecTest.class,
-		CramRecordWriteReadTests.class, BitInputStreamTest.class,
-		BitOutputStreamTest.class, BitStreamIntegrationTest.class })
+		BitInputStreamTest.class,
+		BitOutputStreamTest.class, BitStreamIntegrationTest.class, BamRoundTripTests.class })
 public class TestAll {
 
 }

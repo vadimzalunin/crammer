@@ -1,4 +1,4 @@
-package uk.ac.ebi.ena.sra.cram.impl;
+package uk.ac.ebi.ena.sra.cram;
 
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 

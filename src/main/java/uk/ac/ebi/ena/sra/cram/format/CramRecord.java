@@ -15,14 +15,15 @@ public class CramRecord {
 	private boolean lastFragment;
 	private long recordsToNextFragment;
 
-	@Deprecated
-	private Collection<InsertionVariation> insertionVariations;
-	@Deprecated
-	private Collection<SubstitutionVariation> substitutionVariations;
-	@Deprecated
-	private Collection<DeletionVariation> deletionVariations;
-	@Deprecated
-	private Collection<ReadBase> readBases;
+	private byte[] readBases;
+	private byte[] qualityScores;
+
+	// @Deprecated
+	// private Collection<InsertionVariation> insertionVariations;
+	// @Deprecated
+	// private Collection<SubstitutionVariation> substitutionVariations;
+	// @Deprecated
+	// private Collection<DeletionVariation> deletionVariations;
 
 	private List<ReadFeature> readFeatures;
 
@@ -50,48 +51,48 @@ public class CramRecord {
 		this.negativeStrand = negativeStrand;
 	}
 
-	@Deprecated
-	public Collection<InsertionVariation> getInsertionVariations() {
-		return insertionVariations;
-	}
+	// @Deprecated
+	// public Collection<InsertionVariation> getInsertionVariations() {
+	// return insertionVariations;
+	// }
+	//
+	// @Deprecated
+	// public void setInsertionVariations(
+	// Collection<InsertionVariation> insertionVariations) {
+	// this.insertionVariations = insertionVariations;
+	// }
+	//
+	// @Deprecated
+	// public Collection<SubstitutionVariation> getSubstitutionVariations() {
+	// return substitutionVariations;
+	// }
+	//
+	// @Deprecated
+	// public void setSubstitutionVariations(
+	// Collection<SubstitutionVariation> substitutionVariations) {
+	// this.substitutionVariations = substitutionVariations;
+	// }
+	//
+	// @Deprecated
+	// public Collection<DeletionVariation> getDeletionVariations() {
+	// return deletionVariations;
+	// }
+	//
+	// @Deprecated
+	// public void setDeletionVariations(
+	// Collection<DeletionVariation> deletionVariations) {
+	// this.deletionVariations = deletionVariations;
+	// }
 
-	@Deprecated
-	public void setInsertionVariations(
-			Collection<InsertionVariation> insertionVariations) {
-		this.insertionVariations = insertionVariations;
-	}
-
-	@Deprecated
-	public Collection<SubstitutionVariation> getSubstitutionVariations() {
-		return substitutionVariations;
-	}
-
-	@Deprecated
-	public void setSubstitutionVariations(
-			Collection<SubstitutionVariation> substitutionVariations) {
-		this.substitutionVariations = substitutionVariations;
-	}
-
-	@Deprecated
-	public Collection<DeletionVariation> getDeletionVariations() {
-		return deletionVariations;
-	}
-
-	@Deprecated
-	public void setDeletionVariations(
-			Collection<DeletionVariation> deletionVariations) {
-		this.deletionVariations = deletionVariations;
-	}
-
-	@Deprecated
-	public Collection<ReadBase> getReadBases() {
-		return readBases;
-	}
-
-	@Deprecated
-	public void setReadBases(Collection<ReadBase> readBases) {
-		this.readBases = readBases;
-	}
+	// @Deprecated
+	// public Collection<ReadBase> getReadBases() {
+	// return readBases;
+	// }
+	//
+	// @Deprecated
+	// public void setReadBases(Collection<ReadBase> readBases) {
+	// this.readBases = readBases;
+	// }
 
 	@Override
 	public boolean equals(Object obj) {
@@ -115,18 +116,27 @@ public class CramRecord {
 		if (recordsToNextFragment != r.recordsToNextFragment)
 			return false;
 
-		if (!deepEquals(substitutionVariations, r.substitutionVariations))
-			return false;
-		if (!deepEquals(insertionVariations, r.insertionVariations))
-			return false;
-		if (!deepEquals(deletionVariations, r.deletionVariations))
-			return false;
-		if (!deepEquals(readBases, r.readBases))
-			return false;
+		// if (!deepEquals(substitutionVariations, r.substitutionVariations))
+		// return false;
+		// if (!deepEquals(insertionVariations, r.insertionVariations))
+		// return false;
+		// if (!deepEquals(deletionVariations, r.deletionVariations))
+		// return false;
+		// if (!deepEquals(readBases, r.readBases))
+		// return false;
 		if (!deepEquals(readFeatures, r.readFeatures))
 			return false;
+		
 
 		return true;
+	}
+	
+	private boolean isEqual (byte[] array1, byte[] array2) {
+		if (array1 == null && array2 == null) return true ;
+		if (array1 != null && array2 != null) {
+			
+		} 
+		return false ;
 	}
 
 	private boolean deepEquals(Collection<?> c1, Collection<?> c2) {
@@ -144,21 +154,26 @@ public class CramRecord {
 		sb.append("; negativeStrand=").append(negativeStrand);
 		sb.append("; perfectMatch=").append(perfectMatch);
 
-		if (substitutionVariations != null)
-			for (SubstitutionVariation sub : substitutionVariations)
-				sb.append("; ").append(sub.toString());
-		if (insertionVariations != null)
-			for (InsertionVariation ins : insertionVariations)
-				sb.append("; ").append(ins.toString());
-		if (deletionVariations != null)
-			for (DeletionVariation del : deletionVariations)
-				sb.append("; ").append(del.toString());
-		if (readBases != null)
-			for (ReadBase base : readBases)
-				sb.append("; ").append(base.toString());
+		// if (substitutionVariations != null)
+		// for (SubstitutionVariation sub : substitutionVariations)
+		// sb.append("; ").append(sub.toString());
+		// if (insertionVariations != null)
+		// for (InsertionVariation ins : insertionVariations)
+		// sb.append("; ").append(ins.toString());
+		// if (deletionVariations != null)
+		// for (DeletionVariation del : deletionVariations)
+		// sb.append("; ").append(del.toString());
+		// if (readBases != null)
+		// for (ReadBase base : readBases)
+		// sb.append("; ").append(base.toString());
 		if (readFeatures != null)
 			for (ReadFeature feature : readFeatures)
 				sb.append("; ").append(feature.toString());
+
+		if (readBases != null)
+			sb.append("bases: ").append(new String(readBases));
+		if (qualityScores != null)
+			sb.append("qscores: ").append(new String(qualityScores));
 
 		sb.append("]");
 		return sb.toString();
@@ -202,5 +217,21 @@ public class CramRecord {
 
 	public void setReadFeatures(List<ReadFeature> readFeatures) {
 		this.readFeatures = readFeatures;
+	}
+
+	public byte[] getReadBases() {
+		return readBases;
+	}
+
+	public void setReadBases(byte[] readBases) {
+		this.readBases = readBases;
+	}
+
+	public byte[] getQualityScores() {
+		return qualityScores;
+	}
+
+	public void setQualityScores(byte[] qualityScores) {
+		this.qualityScores = qualityScores;
 	}
 }

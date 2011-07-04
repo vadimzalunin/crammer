@@ -1,40 +1,27 @@
-cramtools, version 0.2
-Author: vadim@ebi.ac.uk
-
-This is a set of Java tools and APIs for efficient compression of SRA data.
-
-
-Build.
-cd build
-ant jar
-
-Run.
-cramtools
-
-Usage. 
-There is some help available by running cramtools <command> without arguments.
-
-To convert a BAM file to CRAM: 
-cramtools cram --input-bam-file <bam file>
-		--reference-fasta <reference fasta file>
-		[--output-cram-file <output cram file>]
-		
-To convert a CRAM file to BAM: 		
-cramtools bam --input-cram <input cram file> 
-		--reference <reference fasta file>
-		--output-file <output bam file>
-
-Notes:
-1. reference fasta file must be indexed: 
-samtools faidx <fasta file>
-2. input bam file must be sorted by coordinate.
-3. input bam file must be indexed.
-
-Release notes.
-Although this should be a stable version the code is released only as early access. 
-A big part of the project is still experimental and will not be supported in the future.   
+CRAMTools is a set of Java tools and APIs for efficient compression of sequence read data. Although this is intended as a stable version the code is released as early access. Parts of the CRAMTools are experimental and may not be supported in the future.
+http://www.ebi.ac.uk/ena/about/cram_toolkit
  
-In this version there are a number of limitations: 
-- unampped reads are ignored
-- paired reads are treated as single
-- input BAM file is read twice during conversion (first-pass is to collect statistics) 
+Input files:
+Reference sequence in fasta format <fasta file>
+Reference sequence index file <fasta file>.fai created using samtools (samtools faidx <fasta file>)
+Input BAM file <BAM file> sorted by reference coordinates
+BAM index file <BAM file>.bai created using samtools (samtools index <BAM file>)
+Download and run the program:
+Download the prebuilt runnable jar file from: https://github.com/vadimzalunin/crammer/blob/master/cramtools.jar?raw=true
+Execute the command line program: java -jar cramtools.jar
+Usage is printed if no arguments was given 
+To convert a BAM file to CRAM:
+
+java -jar cramtools.jar cram --input-bam-file <bam file> --reference-fasta-file <reference fasta file> [--output-cram-file <output cram file>]
+To convert a CRAM file to BAM:
+java -jar cramtools.jar bam --input-cram-file <input cram file> --reference-fasta-file <reference fasta file> --output-bam-file <output bam file>
+To build the program from source:
+ 
+To check out the source code from github you will need git client: http://git-scm.com/
+Make sure you have java 1.6 or higher: http://openjdk.java.net/ or http://www.oracle.com/us/technologies/java/index.html
+Make sure you have ant version 1.7 or higher: http://ant.apache.org/
+git clone git://github.com/vadimzalunin/crammer.git
+ant -f build/build.xml runnable
+java -jar cramtools.jar
+To run unit tests:
+ ant -f build/build.xml test

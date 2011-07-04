@@ -7,11 +7,11 @@
 	<classpathentry kind="lib" path="lib/commons-collections-3.2.1.jar" sourcepath="Y:/lib/commons-collections-3.2.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib/jcommander-1.7.jar"/>
 	<classpathentry kind="lib" path="lib/commons-io-1.4.jar" sourcepath="Y:/lib/commons-io-1.4-sources.jar"/>
-	<classpathentry kind="lib" path="lib/commons-compress-1.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-compress-1.1.jar" sourcepath="Y:/lib/commons-compress-1.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib/commons-math-2.2.jar" sourcepath="Y:/lib/commons-math-2.2-sources.jar"/>
-	<classpathentry kind="lib" path="lib/log4j-1.2.16.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.16.jar" sourcepath="/log4j/src"/>
 	<classpathentry kind="lib" path="lib/colloquial_arithcode-1_1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/picard"/>
-	<classpathentry kind="output" path="target"/>
+	<classpathentry kind="output" path="target/classes"/>
 </classpath>

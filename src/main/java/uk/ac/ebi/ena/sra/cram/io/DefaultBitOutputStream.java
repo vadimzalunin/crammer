@@ -182,7 +182,12 @@ public class DefaultBitOutputStream extends OutputStream implements
 		if (bufferedNumberOfBits > 0)
 			out.write(bufferByte);
 
+		bufferedNumberOfBits = 0 ;
 		out.flush();
+	}
+	
+	public OutputStream getDelegate () {
+		return out ;
 	}
 
 }

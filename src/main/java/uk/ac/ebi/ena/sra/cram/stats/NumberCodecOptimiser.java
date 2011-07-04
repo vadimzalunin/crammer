@@ -16,13 +16,13 @@ class NumberCodecOptimiser {
 	public NumberCodecOptimiser() throws CramCompressionException {
 		List<NumberCodecStub> list = new ArrayList<NumberCodecStub>();
 		NumberCodecStub stub = null;
-		for (int i = 2; i < 10; i++) {
+		for (int i = 2; i < 20; i++) {
 			stub = NumberCodecFactory.createStub(EncodingAlgorithm.GOLOMB);
 			stub.initFromString(i + ",0,1");
 			list.add(stub);
 		}
 
-		for (int i = 1; i < 10; i++) {
+		for (int i = 1; i < 20; i++) {
 			stub = NumberCodecFactory.createStub(EncodingAlgorithm.GOLOMB_RICE);
 			stub.initFromString(i + ",0,1");
 			list.add(stub);
@@ -32,7 +32,7 @@ class NumberCodecOptimiser {
 		stub.initFromString("1,0");
 		list.add(stub);
 
-		for (int i = 1; i < 10; i++) {
+		for (int i = 1; i < 20; i++) {
 			stub = NumberCodecFactory.createStub(EncodingAlgorithm.SUBEXP);
 			stub.initFromString(i + ",0,1");
 			list.add(stub);

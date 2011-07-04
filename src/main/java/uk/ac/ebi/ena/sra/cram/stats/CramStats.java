@@ -3,6 +3,7 @@ package uk.ac.ebi.ena.sra.cram.stats;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.apache.commons.collections.bag.TreeBag;
 import org.apache.commons.math.stat.Frequency;
 import org.apache.log4j.Logger;
 
@@ -24,45 +25,64 @@ public class CramStats {
 	private Frequency inSeqPosFreq = new Frequency();
 	private Frequency inReadPosFreq = new Frequency();
 	private Frequency qualityScoreFreq = new Frequency();
-	private Frequency insertBasesFreq = new Frequency();
+	private Frequency basesFreq = new Frequency();
 	private Frequency readLengthFreq = new Frequency();
 	private Frequency delLengthFreq = new Frequency();
 	private Frequency readFeatureFreq = new Frequency();
+	private Frequency distanceToNextFragmentFreq = new Frequency();
 
 	private long nofSubstituions = 0L;
 	private long nofInsertions = 0L;
 	private long nofDeletions = 0L;
 
-	private long bases = 0L;
-	private long records = 0L;
+	private long baseCount = 0L;
+	private long recordCount = 0L;
 
 	private long firstRecordPosition = -1L;
+
+	private TreeBag inserts = new TreeBag();
 
 	private static Logger log = Logger.getLogger(CramStats.class);
 
 	public void addRecord(CramRecord record) {
-		if (!record.isReadMapped())
-			throw new IllegalArgumentException("Unmaped record not allowed.");
-		if (!record.isLastFragment())
-			throw new IllegalArgumentException("Only single reads are allowed.");
-
-		if (record.getAlignmentStart() < 0)
-			throw new IllegalArgumentException(
-					"Records position in reference is negative: "
-							+ record.getAlignmentStart());
-
-		if (firstRecordPosition < 0)
-			firstRecordPosition = record.getAlignmentStart();
-
-		if (prevRecord == null) {
-			inSeqPosFreq.addValue(0);
-		} else {
-			inSeqPosFreq.addValue(record.getAlignmentStart()
-					- prevRecord.getAlignmentStart());
-		}
-		prevRecord = record;
-
+		recordCount++;
+		baseCount += record.getReadLength();
 		readLengthFreq.addValue(record.getReadLength());
+		
+		if (!record.isLastFragment())
+			distanceToNextFragmentFreq.addValue(record
+					.getRecordsToNextFragment());
+
+		if (record.getAlignmentStart() > 0) {
+			// throw new IllegalArgumentException(
+			// "Records position in reference is negative: "
+			// + record.getAlignmentStart());
+
+			if (firstRecordPosition < 0)
+				firstRecordPosition = record.getAlignmentStart();
+
+			if (prevRecord == null) {
+				inSeqPosFreq.addValue(0);
+			} else {
+				inSeqPosFreq.addValue(record.getAlignmentStart()
+						- prevRecord.getAlignmentStart());
+			}
+			prevRecord = record;
+		}
+
+		if (!record.isReadMapped()) {
+			byte[] bases = record.getReadBases();
+			byte[] scores = record.getQualityScores();
+			for (int i = 0; i < record.getReadLength(); i++) {
+				basesFreq.addValue(bases[i]);
+				qualityScoreFreq.addValue(scores[i]);
+			}
+
+			basesFreq.addValue((byte) '$');
+			qualityScoreFreq.addValue((byte) -1);
+
+			return;
+		}
 
 		Collection<ReadFeature> variationsByPosition = record.getReadFeatures();
 		int prevInReadPos = 1;
@@ -73,6 +93,8 @@ public class CramStats {
 			switch (f.getOperator()) {
 			case SubstitutionVariation.operator:
 				SubstitutionVariation sv = (SubstitutionVariation) f;
+				if (sv.getBase() != 0)
+					basesFreq.addValue(sv.getBase());
 				qualityScoreFreq.addValue(sv.getQualityScore());
 				nofSubstituions++;
 				break;
@@ -83,8 +105,9 @@ public class CramStats {
 			case InsertionVariation.operator:
 				InsertionVariation iv = (InsertionVariation) f;
 				for (byte base : iv.getSequence())
-					insertBasesFreq.addValue(base);
+					basesFreq.addValue(base);
 				nofInsertions++;
+				// inserts.add(new String (iv.getSequence())) ;
 				break;
 			case DeletionVariation.operator:
 				DeletionVariation dv = (DeletionVariation) f;
@@ -100,18 +123,20 @@ public class CramStats {
 		if (!variationsByPosition.isEmpty())
 			readFeatureFreq.addValue(ReadFeature.STOP_OPERATOR);
 
-		records++;
-		bases += record.getReadLength();
 	}
 
 	public void adjustBlock(CramRecordBlock block)
 			throws CramCompressionException {
 		block.setFirstRecordPosition(firstRecordPosition);
-		block.setRecordCount(records);
+		block.setRecordCount(recordCount);
 
 		CramCompression compression = block.getCompression();
+		if (compression == null) {
+			block.setCompression(new CramCompression());
+			compression = block.getCompression();
+		}
 
-		ValueFrequencyHolder holder = getValueFrequencies(insertBasesFreq);
+		ValueFrequencyHolder holder = getValueFrequencies(basesFreq);
 		compression.setBaseAlphabet(holder.values);
 		compression.setBaseFrequencies(holder.frequencies);
 
@@ -134,6 +159,8 @@ public class CramStats {
 		block.getCompression().setDelLengthEncoding(getEncoding(delLengthFreq));
 		block.getCompression().setReadLengthEncoding(
 				getEncoding(readLengthFreq));
+		block.getCompression().setRecordsToNextFragmentEncoding(
+				getEncoding(distanceToNextFragmentFreq));
 
 		holder = getValueFrequencies(readFeatureFreq);
 		compression.setReadFeatureAlphabet(holder.values);
@@ -148,7 +175,7 @@ public class CramStats {
 		log.debug("Quality score frequencies: ");
 		log.debug(qualityScoreFreq.toString());
 		log.debug("Insert base frequencies: ");
-		log.debug(insertBasesFreq.toString());
+		log.debug(basesFreq.toString());
 		log.debug("Read length frequencies: ");
 		log.debug(readLengthFreq.toString());
 		log.debug("Deletion length frequencies: ");
@@ -158,8 +185,15 @@ public class CramStats {
 		log.info("Nubmer of insertions: " + nofInsertions);
 		log.info("Nubmer of deletions: " + nofDeletions);
 
-		log.info("Bases: " + bases);
-		log.info("Records: " + records);
+		log.info("Bases: " + baseCount);
+		log.info("Records: " + recordCount);
+
+		// Iterator iterator = inserts.uniqueSet().iterator() ;
+		// while (iterator.hasNext()) {
+		// String insert = (String) iterator.next() ;
+		// int count = inserts.getCount(insert) ;
+		// System.out.printf("%d\t%s\n", count, insert);
+		// }
 	}
 
 	private static final Encoding getEncoding(Frequency f)
@@ -223,5 +257,9 @@ public class CramStats {
 		}
 
 		return holder;
+	}
+
+	public long getBaseCount() {
+		return baseCount;
 	}
 }

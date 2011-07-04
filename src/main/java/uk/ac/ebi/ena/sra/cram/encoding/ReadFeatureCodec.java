@@ -24,62 +24,7 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 
 	public BitCodec<Byte> featureOperationCodec;
 
-	private long dumpInterval = 10000;
-	private long counter = 0L;
-	private long inReadPosLen = 0L;
-	private long nLen = 0L;
-	private long sLen = 0L;
-	private long iLen = 0L;
-	private long dLen = 0L;
-
-	private long sCount = 0L;
-	private long iCount = 0L;
-	private long dCount = 0L;
-
 	private static Logger log = Logger.getLogger(ReadFeatureCodec.class);
-
-	private void dump() {
-		log.debug(toString());
-	}
-
-	private static final String getCodecReport(BitCodec<?> codec) {
-		if (codec instanceof MeasuringCodec) {
-			MeasuringCodec<?> mc = (MeasuringCodec<?>) codec;
-			return mc.toString();
-		}
-		return null;
-	}
-
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder("Read features codec report: \n");
-		sb.append("inReadPosCodec: ").append(getCodecReport(inReadPosCodec))
-				.append("\n");
-		sb.append("readBaseCodec: ").append(getCodecReport(readBaseCodec))
-				.append("\n");
-		sb.append("featureOperationCodec: ")
-				.append(getCodecReport(featureOperationCodec)).append("\n");
-		sb.append("substitutionCodec: ")
-				.append(getCodecReport(substitutionCodec)).append("\n");
-		sb.append("insertionCodec: ").append(getCodecReport(insertionCodec))
-				.append("\n");
-		sb.append("deletionCodec: ").append(getCodecReport(deletionCodec))
-				.append("\n");
-		return sb.toString();
-	}
-
-	private void reset() {
-		counter = 0L;
-		inReadPosLen = 0L;
-		nLen = 0L;
-		sLen = 0L;
-		iLen = 0L;
-		dLen = 0L;
-
-		sCount = 0L;
-		iCount = 0L;
-		dCount = 0L;
-	}
 
 	@Override
 	public List<ReadFeature> read(BitInputStream bis) throws IOException {
@@ -128,58 +73,36 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 
 		long len = 0L;
 		int prevPos = 1;
-		// long tmpLen = 0 ;
 		for (ReadFeature feature : features) {
 			len += featureOperationCodec.write(bos, feature.getOperator());
 
-			inReadPosLen -= len;
 			len += inReadPosCodec.write(bos, (long) feature.getPosition()
 					- prevPos);
-			inReadPosLen += len;
 
 			prevPos = feature.getPosition();
 			switch (feature.getOperator()) {
 			case ReadBase.operator:
-				nLen -= len;
 				len += readBaseCodec.write(bos, (ReadBase) feature);
-				nLen += len;
 				break;
 			case SubstitutionVariation.operator:
-				sCount++;
-				sLen -= len;
-				// tmpLen = -len ;
 
 				len += substitutionCodec.write(bos,
 						(SubstitutionVariation) feature);
-				sLen += len;
-
-				// tmpLen += len ;
-				// System.out.println("sub len: " + tmpLen);
 
 				break;
 			case InsertionVariation.operator:
-				iCount++;
-				iLen -= len;
 				len += insertionCodec.write(bos, (InsertionVariation) feature);
-				iLen += len;
 				break;
 			case DeletionVariation.operator:
-				dCount++;
-				dLen -= len;
 				len += deletionCodec.write(bos, (DeletionVariation) feature);
-				dLen += len;
 				break;
 
 			default:
 				throw new RuntimeException("Unknown read feature operator: "
 						+ (char) feature.getOperator());
 			}
-			if (++counter >= dumpInterval) {
-				dump();
-				reset();
-			}
 		}
-		featureOperationCodec.write(bos, ReadFeature.STOP_OPERATOR);
+		len += featureOperationCodec.write(bos, ReadFeature.STOP_OPERATOR);
 
 		return len;
 	}
@@ -192,13 +115,4 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 			throw new RuntimeException(e);
 		}
 	}
-
-	public long getDumpInterval() {
-		return dumpInterval;
-	}
-
-	public void setDumpInterval(long dumpInterval) {
-		this.dumpInterval = dumpInterval;
-	}
-
 }

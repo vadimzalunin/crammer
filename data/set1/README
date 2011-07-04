@@ -1,0 +1,5 @@
+Data source: 5120_1.bam
+Reference source: Danio_rerio.Zv9.62.dna.toplevel.fa
+Organism: zebra fish
+Reads, count: 10000
+Reads, type: single, paired, mapped, unmapped

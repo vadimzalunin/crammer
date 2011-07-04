@@ -1,0 +1,5 @@
+Data source: http://ftp.sra.ebi.ac.uk/analysis/ERZ000/ERZ000001/ERZ000001.bam
+Reference source: Mus_musculus.NCBIM37.52.dna.toplevel.fa
+Organism: mouse
+Reads, count: 10000
+Reads, type: single, mapped

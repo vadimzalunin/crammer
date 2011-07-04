@@ -1,5 +1,0 @@
-#!/bin/sh -eu
-
-CRAMLIB=./lib/
-TARGET=./target/
-java -Xms1g -Xmx4g -cp ${TARGET}/cramtools.jar:${CRAMLIB}/sam-1.38.jar:${CRAMLIB}/picard-1.40.jar:${CRAMLIB}/jcommander-1.7.jar:${CRAMLIB}/commons-io-1.4.jar:${CRAMLIB}/commons-math-2.2.jar:${CRAMLIB}/log4j-1.2.16.jar uk.ac.ebi.ena.sra.cram.CramTools $@

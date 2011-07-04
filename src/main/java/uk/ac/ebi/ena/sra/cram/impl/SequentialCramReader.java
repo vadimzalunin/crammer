@@ -40,11 +40,11 @@ public class SequentialCramReader {
 			throw new RuntimeException("Pending records found. ");
 		block = blockReader.read();
 		if (block == null) {
-			awaitingRecords = -1 ;
-			referenceBaseProvider = null ;
-			recordCodec = null ;
-			restoreBases = null ;
-			return null ;
+			awaitingRecords = -1;
+			referenceBaseProvider = null;
+			recordCodec = null;
+			restoreBases = null;
+			return null;
 		}
 		awaitingRecords = block.getRecordCount();
 		bis = new DefaultBitInputStream(dis);
@@ -64,7 +64,8 @@ public class SequentialCramReader {
 		if (awaitingRecords < 1)
 			throw new RuntimeException("No more records in this block.");
 		CramRecord record = recordCodec.read(bis);
-		restoreBases.restoreReadBases(record);
+		if (record.isReadMapped())
+			restoreBases.restoreReadBases(record);
 		awaitingRecords--;
 		return record;
 	}
