@@ -3,15 +3,12 @@ package uk.ac.ebi.ena.sra.cram.format.text;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -27,7 +24,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.xerial.snappy.Snappy;
 
 import uk.ac.ebi.ena.sra.cram.CramTools;
 import uk.ac.ebi.ena.sra.cram.Utils;
@@ -36,7 +32,6 @@ import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.impl.CramHeaderIO;
-import uk.ac.ebi.ena.sra.cram.impl.RecordCodecFactory;
 import uk.ac.ebi.ena.sra.cram.impl.RestoreBases;
 import uk.ac.ebi.ena.sra.cram.impl.RestoreQualityScores;
 import uk.ac.ebi.ena.sra.cram.impl.SequentialCramReader;
@@ -110,7 +105,7 @@ public class TRAMRoundTripTests {
 
 			for (int i = 0; i < block.getRecordCount(); i++) {
 				CramRecord record = reader.readRecord();
-				
+
 				String s = format.writeRecord(record);
 				CramRecord derivedRecord = format.fromString(s);
 				if (!record.equals(derivedRecord)) {
@@ -202,14 +197,13 @@ public class TRAMRoundTripTests {
 
 			assertThat(derivedString, notNullValue());
 			assertThat(derivedString, equalTo(line));
-			
+
 			SAMRecord samRecord = iterator.next();
 			byte[] restoredReadBases;
 			if (record.isReadMapped())
 				restoredReadBases = restoreBases.restoreReadBases(record);
 			else
 				restoredReadBases = record.getReadBases();
-
 
 			assertThat("Mismatch for record: " + samRecord.getReadName()
 					+ " for read number " + readCounter, new String(
