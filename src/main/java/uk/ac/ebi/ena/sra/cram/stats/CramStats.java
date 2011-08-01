@@ -7,11 +7,13 @@ import org.apache.commons.collections.bag.TreeBag;
 import org.apache.commons.math.stat.Frequency;
 import org.apache.log4j.Logger;
 
+import uk.ac.ebi.ena.sra.cram.format.BaseQualityScore;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
+import uk.ac.ebi.ena.sra.cram.format.InsertBase;
 import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
 import uk.ac.ebi.ena.sra.cram.format.ReadBase;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
@@ -48,7 +50,7 @@ public class CramStats {
 		recordCount++;
 		baseCount += record.getReadLength();
 		readLengthFreq.addValue(record.getReadLength());
-		
+
 		if (!record.isLastFragment())
 			distanceToNextFragmentFreq.addValue(record
 					.getRecordsToNextFragment());
@@ -74,8 +76,10 @@ public class CramStats {
 			byte[] bases = record.getReadBases();
 			byte[] scores = record.getQualityScores();
 			for (int i = 0; i < record.getReadLength(); i++) {
-				basesFreq.addValue(bases[i]);
-				qualityScoreFreq.addValue(scores[i]);
+				if (bases != null)
+					basesFreq.addValue(bases[i]);
+				if (scores != null && scores.length != 0)
+					qualityScoreFreq.addValue(scores[i]);
 			}
 
 			basesFreq.addValue((byte) '$');
@@ -85,43 +89,54 @@ public class CramStats {
 		}
 
 		Collection<ReadFeature> variationsByPosition = record.getReadFeatures();
-		int prevInReadPos = 1;
-		for (ReadFeature f : variationsByPosition) {
-			readFeatureFreq.addValue(f.getOperator());
+		if (variationsByPosition != null) {
+			int prevInReadPos = 1;
+			for (ReadFeature f : variationsByPosition) {
+				readFeatureFreq.addValue(f.getOperator());
 
-			inReadPosFreq.addValue(f.getPosition() - prevInReadPos);
-			switch (f.getOperator()) {
-			case SubstitutionVariation.operator:
-				SubstitutionVariation sv = (SubstitutionVariation) f;
-				if (sv.getBase() != 0)
-					basesFreq.addValue(sv.getBase());
-				qualityScoreFreq.addValue(sv.getQualityScore());
-				nofSubstituions++;
-				break;
-			case ReadBase.operator:
-				ReadBase rb = (ReadBase) f;
-				qualityScoreFreq.addValue(rb.getQualityScore());
-				break;
-			case InsertionVariation.operator:
-				InsertionVariation iv = (InsertionVariation) f;
-				for (byte base : iv.getSequence())
-					basesFreq.addValue(base);
-				nofInsertions++;
-				// inserts.add(new String (iv.getSequence())) ;
-				break;
-			case DeletionVariation.operator:
-				DeletionVariation dv = (DeletionVariation) f;
-				nofDeletions++;
-				delLengthFreq.addValue(dv.getLength());
-				break;
+				inReadPosFreq.addValue(f.getPosition() - prevInReadPos);
+				switch (f.getOperator()) {
+				case SubstitutionVariation.operator:
+					SubstitutionVariation sv = (SubstitutionVariation) f;
+					if (sv.getBase() != 0)
+						basesFreq.addValue(sv.getBase());
+					nofSubstituions++;
+					break;
+				case ReadBase.operator:
+					ReadBase rb = (ReadBase) f;
+					basesFreq.addValue(rb.getBase());
+					qualityScoreFreq.addValue(rb.getQualityScore());
+					break;
+				case InsertionVariation.operator:
+					InsertionVariation iv = (InsertionVariation) f;
+					for (byte base : iv.getSequence())
+						basesFreq.addValue(base);
+					nofInsertions++;
+					// inserts.add(new String (iv.getSequence())) ;
+					break;
+				case DeletionVariation.operator:
+					DeletionVariation dv = (DeletionVariation) f;
+					nofDeletions++;
+					delLengthFreq.addValue(dv.getLength());
+					break;
+				case InsertBase.operator:
+					InsertBase ib = (InsertBase) f;
+					basesFreq.addValue(ib.getBase());
+					nofInsertions++ ;
+					break ;
+				case BaseQualityScore.operator:
+					BaseQualityScore bqs = (BaseQualityScore) f;
+					qualityScoreFreq.addValue(bqs.getQualityScore()) ;
+					break ;
 
-			default:
-				break;
+				default:
+					break;
+				}
+				prevInReadPos = f.getPosition();
 			}
-			prevInReadPos = f.getPosition();
+			if (!variationsByPosition.isEmpty())
+				readFeatureFreq.addValue(ReadFeature.STOP_OPERATOR);
 		}
-		if (!variationsByPosition.isEmpty())
-			readFeatureFreq.addValue(ReadFeature.STOP_OPERATOR);
 
 	}
 

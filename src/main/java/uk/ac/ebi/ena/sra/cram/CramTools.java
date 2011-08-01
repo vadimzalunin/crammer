@@ -43,6 +43,7 @@ public class CramTools {
 			Logger.getRootLogger().setLevel(params.logLevel);
 			String[] newArgs = new String[args.length - 2];
 			System.arraycopy(args, 2, newArgs, 0, newArgs.length);
+			args = newArgs ;
 		}
 
 		String command = jc.getParsedCommand();

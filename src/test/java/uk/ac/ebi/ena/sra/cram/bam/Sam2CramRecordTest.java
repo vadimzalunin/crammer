@@ -15,7 +15,6 @@ import org.junit.Test;
 
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.Utils;
-import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory.TREAT_TYPE;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.impl.RestoreBases;
@@ -126,7 +125,6 @@ public class Sam2CramRecordTest {
 
 		Sam2CramRecordFactory factory = new Sam2CramRecordFactory(
 				refString.getBytes());
-		factory.setTreatSoftClipsAs(TREAT_TYPE.ALIGNMENT);
 		CramRecord cramRecord = factory.createCramRecord(samRecord);
 		SequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
 				refString.getBytes());
@@ -151,7 +149,6 @@ public class Sam2CramRecordTest {
 
 		Sam2CramRecordFactory factory = new Sam2CramRecordFactory(
 				refString.getBytes());
-		factory.setTreatSoftClipsAs(TREAT_TYPE.ALIGNMENT);
 		CramRecord cramRecord = factory.createCramRecord(samRecord);
 		SequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
 				refString.getBytes());
@@ -176,7 +173,6 @@ public class Sam2CramRecordTest {
 
 		Sam2CramRecordFactory factory = new Sam2CramRecordFactory(
 				refString.getBytes());
-		factory.setTreatSoftClipsAs(TREAT_TYPE.ALIGNMENT);
 		CramRecord cramRecord = factory.createCramRecord(samRecord);
 		SequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
 				refString.getBytes());

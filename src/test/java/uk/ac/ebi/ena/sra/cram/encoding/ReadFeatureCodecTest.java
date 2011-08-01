@@ -35,7 +35,6 @@ public class ReadFeatureCodecTest {
 				100, 90, 80 }, new Byte[] { 33, 34, 35 });
 		HuffmanCodec<Byte> qualityScoreCodec = new HuffmanCodec<Byte>(
 				qualityScoreTree);
-		codec.qualityScoreCodec = qualityScoreCodec;
 
 		ReadFeatureCodec featuresCodec = new ReadFeatureCodec();
 		featuresCodec.substitutionCodec = codec;
@@ -46,11 +45,9 @@ public class ReadFeatureCodecTest {
 
 		SubstitutionVariation v = new SubstitutionVariation();
 		v.setBaseChange(new BaseChange((byte) 'C', (byte) 'A'));
-		v.setQualityScore((byte) '!');
 		v.setPosition(20);
 		SubstitutionVariation v2 = new SubstitutionVariation();
 		v2.setBaseChange(new BaseChange((byte) 'C', (byte) 'A'));
-		v2.setQualityScore((byte) '"');
 		v2.setPosition(23);
 
 		List<ReadFeature> features = new ArrayList<ReadFeature>();

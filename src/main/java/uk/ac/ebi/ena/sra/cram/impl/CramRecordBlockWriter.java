@@ -19,6 +19,8 @@ class CramRecordBlockWriter {
 	public long write(CramRecordBlock block) throws IOException {
 		DataOutputStream dos = new DataOutputStream(delegate);
 
+		dos.write("BLOCKBEGIN".getBytes()) ;
+		
 		dos.writeUTF(block.getSequenceName());
 		dos.writeInt(block.getSequenceLength());
 
@@ -27,8 +29,13 @@ class CramRecordBlockWriter {
 		dos.writeInt(block.getReadLength());
 		dos.writeBoolean(block.isPositiveStrandBasePositionReversed());
 		dos.writeBoolean(block.isNegativeStrandBasePositionReversed());
+		dos.writeBoolean(block.isUnmappedReadQualityScoresIncluded());
+		dos.writeBoolean(block.isSubstitutionQualityScoresIncluded());
+		dos.writeBoolean(block.isMaskedQualityScoresIncluded());
 
+		dos.write("COMPRESSIONBEGIN".getBytes()) ;
 		writeCramCompression(dos, block.getCompression());
+		dos.write("BLOCKEND".getBytes()) ;
 		dos.flush();
 		return dos.size() * 8;
 	}

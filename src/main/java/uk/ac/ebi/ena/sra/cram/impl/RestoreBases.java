@@ -6,7 +6,9 @@ import java.util.List;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
+import uk.ac.ebi.ena.sra.cram.format.InsertBase;
 import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
+import uk.ac.ebi.ena.sra.cram.format.ReadBase;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
 
@@ -52,6 +54,7 @@ public class RestoreBases {
 
 		int posInRead = 1;
 		long alignmentStart = record.getAlignmentStart() - 1;
+
 		int posInSeq = 0;
 		provider.copyBases(sequenceName, alignmentStart, refBases.length,
 				refBases);
@@ -82,21 +85,36 @@ public class RestoreBases {
 				InsertionVariation iv = (InsertionVariation) v;
 				for (int i = 0; i < iv.getSequence().length; i++)
 					bases[posInRead++ - 1] = iv.getSequence()[i];
-
 				break;
 			case DeletionVariation.operator:
 				DeletionVariation dv = (DeletionVariation) v;
 				posInSeq += dv.getLength();
 				break;
+			case InsertBase.operator:
+				InsertBase ib = (InsertBase) v;
+				bases[posInRead++ - 1] = ib.getBase();
+				break;
 
-			default:
-				throw new RuntimeException("Uknown variation operator: "
-						+ v.getOperator());
+			// default:
+			// throw new RuntimeException("Uknown variation operator: "
+			// + v.getOperator());
 			}
 		}
 		for (; posInRead <= readLength; posInRead++)
 			bases[posInRead - 1] = provider.getBaseAt(sequenceName,
 					alignmentStart + posInSeq++);
+
+		// ReadBase overwrites bases:
+		for (ReadFeature v : variations) {
+			switch (v.getOperator()) {
+			case ReadBase.operator:
+				ReadBase rb = (ReadBase) v;
+				bases[v.getPosition() - 1] = rb.getBase();
+				break;
+			default:
+				break;
+			}
+		}
 		return bases;
 	}
 

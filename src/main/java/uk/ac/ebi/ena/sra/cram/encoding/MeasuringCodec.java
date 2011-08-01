@@ -67,4 +67,8 @@ public class MeasuringCodec<T> implements BitCodec<T> {
 						getWrittenBits(), (double) getWrittenBits()
 								/ getWrittenObjects());
 	}
+
+	public String getName() {
+		return name;
+	}
 }

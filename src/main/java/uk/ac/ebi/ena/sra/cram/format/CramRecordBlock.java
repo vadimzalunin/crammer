@@ -14,6 +14,10 @@ public class CramRecordBlock implements Serializable {
 	private boolean positiveStrandBasePositionReversed = false;
 	private boolean negativeStrandBasePositionReversed = !positiveStrandBasePositionReversed;
 
+	private boolean unmappedReadQualityScoresIncluded = false;
+	private boolean substitutionQualityScoresIncluded = true;
+	private boolean maskedQualityScoresIncluded = true;
+
 	public String getSequenceName() {
 		return sequenceName;
 	}
@@ -88,6 +92,12 @@ public class CramRecordBlock implements Serializable {
 			return false;
 		if (negativeStrandBasePositionReversed != foe.negativeStrandBasePositionReversed)
 			return false;
+		if (unmappedReadQualityScoresIncluded != foe.unmappedReadQualityScoresIncluded)
+			return false;
+		if (substitutionQualityScoresIncluded != foe.substitutionQualityScoresIncluded)
+			return false;
+		if (maskedQualityScoresIncluded != foe.maskedQualityScoresIncluded)
+			return false;
 
 		if (!compression.equals(foe.compression))
 			return false;
@@ -108,6 +118,12 @@ public class CramRecordBlock implements Serializable {
 		sb.append("in-read pos reversed=(")
 				.append(positiveStrandBasePositionReversed).append(",")
 				.append(negativeStrandBasePositionReversed).append("), ");
+		sb.append("unmappedReadQualityScoresIncluded=")
+				.append(unmappedReadQualityScoresIncluded).append(", ");
+		sb.append("substitutionQualityScoresIncluded=")
+				.append(substitutionQualityScoresIncluded).append(", ");
+		sb.append("maskedQualityScoresIncluded=")
+				.append(maskedQualityScoresIncluded).append(", ");
 		sb.append("compression=").append(compression).append("]");
 		return sb.toString();
 	}
@@ -136,5 +152,32 @@ public class CramRecordBlock implements Serializable {
 
 	public void setSequenceLength(int sequenceLength) {
 		this.sequenceLength = sequenceLength;
+	}
+
+	public boolean isUnmappedReadQualityScoresIncluded() {
+		return unmappedReadQualityScoresIncluded;
+	}
+
+	public void setUnmappedReadQualityScoresIncluded(
+			boolean unmappedReadQualityScoresIncluded) {
+		this.unmappedReadQualityScoresIncluded = unmappedReadQualityScoresIncluded;
+	}
+
+	public boolean isSubstitutionQualityScoresIncluded() {
+		return substitutionQualityScoresIncluded;
+	}
+
+	public void setSubstitutionQualityScoresIncluded(
+			boolean substitutionQualityScoresIncluded) {
+		this.substitutionQualityScoresIncluded = substitutionQualityScoresIncluded;
+	}
+
+	public boolean isMaskedQualityScoresIncluded() {
+		return maskedQualityScoresIncluded;
+	}
+
+	public void setMaskedQualityScoresIncluded(
+			boolean maskedQualityScoresIncluded) {
+		this.maskedQualityScoresIncluded = maskedQualityScoresIncluded;
 	}
 }

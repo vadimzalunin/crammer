@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
+import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
@@ -35,7 +36,7 @@ public class SequentialCramReader {
 	}
 
 	public CramRecordBlock readBlock() throws IOException,
-			CramCompressionException {
+			CramCompressionException, CramFormatException {
 		if (awaitingRecords > 0L)
 			throw new RuntimeException("Pending records found. ");
 		block = blockReader.read();

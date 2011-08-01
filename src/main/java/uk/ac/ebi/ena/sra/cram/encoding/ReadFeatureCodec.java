@@ -6,7 +6,9 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import uk.ac.ebi.ena.sra.cram.format.BaseQualityScore;
 import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
+import uk.ac.ebi.ena.sra.cram.format.InsertBase;
 import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
 import uk.ac.ebi.ena.sra.cram.format.ReadBase;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
@@ -21,6 +23,8 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 	public BitCodec<SubstitutionVariation> substitutionCodec;
 	public BitCodec<InsertionVariation> insertionCodec;
 	public BitCodec<DeletionVariation> deletionCodec;
+	public BitCodec<BaseQualityScore> baseQSCodec;
+	public BitCodec<InsertBase> insertBaseCodec;
 
 	public BitCodec<Byte> featureOperationCodec;
 
@@ -56,6 +60,16 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 				del.setPosition(pos);
 				feature = del;
 				break;
+			case InsertBase.operator:
+				InsertBase ib = insertBaseCodec.read(bis);
+				ib.setPosition(pos);
+				feature = ib;
+				break;
+			case BaseQualityScore.operator:
+				BaseQualityScore bqs = baseQSCodec.read(bis);
+				bqs.setPosition(pos);
+				feature = bqs;
+				break;
 
 			default:
 				throw new RuntimeException("Unknown read feature operator: "
@@ -88,13 +102,18 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 
 				len += substitutionCodec.write(bos,
 						(SubstitutionVariation) feature);
-
 				break;
 			case InsertionVariation.operator:
 				len += insertionCodec.write(bos, (InsertionVariation) feature);
 				break;
 			case DeletionVariation.operator:
 				len += deletionCodec.write(bos, (DeletionVariation) feature);
+				break;
+			case InsertBase.operator:
+				len += insertBaseCodec.write(bos, (InsertBase) feature);
+				break;
+			case BaseQualityScore.operator:
+				len += baseQSCodec.write(bos, (BaseQualityScore) feature);
 				break;
 
 			default:

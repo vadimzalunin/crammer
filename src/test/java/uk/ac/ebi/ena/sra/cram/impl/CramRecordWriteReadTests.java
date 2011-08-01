@@ -6,8 +6,10 @@ import org.junit.Test;
 
 public class CramRecordWriteReadTests {
 
+	
+	
 	@Test
-	public void testFail() {
+	public void fail() {
 		throw new AssertionFailedError("This class is not ready.");
 	}
 	//

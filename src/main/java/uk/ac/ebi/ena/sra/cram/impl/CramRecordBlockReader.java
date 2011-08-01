@@ -3,8 +3,10 @@ package uk.ac.ebi.ena.sra.cram.impl;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.Arrays;
 
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
+import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
 import uk.ac.ebi.ena.sra.cram.format.compression.EncodingAlgorithm;
@@ -17,25 +19,44 @@ class CramRecordBlockReader {
 		this.dis = os;
 	}
 
-	/** Read next block header from the stream 
+	private void ensureExpectedBytes(byte[] expectedBytes)
+			throws CramFormatException, IOException {
+		byte[] actuallBeginBytes = new byte[expectedBytes.length];
+		dis.readFully(actuallBeginBytes);
+		if (!Arrays.equals(expectedBytes, actuallBeginBytes))
+			throw new CramFormatException("Expecting bytes "
+					+ Arrays.toString(expectedBytes) + " but got "
+					+ Arrays.toString(actuallBeginBytes));
+	}
+
+	/**
+	 * Read next block header from the stream
+	 * 
 	 * @return next block header or null if EOF.
 	 * @throws IOException
+	 * @throws CramFormatException
 	 */
-	public CramRecordBlock read() throws IOException {
+	public CramRecordBlock read() throws IOException, CramFormatException {
 		CramRecordBlock block = new CramRecordBlock();
 		try {
+			ensureExpectedBytes("BLOCKBEGIN".getBytes()) ;
 			block.setSequenceName(dis.readUTF());
 		} catch (EOFException e) {
 			return null;
 		}
-		block.setSequenceLength(dis.readInt()) ;
+		block.setSequenceLength(dis.readInt());
 		block.setFirstRecordPosition(dis.readLong());
 		block.setRecordCount(dis.readLong());
 		block.setReadLength(dis.readInt());
-		block.setPositiveStrandBasePositionReversed(dis.readBoolean());
-		block.setNegativeStrandBasePositionReversed(dis.readBoolean());
+		 block.setPositiveStrandBasePositionReversed(dis.readBoolean());
+		 block.setNegativeStrandBasePositionReversed(dis.readBoolean());
+		 block.setUnmappedReadQualityScoresIncluded(dis.readBoolean());
+		 block.setSubstitutionQualityScoresIncluded(dis.readBoolean());
+		 block.setMaskedQualityScoresIncluded(dis.readBoolean());
 
+		ensureExpectedBytes("COMPRESSIONBEGIN".getBytes()) ;
 		block.setCompression(readCompression());
+		ensureExpectedBytes("BLOCKEND".getBytes()) ;
 		return block;
 	}
 

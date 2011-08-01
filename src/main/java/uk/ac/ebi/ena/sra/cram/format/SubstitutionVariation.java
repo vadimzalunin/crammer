@@ -9,7 +9,7 @@ public class SubstitutionVariation implements Serializable, ReadFeature {
 	private int position;
 	private byte base;
 	private byte refernceBase;
-	private byte qualityScore;
+//	private byte qualityScore;
 	private BaseChange baseChange;
 
 	public static final byte operator = 'S';
@@ -52,10 +52,17 @@ public class SubstitutionVariation implements Serializable, ReadFeature {
 
 		if (position != v.position)
 			return false;
-		if (base != v.base)
-			return false;
-		if (refernceBase != v.refernceBase)
-			return false;
+
+		if (baseChange != null || v.baseChange != null) {
+			if (baseChange != null) {
+				if (!baseChange.equals(v.baseChange))
+					return false;
+			} else if (!v.baseChange.equals(baseChange))
+				return false;
+		}
+
+//		if (qualityScore != v.qualityScore)
+//			return false;
 
 		return true;
 	}
@@ -64,20 +71,24 @@ public class SubstitutionVariation implements Serializable, ReadFeature {
 	public String toString() {
 		StringBuffer sb = new StringBuffer(getClass().getSimpleName() + "[");
 		sb.append("position=").append(position);
-		sb.append("; base=").append((char) base);
-		sb.append("; quality score=").append(qualityScore);
-		sb.append("; referenceBase=").append((char) refernceBase);
+		if (baseChange != null)
+			sb.append("; change=").append(baseChange.getChange());
+		else {
+			sb.append("; base=").append((char) base);
+			sb.append("; referenceBase=").append((char) refernceBase);
+		}
+//		sb.append("; quality score=").append(qualityScore);
 		sb.append("] ");
 		return sb.toString();
 	}
 
-	public byte getQualityScore() {
-		return qualityScore;
-	}
-
-	public void setQualityScore(byte qualityScore) {
-		this.qualityScore = qualityScore;
-	}
+//	public byte getQualityScore() {
+//		return qualityScore;
+//	}
+//
+//	public void setQualityScore(byte qualityScore) {
+//		this.qualityScore = qualityScore;
+//	}
 
 	public BaseChange getBaseChange() {
 		return baseChange;

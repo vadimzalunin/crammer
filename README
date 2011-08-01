@@ -1,5 +1,7 @@
 CRAMTools is a set of Java tools and APIs for efficient compression of sequence read data. Although this is intended as a stable version the code is released as early access. Parts of the CRAMTools are experimental and may not be supported in the future.
 http://www.ebi.ac.uk/ena/about/cram_toolkit
+
+Version 0.3
  
 Input files:
 Reference sequence in fasta format <fasta file>
@@ -9,7 +11,7 @@ BAM index file <BAM file>.bai created using samtools (samtools index <BAM file>)
 Download and run the program:
 Download the prebuilt runnable jar file from: https://github.com/vadimzalunin/crammer/blob/master/cramtools.jar?raw=true
 Execute the command line program: java -jar cramtools.jar
-Usage is printed if no arguments was given 
+Usage is printed if no arguments were given 
 To convert a BAM file to CRAM:
 
 java -jar cramtools.jar cram --input-bam-file <bam file> --reference-fasta-file <reference fasta file> [--output-cram-file <output cram file>]
@@ -25,3 +27,15 @@ ant -f build/build.xml runnable
 java -jar cramtools.jar
 To run unit tests:
  ant -f build/build.xml test
+ 
+Read quality masking (RQM).
+By default in this version quality scores are not stored unless a special file containing read quality masks is provided in the input. Two RQM formats are provisionally supported:
+1. Each line is a combination of 'on' and 'off' symbols. 
+2. Each line consists of decimal read positions delimited by space. 
+
+Examples can be found in the test datasets provided. 
+
+Known issues
+- BamRoundTripTests fails on one of the test datasets (set1). This is due to the design defect in dealing with long-distance pairing information. The issue has high priority and will be fixed in the next release. 
+- BAM->CRAM->BAM produces BAM file which is much smaller than the original BAM file. Therefore when comparing BAM vs CRAM this fact should be taken into account. 
+- Performance is heavily affected by file IO, namely by reading BAM and reference files.

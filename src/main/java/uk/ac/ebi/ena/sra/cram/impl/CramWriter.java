@@ -24,18 +24,28 @@ public class CramWriter {
 	private int maxRecordsPerBlock = 100000;
 	private Collection<CramReferenceSequence> sequences;
 	private boolean roundTripCheck;
-	private long recordsBitLength;
+	private long bitsWritten;
 
 	private static Logger log = Logger.getLogger(CramWriter.class);
+	private final boolean captureUnammpedQualityScortes;
+	private final boolean captureSubstituionQualityScore;
+	private final boolean captureMaskedQualityScores;
+	private boolean autodump;
 
 	public CramWriter(OutputStream os, SequenceBaseProvider provider,
 			Collection<CramReferenceSequence> sequences,
-			boolean roundTripCheck, int maxBlockSize) {
+			boolean roundTripCheck, int maxBlockSize,
+			boolean captureUnammpedQualityScortes,
+			boolean captureSubstituionQualityScore,
+			boolean captureMaskedQualityScores) {
 		this.os = os;
 		this.provider = provider;
 		this.sequences = sequences;
 		this.roundTripCheck = roundTripCheck;
 		maxRecordsPerBlock = maxBlockSize;
+		this.captureUnammpedQualityScortes = captureUnammpedQualityScortes;
+		this.captureSubstituionQualityScore = captureSubstituionQualityScore;
+		this.captureMaskedQualityScores = captureMaskedQualityScores;
 	}
 
 	public void dump() {
@@ -48,7 +58,7 @@ public class CramWriter {
 		header.setReferenceSequences(sequences);
 		CramHeaderIO.write(header, os);
 		stats = new CramStats();
-		recordsBitLength = 0;
+		bitsWritten = 0;
 	}
 
 	private CramReferenceSequence findSequenceByName(String name) {
@@ -65,9 +75,9 @@ public class CramWriter {
 		CramReferenceSequence sequence = findSequenceByName(name);
 		if (sequence == null)
 			throw new IllegalArgumentException(
-					"Unknown refernce sequence name: " + name);
+					"Unknown reference sequence name: " + name);
 
-		recordsBitLength += purgeBlock(block);
+		bitsWritten += purgeBlock(block);
 
 		provider = new ByteArraySequenceBaseProvider(bases);
 		writer = new SequentialCramWriter(os, provider);
@@ -81,9 +91,8 @@ public class CramWriter {
 		stats.addRecord(record);
 		block.getRecords().add(record);
 
-		if (block.getRecords().size() >= maxRecordsPerBlock) {
-			recordsBitLength += purgeBlock(block);
-		}
+		if (block.getRecords().size() >= maxRecordsPerBlock)
+			bitsWritten += purgeBlock(block);
 	}
 
 	private long purgeBlock(CramRecordBlock block) throws IOException,
@@ -109,6 +118,11 @@ public class CramWriter {
 		}
 		this.block
 				.setRecords(new ArrayList<CramRecord>(maxRecordsPerBlock + 1));
+		this.block
+				.setUnmappedReadQualityScoresIncluded(captureUnammpedQualityScortes);
+		this.block
+				.setSubstitutionQualityScoresIncluded(captureSubstituionQualityScore);
+		this.block.setMaskedQualityScoresIncluded(captureMaskedQualityScores);
 
 		return len;
 	}
@@ -116,7 +130,6 @@ public class CramWriter {
 	private long write(CramRecordBlock block) throws IOException, CramException {
 		long len = 0;
 		len = writer.write(block);
-		len = 0;
 
 		if (roundTripCheck)
 			for (CramRecord record : block.getRecords())
@@ -126,15 +139,25 @@ public class CramWriter {
 				len += writer.write(record);
 
 		writer.flush();
+		
+		if (autodump) dump () ;
 
 		return len;
 	}
 
 	public void close() throws IOException, CramException {
-		recordsBitLength += purgeBlock(block);
+		bitsWritten += purgeBlock(block);
 	}
 
-	public long getRecordsBitLength() {
-		return recordsBitLength;
+	public long getBitsWritten() {
+		return bitsWritten;
+	}
+
+	public boolean isAutodump() {
+		return autodump;
+	}
+
+	public void setAutodump(boolean autodump) {
+		this.autodump = autodump;
 	}
 }

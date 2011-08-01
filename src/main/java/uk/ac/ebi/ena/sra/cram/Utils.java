@@ -177,7 +177,7 @@ public class Utils {
 		return bases;
 	}
 
-	public static void capitaliseAndCheckBases(byte[] bases) {
+	public static void capitaliseAndCheckBases(byte[] bases, boolean strict) {
 		for (int i = 0; i < bases.length; i++) {
 			switch (bases[i]) {
 			case 'A':
@@ -203,10 +203,12 @@ public class Utils {
 				break;
 
 			default:
-				// bases[i]='N' ;
-				throw new RuntimeException("Illegal base at " + i + ": "
-						+ bases[i]);
-				// break ;
+				if (strict)
+					throw new RuntimeException("Illegal base at " + i + ": "
+							+ bases[i]);
+				else
+					bases[i] = 'N';
+				break;
 			}
 		}
 	}

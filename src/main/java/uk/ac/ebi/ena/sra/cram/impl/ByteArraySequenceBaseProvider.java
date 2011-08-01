@@ -20,7 +20,12 @@ public class ByteArraySequenceBaseProvider implements SequenceBaseProvider {
 	@Override
 	public void copyBases(String sequenceName, long from, int len, byte[] dest)
 			throws IOException {
-		System.arraycopy(sequence, (int) from, dest, 0, len) ;
+		try {
+			System.arraycopy(sequence, (int) from, dest, 0, len);
+		} catch (ArrayIndexOutOfBoundsException e) {
+			System.err.printf("Sequence: %s; from=%d; len=%d\n", sequenceName, from, len);
+			throw e ;
+		}
 	}
 
 }

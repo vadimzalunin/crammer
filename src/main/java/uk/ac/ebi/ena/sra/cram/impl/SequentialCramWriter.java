@@ -4,12 +4,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
+import uk.ac.ebi.ena.sra.cram.encoding.MeasuringCodec;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
@@ -81,6 +83,9 @@ public class SequentialCramWriter {
 		checkBAIS.reset();
 		checkBIS.reset();
 		CramRecord checkRecord = checkRecordReadCodec.read(checkBIS);
+		// the codec does not handle alignment start of the first sequence in
+		// the block:
+		checkRecord.setAlignmentStart(record.getAlignmentStart());
 		restoreBases.restoreReadBases(checkRecord);
 
 		if (!checkRecord.equals(record)) {
@@ -101,6 +106,21 @@ public class SequentialCramWriter {
 	}
 
 	public void dump() {
+		Collection<MeasuringCodec> allCodecs = recordCodecFactory
+				.listAllCodecs(rootNode);
+		boolean first = true;
+		long firstCodecBits = 0;
+		for (MeasuringCodec codec : allCodecs) {
+			if (first) {
+				first = false;
+				firstCodecBits = codec.getWrittenBits();
+				continue;
+			}
+			if (codec.getWrittenBits() > 0)
+				System.err.printf("%s:\tbits %d\t%.2f%%\n", codec.getName(),
+						codec.getWrittenBits(), 100d * codec.getWrittenBits()
+								/ firstCodecBits);
+		}
 		recordCodecFactory.dump(rootNode);
 	}
 

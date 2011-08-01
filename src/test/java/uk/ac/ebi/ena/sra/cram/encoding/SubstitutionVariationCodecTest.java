@@ -28,13 +28,9 @@ public class SubstitutionVariationCodecTest {
 		codec.baseChangeCodec = new BaseChangeCodec();
 		HuffmanTree<Byte> qualityScoreTree = HuffmanCode.buildTree(new int[] {
 				100, 90, 80 }, new Byte[] { 33, 34, 35 });
-		HuffmanCodec<Byte> qualityScoreCodec = new HuffmanCodec<Byte>(
-				qualityScoreTree);
-		codec.qualityScoreCodec = qualityScoreCodec;
 
 		SubstitutionVariation v = new SubstitutionVariation();
 		v.setBaseChange(new BaseChange((byte)'A', (byte)'C')) ;
-		v.setQualityScore((byte) '!');
 		v.setPosition(-1);
 		codec.write(bos, v);
 

@@ -5,9 +5,16 @@ import java.io.Serializable;
 public class ReadBase implements Serializable, ReadFeature {
 
 	private int position;
+	private byte base;
 	private byte qualityScore;
 
 	public static final byte operator = 'N';
+	
+	public ReadBase(int position, byte base, byte qualityScore) {
+		this.position = position;
+		this.base = base;
+		this.qualityScore = qualityScore;
+	}
 
 	@Override
 	public byte getOperator() {
@@ -40,6 +47,8 @@ public class ReadBase implements Serializable, ReadFeature {
 
 		if (position != v.position)
 			return false;
+		if (base != v.base)
+			return false;
 		if (qualityScore != v.qualityScore)
 			return false;
 
@@ -50,9 +59,18 @@ public class ReadBase implements Serializable, ReadFeature {
 	public String toString() {
 		StringBuffer sb = new StringBuffer(getClass().getSimpleName() + "[");
 		sb.append("position=").append(position);
-		sb.append("; score=").append((char) qualityScore);
+		sb.append("; base=").appendCodePoint(base);
+		sb.append("; score=").appendCodePoint(qualityScore);
 		sb.append("] ");
 		return sb.toString();
+	}
+
+	public byte getBase() {
+		return base;
+	}
+
+	public void setBase(byte base) {
+		this.base = base;
 	}
 
 }
