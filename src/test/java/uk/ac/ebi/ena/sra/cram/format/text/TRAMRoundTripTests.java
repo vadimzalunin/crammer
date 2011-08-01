@@ -121,40 +121,7 @@ public class TRAMRoundTripTests {
 
 		textCramWriter.close();
 
-		// System.out.printf("BAM file size=%d; snapped=%d\n",
-		// inputBamPath.length(), getSnappedSize(inputBamPath));
-		// System.out.printf("CRAM file size=%d; snapped=%d\n",
-		// cramFile.length(),
-		// getSnappedSize(cramFile));
-		// System.out.printf("TRAM file size=%d; snapped=%d\n",
-		// textCramFile.length(), getSnappedSize(textCramFile));
 	}
-
-	// private static byte[] getContent(File file) throws IOException {
-	// if (file.length() >= Integer.MAX_VALUE)
-	// throw new RuntimeException("File size is too big: " + file.length());
-	//
-	// BufferedInputStream bis = new BufferedInputStream(new FileInputStream(
-	// file));
-	//
-	// ByteBuffer byteBuffer = ByteBuffer.allocate((int) file.length());
-	// byte[] readBuf = new byte[1024 * 4];
-	// int len = 0;
-	// while ((len = bis.read(readBuf)) != -1) {
-	// byteBuffer.put(readBuf, 0, len);
-	// }
-	// bis.close();
-	//
-	// byteBuffer.flip();
-	// byte[] data = new byte[byteBuffer.limit()];
-	// byteBuffer.get(data);
-	//
-	// return data;
-	// }
-	//
-	// private static long getSnappedSize(File file) throws IOException {
-	// return Snappy.compress(getContent(file)).length;
-	// }
 
 	public TRAMRoundTripTests(String datasetName) {
 		folder = findDataSetFolder(datasetName);
