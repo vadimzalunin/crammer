@@ -21,10 +21,13 @@ public class ByteArraySequenceBaseProvider implements SequenceBaseProvider {
 	public void copyBases(String sequenceName, long from, int len, byte[] dest)
 			throws IOException {
 		try {
+			if (from + len > sequence.length)
+				len = sequence.length - (int) from;
 			System.arraycopy(sequence, (int) from, dest, 0, len);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.err.printf("Sequence: %s; from=%d; len=%d\n", sequenceName, from, len);
-			throw e ;
+			System.err.printf("Sequence: %s; from=%d; len=%d\n", sequenceName,
+					from, len);
+			throw e;
 		}
 	}
 
