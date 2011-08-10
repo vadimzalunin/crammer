@@ -29,7 +29,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.text.CramRecordFormat;
 import uk.ac.ebi.ena.sra.cram.impl.CramWriter;
-import uk.ac.ebi.ena.sra.cram.impl.ReadAnnotationReader;
+//import uk.ac.ebi.ena.sra.cram.impl.ReadAnnotationReader;
 import uk.ac.ebi.ena.sra.cram.mask.FastaByteArrayMaskFactory;
 import uk.ac.ebi.ena.sra.cram.mask.IntegerListMaskFactory;
 import uk.ac.ebi.ena.sra.cram.mask.PositionMask;
@@ -54,7 +54,7 @@ public class Bam2Cram {
 	private OutputStream os;
 	private SequenceBaseProvider provider;
 	private SingleLineMaskReader maskReader;
-	private ReadAnnotationReader readAnnoReader;
+	// private ReadAnnotationReader readAnnoReader;
 
 	private ReferenceSequenceFile referenceSequenceFile;
 	private CramRecordFormat cramRecordFormat = new CramRecordFormat();
@@ -99,10 +99,10 @@ public class Bam2Cram {
 					new FileReader(params.readQualityMaskFile)), rqmFactory);
 		}
 
-		if (params.readAnnoFile != null) {
-			readAnnoReader = new ReadAnnotationReader(new BufferedReader(
-					new FileReader(params.readAnnoFile)));
-		}
+		// if (params.readAnnoFile != null) {
+		// readAnnoReader = new ReadAnnotationReader(new BufferedReader(
+		// new FileReader(params.readAnnoFile)));
+		// }
 
 		recordCount = 0;
 		unmappedRecordCount = 0;
@@ -120,14 +120,13 @@ public class Bam2Cram {
 				params.roundTripCheck, params.maxBlockSize,
 				params.captureUnmappedQualityScore,
 				params.captureSubstitutionQualityScore,
-				params.captureMaskedQualityScore, readAnnoReader == null ? null
-						: readAnnoReader.listUniqAnnotations());
+				params.captureMaskedQualityScore, null);
 		cramWriter.setAutodump(log.isInfoEnabled());
 		cramWriter.init();
 	}
-	
+
 	public void close() throws IOException {
-		os.close() ;
+		os.close();
 	}
 
 	public void run() throws IOException, CramException {
@@ -226,8 +225,8 @@ public class Bam2Cram {
 			throws IOException, CramException {
 		CramRecord cramRecord = buildCramRecord(record);
 
-		if (readAnnoReader != null)
-			cramRecord.setAnnotations(readAnnoReader.nextReadAnnotations());
+		// if (readAnnoReader != null)
+		// cramRecord.setAnnotations(readAnnoReader.nextReadAnnotations());
 
 		if (!cramRecord.isReadMapped())
 			unmappedRecordCount++;
@@ -295,7 +294,7 @@ public class Bam2Cram {
 		Bam2Cram b2c = new Bam2Cram(params);
 		b2c.init();
 		b2c.run();
-		b2c.close() ;
+		b2c.close();
 
 		// long time = System.currentTimeMillis();
 		// log.info(String.format("Compression time: %.3f seconds",
@@ -363,7 +362,7 @@ public class Bam2Cram {
 		@Parameter(names = { "--print-cram-records" })
 		boolean printCramRecords = false;
 
-		@Parameter(names = { "--read-anno-file" }, converter = FileConverter.class)
+		@Parameter(names = { "--read-anno-file" }, converter = FileConverter.class, hidden = false)
 		File readAnnoFile;
 	}
 }
