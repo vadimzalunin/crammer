@@ -120,7 +120,7 @@ public class Bam2Cram {
 				params.roundTripCheck, params.maxBlockSize,
 				params.captureUnmappedQualityScore,
 				params.captureSubstitutionQualityScore,
-				params.captureMaskedQualityScore, null);
+				params.captureMaskedQualityScore);
 		cramWriter.setAutodump(log.isInfoEnabled());
 		cramWriter.init();
 	}
