@@ -1,7 +1,7 @@
 CRAMTools is a set of Java tools and APIs for efficient compression of sequence read data. Although this is intended as a stable version the code is released as early access. Parts of the CRAMTools are experimental and may not be supported in the future.
 http://www.ebi.ac.uk/ena/about/cram_toolkit
 
-Version 0.3
+Version 0.5
  
 Input files:
 Reference sequence in fasta format <fasta file>
@@ -28,14 +28,13 @@ java -jar cramtools.jar
 To run unit tests:
  ant -f build/build.xml test
  
-Read quality masking (RQM).
-By default in this version quality scores are not stored unless a special file containing read quality masks is provided in the input. Two RQM formats are provisionally supported:
-1. Each line is a combination of 'on' and 'off' symbols. 
-2. Each line consists of decimal read positions delimited by space. 
+Picard integraion
+Some tools using Picard API should be able to read/write CRAM archives. For example: 
+java -cp cramtools.jar net.sf.picard.sam.ValidateSamFile INPUT=data.cram
 
-Examples can be found in the test datasets provided. 
+However, please note that the following will not work: 
+java -cp cramtools.jar net.sf.picard.sam.ValidateSamFile -jar ValidateSamFile.jar INPUT=data.cram
 
-Known issues
-- BamRoundTripTests fails on one of the test datasets (set1). This is due to the design defect in dealing with long-distance pairing information. The issue has high priority and will be fixed in the next release. 
-- BAM->CRAM->BAM produces BAM file which is much smaller than the original BAM file. Therefore when comparing BAM vs CRAM this fact should be taken into account. 
-- Performance is heavily affected by file IO, namely by reading BAM and reference files.
+
+Please check for more on our web site: 
+http://www.ebi.ac.uk/ena/about/cram_toolkit

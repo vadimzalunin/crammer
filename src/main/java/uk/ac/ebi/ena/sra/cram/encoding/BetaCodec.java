@@ -30,7 +30,7 @@ public class BetaCodec implements BitCodec<Long> {
 	public final long numberOfBits(Long value) {
 		if (value > (1L << readNofBits))
 			throw new IllegalArgumentException(
-					"Value written is bigger then allowed: value" + value
+					"Value written is bigger then allowed: value=" + value
 							+ ", max nof bits=" + readNofBits);
 		
 		return readNofBits;

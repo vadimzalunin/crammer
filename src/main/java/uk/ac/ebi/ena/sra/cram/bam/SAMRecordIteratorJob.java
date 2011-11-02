@@ -3,8 +3,6 @@ package uk.ac.ebi.ena.sra.cram.bam;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.management.RuntimeErrorException;
-
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 
@@ -34,18 +32,18 @@ public class SAMRecordIteratorJob implements Runnable {
 	public void run() {
 		long counter = 0;
 		long nullCounter = 0;
-		
+
 		try {
 			while (!abort.get() && iterator.hasNext()) {
 				SAMRecord record = iterator.next();
 				counter++;
 				while (!abort.get() && !queue.offer(record)) {
-					nullCounter++ ;
-//					try {
-//						Thread.sleep(sleepTime);
-//					} catch (InterruptedException e) {
-//						return;
-//					}
+					nullCounter++;
+					// try {
+					// Thread.sleep(sleepTime);
+					// } catch (InterruptedException e) {
+					// return;
+					// }
 				}
 			}
 			queue.add(STOP_SAMRECORD);
@@ -54,7 +52,7 @@ public class SAMRecordIteratorJob implements Runnable {
 			exception = e;
 		} finally {
 			System.err.println("SAMRecordIteratorJob exiting.");
-			System.err.println("nullCounter="+nullCounter);
+			System.err.println("nullCounter=" + nullCounter);
 			finished.set(true);
 			try {
 				iterator.close();

@@ -32,13 +32,15 @@
 	</pathconvert>
 
 	<target name="runnable" depends="clean,compile">
-		<jar destfile="${basedir}/cramtools.jar" filesetmanifest="skip">
+		<jar destfile="${basedir}/cramtools.jar" filesetmanifest="skip" duplicate="preserve">
 			<fileset dir="${classes}" />
-			<zipgroupfileset dir="lib" includes="*.jar" excludes="" />
+			<zipgroupfileset dir="lib" includes="*.jar" excludes="colloquial_arithcode-1_1.jar">
+				<exclude name="**/SAMFileReader.class" />
+			</zipgroupfileset>
 
 			<manifest>
 				<attribute name="Main-Class" value="uk.ac.ebi.ena.sra.cram.CramTools" />
-				<attribute name="Class-Path" value="${mf.classpath}" />
+				<attribute name="Class-Path" value="" />
 			</manifest>
 		</jar>
 	</target>
@@ -82,6 +84,7 @@
 		<javac debug="true" fork="true" destdir="${classes}" srcdir="${src}/main/java:${src}/test/java">
 			<include name="**/*.java" />
 			<exclude name="**/TestArithmeticCode.java" />
+			<exclude name="**/CRAMFileReader.java" />
 			<classpath refid="classpath" />
 		</javac>
 		<copy todir="${classes}">

@@ -91,4 +91,8 @@ public class HuffmanCodec<V> implements BitCodec<V> {
 			code.bitLentgh--;
 		}
 	}
+
+	public HuffmanTree<V> getTree() {
+		return tree;
+	}
 }

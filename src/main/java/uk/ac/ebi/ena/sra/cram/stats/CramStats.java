@@ -1,20 +1,26 @@
 package uk.ac.ebi.ena.sra.cram.stats;
 
+import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 
-import org.apache.commons.collections.bag.TreeBag;
+import org.apache.commons.collections.bag.HashBag;
 import org.apache.commons.math.stat.Frequency;
-import org.apache.log4j.Logger;
 
+import uk.ac.ebi.ena.sra.compression.huffman.HuffmanCode;
+import uk.ac.ebi.ena.sra.compression.huffman.HuffmanTree;
+import uk.ac.ebi.ena.sra.cram.encoding.HuffmanCodec;
 import uk.ac.ebi.ena.sra.cram.format.BaseQualityScore;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
+import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
 import uk.ac.ebi.ena.sra.cram.format.InsertBase;
 import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
+import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
 import uk.ac.ebi.ena.sra.cram.format.ReadBase;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
@@ -32,9 +38,12 @@ public class CramStats {
 	private Frequency delLengthFreq = new Frequency();
 	private Frequency readFeatureFreq = new Frequency();
 	private Frequency distanceToNextFragmentFreq = new Frequency();
+	private Frequency readGroupIndexFreq = new Frequency();
+	private Frequency mappingQualityFreq = new Frequency();
 
 	private long nofSubstituions = 0L;
 	private long nofInsertions = 0L;
+	private long nofInsertedBases = 0L;
 	private long nofDeletions = 0L;
 
 	private long baseCount = 0L;
@@ -42,24 +51,39 @@ public class CramStats {
 
 	private long firstRecordPosition = -1L;
 
-	private TreeBag inserts = new TreeBag();
+	private HashBag readAnnoKeyBag = new HashBag();
 
-	private static Logger log = Logger.getLogger(CramStats.class);
+	private final CramHeader header;
+	private final PrintStream statsPS;
+	private final float qualityBudget;
+
+	public CramStats(CramHeader header, PrintStream statsPS, float qualityBudget) {
+		this.header = header;
+		this.statsPS = statsPS;
+		this.qualityBudget = qualityBudget;
+	}
+
+	public CramStats(CramHeader header, PrintStream statsPS) {
+		this(header, statsPS, 0);
+	}
 
 	public void addRecord(CramRecord record) {
 		recordCount++;
 		baseCount += record.getReadLength();
 		readLengthFreq.addValue(record.getReadLength());
 
+		if (record.getAnnotations() != null) {
+			for (ReadAnnotation a : record.getAnnotations())
+				readAnnoKeyBag.add(a);
+		}
+
+		readGroupIndexFreq.addValue(record.getReadGroupID());
+
 		if (!record.isLastFragment())
 			distanceToNextFragmentFreq.addValue(record
 					.getRecordsToNextFragment());
 
 		if (record.getAlignmentStart() > 0) {
-			// throw new IllegalArgumentException(
-			// "Records position in reference is negative: "
-			// + record.getAlignmentStart());
-
 			if (firstRecordPosition < 0)
 				firstRecordPosition = record.getAlignmentStart();
 
@@ -86,11 +110,12 @@ public class CramStats {
 			qualityScoreFreq.addValue((byte) -1);
 
 			return;
-		}
+		} else
+			mappingQualityFreq.addValue(record.getMappingQuality());
 
 		Collection<ReadFeature> variationsByPosition = record.getReadFeatures();
 		if (variationsByPosition != null) {
-			int prevInReadPos = 1;
+			int prevInReadPos = 0;
 			for (ReadFeature f : variationsByPosition) {
 				readFeatureFreq.addValue(f.getOperator());
 
@@ -112,6 +137,8 @@ public class CramStats {
 					for (byte base : iv.getSequence())
 						basesFreq.addValue(base);
 					nofInsertions++;
+					nofInsertedBases += iv.getSequence().length;
+					basesFreq.addValue((byte) '$');
 					// inserts.add(new String (iv.getSequence())) ;
 					break;
 				case DeletionVariation.operator:
@@ -122,12 +149,13 @@ public class CramStats {
 				case InsertBase.operator:
 					InsertBase ib = (InsertBase) f;
 					basesFreq.addValue(ib.getBase());
-					nofInsertions++ ;
-					break ;
+					nofInsertions++;
+					nofInsertedBases++;
+					break;
 				case BaseQualityScore.operator:
 					BaseQualityScore bqs = (BaseQualityScore) f;
-					qualityScoreFreq.addValue(bqs.getQualityScore()) ;
-					break ;
+					qualityScoreFreq.addValue(bqs.getQualityScore());
+					break;
 
 				default:
 					break;
@@ -137,7 +165,6 @@ public class CramStats {
 			if (!variationsByPosition.isEmpty())
 				readFeatureFreq.addValue(ReadFeature.STOP_OPERATOR);
 		}
-
 	}
 
 	public void adjustBlock(CramRecordBlock block)
@@ -169,6 +196,10 @@ public class CramStats {
 		compression.setReadLengthAlphabet(holder.intValues);
 		compression.setReadLengthFrequencies(holder.frequencies);
 
+		holder = getValueFrequencies(mappingQualityFreq);
+		compression.setMappingQualityAlphabet(holder.values);
+		compression.setMappingQualityFrequencies(holder.frequencies);
+
 		block.getCompression().setInSeqPosEncoding(getEncoding(inSeqPosFreq));
 		block.getCompression().setInReadPosEncoding(getEncoding(inReadPosFreq));
 		block.getCompression().setDelLengthEncoding(getEncoding(delLengthFreq));
@@ -181,39 +212,71 @@ public class CramStats {
 		compression.setReadFeatureAlphabet(holder.values);
 		compression.setReadFeatureFrequencies(holder.frequencies);
 
-		log.debug("Read feature frequencies: ");
-		log.debug(readFeatureFreq.toString());
-		log.debug("In sequence position frequencies: ");
-		log.debug(inSeqPosFreq.toString());
-		log.debug("In read position frequencies: ");
-		log.debug(inReadPosFreq.toString());
-		log.debug("Quality score frequencies: ");
-		log.debug(qualityScoreFreq.toString());
-		log.debug("Insert base frequencies: ");
-		log.debug(basesFreq.toString());
-		log.debug("Read length frequencies: ");
-		log.debug(readLengthFreq.toString());
-		log.debug("Deletion length frequencies: ");
-		log.debug(delLengthFreq.toString());
+		if (header != null && header.getReadAnnotations() != null) {
+			Set uniqueSet = readAnnoKeyBag.uniqueSet();
+			int[] raIndexes = new int[uniqueSet.size()];
+			int[] raFreqs = new int[raIndexes.length];
+			int i = 0;
+			for (Object o : uniqueSet) {
+				ReadAnnotation ra = (ReadAnnotation) o;
+				int count = readAnnoKeyBag.getCount(ra);
+				if (count == 0)
+					continue;
 
-		log.info("Nubmer of substitutions: " + nofSubstituions);
-		log.info("Nubmer of insertions: " + nofInsertions);
-		log.info("Nubmer of deletions: " + nofDeletions);
+				int index = header.getReadAnnotations().indexOf(ra);
+				if (index < 0)
+					throw new CramCompressionException(
+							"Annotation not found in the dictionary: "
+									+ ra.getKey());
 
-		log.info("Bases: " + baseCount);
-		log.info("Records: " + recordCount);
+				raIndexes[i] = index;
+				raFreqs[i] = count;
+				i++;
+			}
+			compression.setReadAnnotationIndexes(raIndexes);
+			compression.setReadAnnotationFrequencies(raFreqs);
+		} else {
+			compression.setReadAnnotationIndexes(new int[0]);
+			compression.setReadAnnotationFrequencies(new int[0]);
+		}
 
-		// Iterator iterator = inserts.uniqueSet().iterator() ;
-		// while (iterator.hasNext()) {
-		// String insert = (String) iterator.next() ;
-		// int count = inserts.getCount(insert) ;
-		// System.out.printf("%d\t%s\n", count, insert);
-		// }
+		holder = getValueFrequencies(readGroupIndexFreq);
+		compression.setReadGroupIndexes(holder.intValues);
+		compression.setReadGroupFrequencies(holder.frequencies);
+
+		if (statsPS != null) {
+			statsPS.println("Read feature frequencies: ");
+			statsPS.println(readFeatureFreq.toString());
+			statsPS.println("Base frequencies: ");
+			statsPS.println(basesFreq.toString());
+			statsPS.println("Quality score frequencies: ");
+			statsPS.println(qualityScoreFreq.toString());
+			statsPS.println("In read position frequencies: ");
+			statsPS.println(inReadPosFreq.toString());
+			statsPS.println("Read length frequencies: ");
+			statsPS.println(readLengthFreq.toString());
+			statsPS.println("Deletion length frequencies: ");
+			statsPS.println(delLengthFreq.toString());
+			statsPS.println("In sequence position frequencies: ");
+			statsPS.println(inSeqPosFreq.toString());
+			statsPS.println("Records to next fragment frequencies: ");
+			statsPS.println(distanceToNextFragmentFreq.toString());
+			statsPS.println("Mapping quality frequencies: ");
+			statsPS.println(mappingQualityFreq.toString());
+
+			statsPS.println("Nubmer of substitutions: " + nofSubstituions);
+			statsPS.println("Nubmer of insertions: " + nofInsertions);
+			statsPS.println("Nubmer of inserted bases: " + nofInsertedBases);
+			statsPS.println("Nubmer of deletions: " + nofDeletions);
+
+			statsPS.println("Bases: " + baseCount);
+			statsPS.println("Records: " + recordCount);
+		}
 	}
 
 	private static final Encoding getEncoding(Frequency f)
 			throws CramCompressionException {
-		NumberCodecOptimiser inSeqPosOpt = new NumberCodecOptimiser();
+		NumberCodecOptimiser optimiser = new NumberCodecOptimiser();
 		Iterator<Comparable<?>> valuesIterator = f.valuesIterator();
 		int i = 0;
 		long valueCounter = 0;
@@ -226,8 +289,17 @@ public class CramStats {
 			i++;
 			long count = f.getCount(next);
 			valueCounter += count;
-			inSeqPosOpt.addValue(value, count);
+			optimiser.addValue(value, count);
 		}
+
+		// long huffmanBits = getHuffmanBitLengthEstimate(f);
+		// if (optimiser.getMinLength() > huffmanBits) {
+		// System.out.printf("Huffman is better: %d vs %d\n",
+		// optimiser.getMinLength(), huffmanBits);
+		// } else
+		// System.out.printf("Huffman is worse: %d vs %d\n",
+		// optimiser.getMinLength(), huffmanBits);
+
 		long binaryBitsRequiredPerPosition;
 		if (maxInSeqPos < 1)
 			binaryBitsRequiredPerPosition = 0;
@@ -236,14 +308,42 @@ public class CramStats {
 					.log(maxInSeqPos + 1) / Math.log(2));
 		long totalBinaryBitsRequired = binaryBitsRequiredPerPosition
 				* valueCounter;
-		if (inSeqPosOpt.getMinLength() > totalBinaryBitsRequired) {
+
+		if (optimiser.getMinLength() > totalBinaryBitsRequired) {
 			return new Encoding(EncodingAlgorithm.BETA, "0,"
 					+ binaryBitsRequiredPerPosition);
 		} else {
-			NumberCodecStub inSeqPosStub = inSeqPosOpt.getMinLengthStub();
+			NumberCodecStub inSeqPosStub = optimiser.getMinLengthStub();
 			return new Encoding(inSeqPosStub.getEncoding(),
 					inSeqPosStub.getStringRepresentation());
 		}
+	}
+
+	private static long getHuffmanBitLengthEstimate(Frequency f) {
+		Iterator<Comparable<?>> valuesIterator = f.valuesIterator();
+		int i = 0;
+		Long[] values = new Long[f.getUniqueCount()];
+		int[] freqs = new int[values.length];
+		while (valuesIterator.hasNext()) {
+			Comparable<?> next = valuesIterator.next();
+			values[i] = ((Long) next).longValue();
+			freqs[i] = (int) f.getCount(next);
+			i++;
+		}
+		HuffmanTree<Long> tree = HuffmanCode.buildTree(freqs, values);
+
+		valuesIterator = f.valuesIterator();
+		HuffmanCodec<Long> codec = new HuffmanCodec<Long>(tree);
+		long totalBits = 0;
+		while (valuesIterator.hasNext()) {
+			Comparable<?> next = valuesIterator.next();
+			long bits = codec.numberOfBits(((Long) next).longValue());
+			totalBits += bits * (int) f.getCount(next);
+		}
+
+		// length of int array plus length of int array in bits:
+		int treeLen = ((4 + values.length * 4) + (4 + freqs.length * 4)) * 8;
+		return totalBits + treeLen;
 	}
 
 	private static class ValueFrequencyHolder {

@@ -13,7 +13,7 @@ import uk.ac.ebi.ena.sra.cram.format.ReadBase;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
 
-class DefaultReadFeaturesFormat implements ReadFeaturesFormat {
+public class DefaultReadFeaturesFormat implements ReadFeaturesFormat {
 	public static final byte MATCH = 'M';
 	public static final byte DELETION = 'D';
 	public static final byte INSERTION = 'I';
@@ -40,14 +40,14 @@ class DefaultReadFeaturesFormat implements ReadFeaturesFormat {
 	private boolean useOneLetterCodesForSubstitutions = true;
 
 	public static void main(String[] args) {
-		test ("M1", 1) ;
-		test ("M2", 2) ;
-		test ("M2D1M1", 3) ;
-		test ("D1M2D1", 2) ;
-		test ("a ", 1) ;
-		test ("a c!", 2) ;
-		test ("M1a c!M1", 4) ;
-		test ("M1y!D1x a c!D1M1", 6) ;
+		test("M1", 1);
+		test("M2", 2);
+		test("M2D1M1", 3);
+		test("D1M2D1", 2);
+		test("a ", 1);
+		test("a c!", 2);
+		test("M1a c!M1", 4);
+		test("M1y!D1x a c!D1M1", 6);
 	}
 
 	private static void test(String s, int readLength) {
@@ -59,7 +59,7 @@ class DefaultReadFeaturesFormat implements ReadFeaturesFormat {
 			System.out.println("ok: " + s);
 		else {
 			System.out.println("failed: " + s + "\t\t\t" + sb.toString());
-			for (ReadFeature f:featureList)
+			for (ReadFeature f : featureList)
 				System.out.println(f.toString());
 		}
 	}
@@ -67,23 +67,41 @@ class DefaultReadFeaturesFormat implements ReadFeaturesFormat {
 	@Override
 	public void addFeaturesToStringBuilder(Iterable<ReadFeature> features,
 			int readLength, StringBuilder sb) {
-		int prevPos = 1;
-		boolean qsRequired = false ;
+		if (features == null) {
+			sb.appendCodePoint(MATCH).append(readLength);
+			return;
+		}
+
+		int prevPos = 0;
+		ReadFeature prevRF = null;
+		boolean qsRequired = false;
 		for (ReadFeature feature : features) {
-			if (feature.getOperator() != BaseQualityScore.operator && qsRequired) {
-				sb.appendCodePoint(UNSET_QUALITY_SCORE) ;
-				qsRequired = false ;
+			if (feature.getOperator() != BaseQualityScore.operator
+					&& qsRequired) {
+				sb.appendCodePoint(UNSET_QUALITY_SCORE);
+				qsRequired = false;
 			}
 			if (feature.getPosition() > prevPos) {
-				sb.appendCodePoint(MATCH).append(
-						feature.getPosition() - prevPos);
+				if (feature.getPosition() - prevPos == 1) {
+					sb.appendCodePoint('=');
+					if (feature.getOperator() != BaseQualityScore.operator)
+						sb.appendCodePoint(UNSET_QUALITY_SCORE);
+					else
+						qsRequired = true;
+				} else {
+					sb.appendCodePoint(MATCH).append(
+							feature.getPosition() - prevPos);
+					qsRequired = false;
+				}
 				prevPos = feature.getPosition();
 			}
+
 			switch (feature.getOperator()) {
 			case ReadBase.operator:
 				ReadBase rb = (ReadBase) feature;
 				sb.appendCodePoint(rb.getBase()).appendCodePoint(
-						rb.getQualityScore() == -1 ? Byte.MAX_VALUE : rb.getQualityScore());
+						rb.getQualityScore() == -1 ? Byte.MAX_VALUE : rb
+								.getQualityScore());
 				prevPos++;
 				break;
 			case DeletionVariation.operator:
@@ -94,19 +112,26 @@ class DefaultReadFeaturesFormat implements ReadFeaturesFormat {
 				InsertionVariation ins = (InsertionVariation) feature;
 				sb.appendCodePoint(INSERTION)
 						.append(new String(ins.getSequence())).append(".");
+				// for (byte base: ins.getSequence())
+				// sb.appendCodePoint(Character.toLowerCase(base)).appendCodePoint(UNSET_QUALITY_SCORE)
+				// ;
 				prevPos += ins.getSequence().length;
 				break;
 			case InsertBase.operator:
-				InsertBase ibs = (InsertBase) feature ;
-				sb.appendCodePoint(Character.toLowerCase(ibs.getBase())) ;
-				qsRequired = true ;
+				InsertBase ibs = (InsertBase) feature;
+				sb.appendCodePoint(Character.toLowerCase(ibs.getBase()));
+				qsRequired = true;
 				prevPos++;
-				break ;
+				break;
 			case BaseQualityScore.operator:
-				BaseQualityScore bqs = (BaseQualityScore) feature ;
-				sb.appendCodePoint(bqs.getQualityScore()) ;
-				qsRequired = false ;
-				break ;
+				BaseQualityScore bqs = (BaseQualityScore) feature;
+				if (qsRequired)
+					sb.appendCodePoint(bqs.getQualityScore());
+				else
+					sb.appendCodePoint('=').appendCodePoint(
+							bqs.getQualityScore());
+				qsRequired = false;
+				break;
 			case SubstitutionVariation.operator:
 				SubstitutionVariation sub = (SubstitutionVariation) feature;
 				if (useOneLetterCodesForSubstitutions) {
@@ -131,19 +156,21 @@ class DefaultReadFeaturesFormat implements ReadFeaturesFormat {
 					sb.appendCodePoint(SUBSTITUTION).append(
 							sub.getBaseChange().getChange());
 
-//				sb.appendCodePoint(sub.getQualityScore());
+				// sb.appendCodePoint(sub.getQualityScore());
 				prevPos++;
-				qsRequired = true ;
+				qsRequired = true;
 				break;
 
 			default:
 				throw new RuntimeException("Unkown read feature operator: '"
 						+ (char) feature.getOperator() + "'");
 			}
+
+			prevRF = feature;
 		}
 		if (qsRequired) {
-			sb.appendCodePoint(UNSET_QUALITY_SCORE) ;
-			qsRequired = false ;
+			sb.appendCodePoint(UNSET_QUALITY_SCORE);
+			qsRequired = false;
 		}
 		if (prevPos < readLength + 1)
 			sb.appendCodePoint(MATCH).append(readLength - prevPos + 1);
@@ -203,7 +230,8 @@ class DefaultReadFeaturesFormat implements ReadFeaturesFormat {
 				i++;
 
 				if (bytes[i] != 32) {
-					BaseQualityScore bqs = new BaseQualityScore(pos-1, bytes[i]);
+					BaseQualityScore bqs = new BaseQualityScore(pos - 1,
+							bytes[i]);
 					features.add(bqs);
 				}
 				break;
@@ -278,6 +306,15 @@ class DefaultReadFeaturesFormat implements ReadFeaturesFormat {
 				svZ.setBaseChange(new BaseChange(0));
 				features.add(svZ);
 
+				if (score != 32) {
+					BaseQualityScore bqs = new BaseQualityScore(pos, bytes[i]);
+					features.add(bqs);
+				}
+				pos++;
+				break;
+			case QUALITY_SCORE:
+			case '=':
+				score = bytes[++i];
 				if (score != 32) {
 					BaseQualityScore bqs = new BaseQualityScore(pos, bytes[i]);
 					features.add(bqs);

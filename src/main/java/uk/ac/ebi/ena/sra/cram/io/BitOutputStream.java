@@ -16,4 +16,6 @@ public interface BitOutputStream {
 
 	public void flush() throws IOException;
 
+	public void close() throws IOException;
+
 }

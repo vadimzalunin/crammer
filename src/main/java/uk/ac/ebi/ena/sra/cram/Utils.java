@@ -1,17 +1,32 @@
 package uk.ac.ebi.ena.sra.cram;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.picard.reference.ReferenceSequenceFileFactory;
 import net.sf.samtools.Cigar;
 import net.sf.samtools.CigarElement;
+import net.sf.samtools.SAMFileHeader;
+import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMSequenceRecord;
+import net.sf.samtools.util.SeekableStream;
+import uk.ac.ebi.ena.sra.cram.CramIndexer.CountingInputStream;
+import uk.ac.ebi.ena.sra.cram.format.CramHeader;
+import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
+import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 
 public class Utils {
@@ -55,8 +70,7 @@ public class Utils {
 		return toBitString(toBytes(value));
 	}
 
-	public static byte[] transformSequence(byte[] bases, boolean compliment,
-			boolean reverse) {
+	public static byte[] transformSequence(byte[] bases, boolean compliment, boolean reverse) {
 		byte[] result = new byte[bases.length];
 		for (int i = 0; i < bases.length; i++) {
 			byte base = bases[i];
@@ -111,8 +125,7 @@ public class Utils {
 		if (newLength == record.getReadLength())
 			return;
 		if (newLength < 1 || newLength >= record.getReadLength())
-			throw new IllegalArgumentException("Cannot change read length to "
-					+ newLength);
+			throw new IllegalArgumentException("Cannot change read length to " + newLength);
 
 		List<CigarElement> newCigarElements = new ArrayList<CigarElement>();
 		int len = 0;
@@ -131,17 +144,16 @@ public class Utils {
 				break;
 
 			default:
-				throw new IllegalArgumentException(
-						"Unexpected cigar operator: " + ce.getOperator()
-								+ " in cigar " + record.getCigarString());
+				throw new IllegalArgumentException("Unexpected cigar operator: " + ce.getOperator() + " in cigar "
+						+ record.getCigarString());
 			}
 
 			if (len <= newLength) {
 				newCigarElements.add(ce);
 				continue;
 			}
-			CigarElement newCe = new CigarElement(ce.getLength()
-					- (record.getReadLength() - newLength), ce.getOperator());
+			CigarElement newCe = new CigarElement(ce.getLength() - (record.getReadLength() - newLength),
+					ce.getOperator());
 			if (newCe.getLength() > 0)
 				newCigarElements.add(newCe);
 			break;
@@ -158,8 +170,7 @@ public class Utils {
 	}
 
 	public static void reversePositionsInRead(CramRecord record) {
-		if (record.getReadFeatures() == null
-				|| record.getReadFeatures().isEmpty())
+		if (record.getReadFeatures() == null || record.getReadFeatures().isEmpty())
 			return;
 		for (ReadFeature f : record.getReadFeatures())
 			f.setPosition((int) (record.getReadLength() - f.getPosition() - 1));
@@ -167,13 +178,11 @@ public class Utils {
 		Collections.reverse(record.getReadFeatures());
 	}
 
-	public static byte[] getBasesFromReferenceFile(String referenceFilePath,
-			String seqName, int from, int length) {
-		ReferenceSequenceFile referenceSequenceFile = ReferenceSequenceFileFactory
-				.getReferenceSequenceFile(new File(referenceFilePath));
+	public static byte[] getBasesFromReferenceFile(String referenceFilePath, String seqName, int from, int length) {
+		ReferenceSequenceFile referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(new File(
+				referenceFilePath));
 		ReferenceSequence sequence = referenceSequenceFile.getSequence(seqName);
-		byte[] bases = referenceSequenceFile.getSubsequenceAt(
-				sequence.getName(), from, from + length).getBases();
+		byte[] bases = referenceSequenceFile.getSubsequenceAt(sequence.getName(), from, from + length).getBases();
 		return bases;
 	}
 
@@ -204,12 +213,90 @@ public class Utils {
 
 			default:
 				if (strict)
-					throw new RuntimeException("Illegal base at " + i + ": "
-							+ bases[i]);
+					throw new RuntimeException("Illegal base at " + i + ": " + bases[i]);
 				else
 					bases[i] = 'N';
 				break;
 			}
 		}
+	}
+
+	private static int readInt(InputStream in) throws IOException {
+		int ch1 = in.read();
+		int ch2 = in.read();
+		int ch3 = in.read();
+		int ch4 = in.read();
+		if ((ch1 | ch2 | ch3 | ch4) < 0)
+			throw new EOFException();
+		return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
+	}
+
+	public static final DataInputStream getNextChunk(DataInputStream dis) throws IOException {
+		int compressedBlockSize;
+		try {
+			compressedBlockSize = readInt(dis);
+			// compressedBlockSize = dis.readInt();
+			// System.out.println("Compressed block sise: " +
+			// compressedBlockSize);
+		} catch (EOFException e) {
+			return null;
+		}
+		byte[] compressedBlockData = new byte[compressedBlockSize];
+		try {
+			dis.readFully(compressedBlockData);
+		} catch (EOFException e) {
+			byte[] buf = new byte[6];
+			System.arraycopy(compressedBlockData, 0, buf, 0, buf.length);
+			System.err.println("Offensive data block start: " + Arrays.toString(buf));
+			throw e;
+		}
+		GZIPInputStream gizIS = new GZIPInputStream(new ByteArrayInputStream(compressedBlockData));
+		CountingInputStream uncompressedCIS = new CountingInputStream(gizIS);
+		DataInputStream uncompressedDIS = new DataInputStream(uncompressedCIS);
+		return uncompressedDIS;
+	}
+
+	public static SAMFileHeader cramHeader2SamHeader(CramHeader cramHeader) {
+		SAMFileHeader samFileHeader = new SAMFileHeader();
+		for (CramReferenceSequence crs : cramHeader.getReferenceSequences()) {
+			SAMSequenceRecord samSequence = new SAMSequenceRecord(crs.getName(), crs.getLength());
+			samFileHeader.addSequence(samSequence);
+		}
+
+		if (cramHeader.getReadGroups() != null)
+			for (CramReadGroup crg : cramHeader.getReadGroups()) {
+				if (crg.getId() == null)
+					continue;
+				SAMReadGroupRecord samReadGroupRecord = new SAMReadGroupRecord(crg.getId());
+				samReadGroupRecord.setSample(crg.getSample());
+				samFileHeader.addReadGroup(samReadGroupRecord);
+			}
+
+		return samFileHeader;
+	}
+
+	/**
+	 * Reads and discards first bytes which must correspond to the CRAM magic.
+	 * 
+	 * @param is
+	 * @return
+	 * @throws IOException
+	 */
+	public static boolean isCRAM(InputStream is) throws IOException {
+		byte[] magick = "CRAM".getBytes();
+		for (byte b : magick)
+			if (is.read() != b)
+				return false;
+
+		return true;
+	}
+
+	public static String peekStream(SeekableStream ss, long pos, int len) throws IOException {
+		ss.mark(len);
+		ss.seek(pos);
+		byte[] buf = new byte[len];
+		ss.read(buf);
+		ss.reset();
+		return Arrays.toString(buf);
 	}
 }

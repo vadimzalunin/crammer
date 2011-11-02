@@ -6,10 +6,10 @@ import java.io.IOException;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
 import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
+import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
-import uk.ac.ebi.ena.sra.cram.io.BitInputStream;
 import uk.ac.ebi.ena.sra.cram.io.DefaultBitInputStream;
 
 public class SequentialCramReader {
@@ -18,7 +18,7 @@ public class SequentialCramReader {
 	private CramRecordBlock block;
 
 	private BitCodec<CramRecord> recordCodec;
-	private BitInputStream bis;
+	private DefaultBitInputStream bis;
 
 	private long awaitingRecords = -1L;
 
@@ -27,18 +27,36 @@ public class SequentialCramReader {
 	private SequenceBaseProvider referenceBaseProvider;
 
 	private RestoreBases restoreBases;
+	private final CramHeader header;
 
 	public SequentialCramReader(DataInputStream dis,
-			SequenceBaseProvider referenceBaseProvider) {
+			SequenceBaseProvider referenceBaseProvider, CramHeader header) {
 		this.dis = dis;
 		this.referenceBaseProvider = referenceBaseProvider;
+		this.header = header;
 		blockReader = new CramRecordBlockReader(dis);
+	}
+
+	public void reset() {
+		block = null;
+	}
+
+	public void skipBits(byte bits) throws IOException {
+		bis.reset();
+		bis.readBits(bits);
+	}
+
+	public byte getHangingBits() {
+		byte bitOffset = (byte) bis.getNofBufferedBits();
+		if (bitOffset > 0)
+			bitOffset = (byte) (8 - bitOffset);
+		return bitOffset;
 	}
 
 	public CramRecordBlock readBlock() throws IOException,
 			CramCompressionException, CramFormatException {
-		if (awaitingRecords > 0L)
-			throw new RuntimeException("Pending records found. ");
+		// if (awaitingRecords > 0L)
+		// throw new RuntimeException("Pending records found. ");
 		block = blockReader.read();
 		if (block == null) {
 			awaitingRecords = -1;
@@ -51,7 +69,7 @@ public class SequentialCramReader {
 		bis = new DefaultBitInputStream(dis);
 
 		if (referenceBaseProvider != null) {
-			recordCodec = recordCodecFactory.createRecordCodec(block,
+			recordCodec = recordCodecFactory.createRecordCodec(header, block,
 					referenceBaseProvider);
 			restoreBases = new RestoreBases(referenceBaseProvider,
 					block.getSequenceName());
@@ -61,10 +79,11 @@ public class SequentialCramReader {
 
 	public CramRecord readRecord() throws IOException {
 		if (block == null)
-			throw new RuntimeException("Read block before reading records.");
+			return null;
 		if (awaitingRecords < 1)
-			throw new RuntimeException("No more records in this block.");
+			return null;
 		CramRecord record = recordCodec.read(bis);
+		record.setSequenceName(block.getSequenceName());
 		if (record.isReadMapped())
 			restoreBases.restoreReadBases(record);
 		awaitingRecords--;
@@ -80,7 +99,7 @@ public class SequentialCramReader {
 			throws CramCompressionException {
 		this.referenceBaseProvider = referenceBaseProvider;
 		if (block != null) {
-			recordCodec = recordCodecFactory.createRecordCodec(block,
+			recordCodec = recordCodecFactory.createRecordCodec(header, block,
 					referenceBaseProvider);
 			restoreBases = new RestoreBases(referenceBaseProvider,
 					block.getSequenceName());

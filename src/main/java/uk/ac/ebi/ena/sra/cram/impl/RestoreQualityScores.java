@@ -51,6 +51,8 @@ public class RestoreQualityScores {
 				break;
 			}
 		}
+		
+		record.setQualityScores(scores) ;
 		return scores;
 	}
 }

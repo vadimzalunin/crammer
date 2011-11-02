@@ -17,6 +17,7 @@ import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.Utils;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
+import uk.ac.ebi.ena.sra.cram.impl.ReadFeatures2Cigar;
 import uk.ac.ebi.ena.sra.cram.impl.RestoreBases;
 
 public class Sam2CramRecordTest {
@@ -181,5 +182,34 @@ public class Sam2CramRecordTest {
 
 		assertThat(new String(restoredBases),
 				equalTo(new String(samRecord.getReadBases())));
+	}
+
+	@Test
+	public void test6() throws IOException {
+		System.out.println(new String(Utils.getBasesFromReferenceFile(
+				"y:/Data/psyringae/psyringae.fa",
+				"gi|66043271|ref|NC_007005.1|", 343, 40)));
+
+		String samRecordString = "HS3_6007:1:2103:12124:168409#3	99	MAL1	1	29	3S37M1I7M1D23M4S	=	1	595	CTGAACCCTGAACCCTAAACCCTAAACCCTAAACCCTAAACCCCTAAACCTAAACCCTAAACCCTGAACCTTCTA	HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHFHHHGHHGGHHHHFHHGHHEFFHHHEEHHFHHGHFHEHFEGE6	MD:Z:6A6G6G9A13^C23	XG:i:2	AM:i:29	NM:i:6	SM:i:29	XM:i:4	XO:i:2	QT:Z:HHHHHHHF	RT:Z:TTAGGCAT	XT:A:M";
+		String refString = "CTGAACCCTAAACCCTGAACCCTGAACCCTAAAACCTAAACCCCTAACACCTAAACCCTAAACCCTGAACCTTCTA";
+		byte[] referenceBases = refString.getBytes();
+
+		SAMRecord samRecord = createSAMRecord(samRecordString, referenceBases);
+
+		Sam2CramRecordFactory factory = new Sam2CramRecordFactory(
+				refString.getBytes());
+		CramRecord cramRecord = factory.createCramRecord(samRecord);
+		SequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
+				refString.getBytes());
+		byte[] restoredBases = new RestoreBases(provider,
+				samRecord.getReferenceName()).restoreReadBases(cramRecord);
+
+		assertThat(new String(restoredBases),
+				equalTo(new String(samRecord.getReadBases())));
+
+		ReadFeatures2Cigar rf2Cigar = new ReadFeatures2Cigar();
+
+		System.out.println(rf2Cigar.getCigar2(cramRecord.getReadFeatures(),
+				(int) cramRecord.getReadLength()));
 	}
 }

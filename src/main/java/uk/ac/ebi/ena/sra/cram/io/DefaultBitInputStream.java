@@ -5,52 +5,53 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
-/** Must not read from delegate unless no bits left in the buffer!!!
+/**
+ * Must not read from delegate unless no bits left in the buffer!!!
+ * 
  * @author vadim
- *
+ * 
  */
 public class DefaultBitInputStream extends DataInputStream implements
 		BitInputStream {
 
-	private int leftBits = 0;
+	private int nofBufferedBits = 0;
 	private int byteBuffer = 0;
+	private boolean endOfStream = false;
 
 	public DefaultBitInputStream(InputStream in) {
 		super(in);
 	}
 
 	public final boolean readBit() throws IOException {
-		if (--leftBits >= 0)
-			return ((byteBuffer >>> leftBits) & 1) == 1;
+		if (--nofBufferedBits >= 0)
+			return ((byteBuffer >>> nofBufferedBits) & 1) == 1;
 
-		leftBits = 7;
+		nofBufferedBits = 7;
 		byteBuffer = in.read();
-		if (byteBuffer == -1)
+		if (byteBuffer == -1) {
+			endOfStream = true;
 			throw new EOFException("End of stream.");
+		}
 
 		return ((byteBuffer >>> 7) & 1) == 1;
 	}
 
-	public final void alignToByte() throws IOException {
-		if (leftBits == 0)
-			return;
-		while (leftBits > 0)
-			readBit();
-	}
-
 	public final int readBits(int n) throws IOException {
+		if (n == 0) return 0 ;
 		int x = 0;
-		while (n > leftBits) {
-			n -= leftBits;
-			x |= rightBits(leftBits, byteBuffer) << n;
+		while (n > nofBufferedBits) {
+			n -= nofBufferedBits;
+			x |= rightBits(nofBufferedBits, byteBuffer) << n;
 			byteBuffer = in.read();
-			if (byteBuffer == -1)
+			if (byteBuffer == -1) {
+				endOfStream = true;
 				throw new EOFException("End of stream.");
+			}
 
-			leftBits = 8;
+			nofBufferedBits = 8;
 		}
-		leftBits -= n;
-		return x | rightBits(n, byteBuffer >>> leftBits);
+		nofBufferedBits -= n;
+		return x | rightBits(n, byteBuffer >>> nofBufferedBits);
 	}
 
 	private static final int rightBits(int n, int x) {
@@ -71,9 +72,18 @@ public class DefaultBitInputStream extends DataInputStream implements
 		}
 		return result;
 	}
-	
-	public void reset () {
-		leftBits = 0;
+
+	public void reset() {
+		nofBufferedBits = 0;
 		byteBuffer = 0;
+	}
+
+	@Override
+	public boolean endOfStream() throws IOException {
+		return endOfStream;
+	}
+
+	public int getNofBufferedBits() {
+		return nofBufferedBits;
 	}
 }

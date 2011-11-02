@@ -1,28 +1,35 @@
 package uk.ac.ebi.ena.sra.cram.impl;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
+import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
+import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
+import uk.ac.ebi.ena.sra.cram.io.ExposedByteArrayOutputStream;
 import uk.ac.ebi.ena.sra.cram.stats.CramStats;
 
 public class CramWriter {
 	private OutputStream os;
+	private ExposedByteArrayOutputStream writerOS;
 	private SequentialCramWriter writer;
 	private SequenceBaseProvider provider;
 	private CramStats stats;
 	private CramRecordBlock block;
-	private int maxRecordsPerBlock = 100000;
-	private Collection<CramReferenceSequence> sequences;
+	private int maxRecordsPerBlock = 1000000;
+	private List<CramReferenceSequence> sequences;
 	private boolean roundTripCheck;
 	private long bitsWritten;
 
@@ -31,33 +38,70 @@ public class CramWriter {
 	private final boolean captureSubstituionQualityScore;
 	private final boolean captureMaskedQualityScores;
 	private boolean autodump;
+	private CramHeader header;
+	private final List<ReadAnnotation> readAnnotations;
+	private final PrintStream statsPS;
+	private final List<CramReadGroup> cramReadGroups;
 
 	public CramWriter(OutputStream os, SequenceBaseProvider provider,
-			Collection<CramReferenceSequence> sequences,
-			boolean roundTripCheck, int maxBlockSize,
-			boolean captureUnammpedQualityScortes,
+			List<CramReferenceSequence> sequences, boolean roundTripCheck,
+			int maxRecordsPerBlock, boolean captureUnammpedQualityScortes,
 			boolean captureSubstituionQualityScore,
-			boolean captureMaskedQualityScores) {
+			boolean captureMaskedQualityScores,
+			List<ReadAnnotation> readAnnotations, PrintStream statsPS,
+			List<CramReadGroup> cramReadGroups) {
 		this.os = os;
 		this.provider = provider;
 		this.sequences = sequences;
 		this.roundTripCheck = roundTripCheck;
-		maxRecordsPerBlock = maxBlockSize;
+		this.maxRecordsPerBlock = maxRecordsPerBlock;
 		this.captureUnammpedQualityScortes = captureUnammpedQualityScortes;
 		this.captureSubstituionQualityScore = captureSubstituionQualityScore;
 		this.captureMaskedQualityScores = captureMaskedQualityScores;
+		this.readAnnotations = readAnnotations;
+		this.statsPS = statsPS;
+		this.cramReadGroups = cramReadGroups;
 	}
 
 	public void dump() {
 		writer.dump();
 	}
 
+	private void flushWriterOS() throws IOException {
+		// stream for in-memory compressed data:
+		ExposedByteArrayOutputStream compressedOS = new ExposedByteArrayOutputStream(
+				1024);
+		GZIPOutputStream gos = new GZIPOutputStream(compressedOS);
+
+		// compress data into memory:
+		gos.write(writerOS.getBuffer(), 0, writerOS.size());
+		gos.close();
+
+		writerOS.reset();
+
+		// write compresseed data size:
+		DataOutputStream dos = new DataOutputStream(os);
+		dos.writeInt(compressedOS.size());
+
+		// write compressed data:
+		dos.write(compressedOS.getBuffer(), 0, compressedOS.size());
+		dos.flush();
+	}
+
 	public void init() throws IOException {
-		CramHeader header = new CramHeader();
-		header.setVersion("0.3");
+		// magick:
+		os.write("CRAM".getBytes()) ;
+		
+		writerOS = new ExposedByteArrayOutputStream(1024 * 1024 * 10);
+
+		header = new CramHeader();
+		header.setVersion("0.5");
 		header.setReferenceSequences(sequences);
-		CramHeaderIO.write(header, os);
-		stats = new CramStats();
+		header.setReadAnnotations(readAnnotations);
+		header.setReadGroups(cramReadGroups);
+		CramHeaderIO.write(header, writerOS);
+		flushWriterOS();
+		stats = new CramStats(header, statsPS);
 		bitsWritten = 0;
 	}
 
@@ -80,11 +124,11 @@ public class CramWriter {
 		bitsWritten += purgeBlock(block);
 
 		provider = new ByteArraySequenceBaseProvider(bases);
-		writer = new SequentialCramWriter(os, provider);
+		writer = new SequentialCramWriter(writerOS, provider, header);
 
 		block.setSequenceName(sequence.getName());
 		block.setSequenceLength(sequence.getLength());
-		stats = new CramStats();
+		stats = new CramStats(header, statsPS);
 	}
 
 	public void addRecord(CramRecord record) throws IOException, CramException {
@@ -100,6 +144,9 @@ public class CramWriter {
 		long len = 0;
 		if (block != null && block.getRecords() != null
 				&& !block.getRecords().isEmpty()) {
+			if (statsPS != null)
+				statsPS.printf("Sequence name: %s; ref length=%d\n",
+						block.getSequenceName(), block.getSequenceLength());
 			stats.adjustBlock(block);
 			block.setRecordCount(block.getRecords().size());
 			log.debug(block.toString());
@@ -110,7 +157,7 @@ public class CramWriter {
 					(float) len / stats.getBaseCount()));
 		}
 
-		stats = new CramStats();
+		stats = new CramStats(header, statsPS);
 		this.block = new CramRecordBlock();
 		if (block != null) {
 			this.block.setSequenceName(block.getSequenceName());
@@ -139,8 +186,10 @@ public class CramWriter {
 				len += writer.write(record);
 
 		writer.flush();
-		
-		if (autodump) dump () ;
+		flushWriterOS();
+
+		if (autodump)
+			dump();
 
 		return len;
 	}

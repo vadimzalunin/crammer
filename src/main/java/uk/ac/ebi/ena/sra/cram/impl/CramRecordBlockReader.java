@@ -25,8 +25,10 @@ class CramRecordBlockReader {
 		dis.readFully(actuallBeginBytes);
 		if (!Arrays.equals(expectedBytes, actuallBeginBytes))
 			throw new CramFormatException("Expecting bytes "
-					+ Arrays.toString(expectedBytes) + " but got "
-					+ Arrays.toString(actuallBeginBytes));
+					+ Arrays.toString(expectedBytes) + " ("
+					+ new String(expectedBytes) + ")" + " but got "
+					+ Arrays.toString(actuallBeginBytes) + " ("
+					+ new String(actuallBeginBytes) + ")");
 	}
 
 	/**
@@ -39,7 +41,7 @@ class CramRecordBlockReader {
 	public CramRecordBlock read() throws IOException, CramFormatException {
 		CramRecordBlock block = new CramRecordBlock();
 		try {
-			ensureExpectedBytes("BLOCKBEGIN".getBytes()) ;
+			ensureExpectedBytes("BLOCKBEGIN".getBytes());
 			block.setSequenceName(dis.readUTF());
 		} catch (EOFException e) {
 			return null;
@@ -48,15 +50,15 @@ class CramRecordBlockReader {
 		block.setFirstRecordPosition(dis.readLong());
 		block.setRecordCount(dis.readLong());
 		block.setReadLength(dis.readInt());
-		 block.setPositiveStrandBasePositionReversed(dis.readBoolean());
-		 block.setNegativeStrandBasePositionReversed(dis.readBoolean());
-		 block.setUnmappedReadQualityScoresIncluded(dis.readBoolean());
-		 block.setSubstitutionQualityScoresIncluded(dis.readBoolean());
-		 block.setMaskedQualityScoresIncluded(dis.readBoolean());
+		block.setPositiveStrandBasePositionReversed(dis.readBoolean());
+		block.setNegativeStrandBasePositionReversed(dis.readBoolean());
+		block.setUnmappedReadQualityScoresIncluded(dis.readBoolean());
+		block.setSubstitutionQualityScoresIncluded(dis.readBoolean());
+		block.setMaskedQualityScoresIncluded(dis.readBoolean());
 
-		ensureExpectedBytes("COMPRESSIONBEGIN".getBytes()) ;
+		ensureExpectedBytes("COMPRESSIONBEGIN".getBytes());
 		block.setCompression(readCompression());
-		ensureExpectedBytes("BLOCKEND".getBytes()) ;
+		ensureExpectedBytes("BLOCKEND".getBytes());
 		return block;
 	}
 
@@ -96,6 +98,15 @@ class CramRecordBlockReader {
 
 		compression.setReadLengthAlphabet(readIntArray());
 		compression.setReadLengthFrequencies(readIntArray());
+
+		compression.setReadAnnotationIndexes(readIntArray());
+		compression.setReadAnnotationFrequencies(readIntArray());
+
+		compression.setReadGroupIndexes(readIntArray());
+		compression.setReadGroupFrequencies(readIntArray());
+
+		compression.setMappingQualityAlphabet(readByteArray());
+		compression.setMappingQualityFrequencies(readIntArray());
 
 		return compression;
 	}

@@ -24,9 +24,22 @@ public class CramCompression implements Serializable {
 	private byte[] readFeatureAlphabet;
 	private int[] readFeatureFrequencies;
 
+	private int[] readAnnotationIndexes;
+	private int[] readAnnotationFrequencies;
+
+	private int[] readGroupIndexes;
+	private int[] readGroupFrequencies;
+
+	private byte[] mappingQualityAlphabet;
+	private int[] mappingQualityFrequencies;
+
 	public CramCompression() {
-		setBaseAlphabet("ACGTN".getBytes());
-		setBaseFrequencies(new int[] { 100, 90, 80, 75, 10 });
+	}
+
+	public static CramCompression createDefaultCramCompression() {
+		CramCompression cc = new CramCompression();
+		cc.setBaseAlphabet("ACGTN".getBytes());
+		cc.setBaseFrequencies(new int[] { 100, 90, 80, 75, 10 });
 
 		byte[] scoreAlphabet = new byte[73];
 		int[] scoreFreqs = new int[scoreAlphabet.length];
@@ -35,23 +48,26 @@ public class CramCompression implements Serializable {
 			scoreFreqs[i] = 100 + i;
 		}
 
-		setReadLengthAlphabet(new int[] { 36 });
-		setReadLengthFrequencies(new int[] { 100 });
+		cc.setReadLengthAlphabet(new int[] { 36 });
+		cc.setReadLengthFrequencies(new int[] { 100 });
 
-		readFeatureAlphabet = "$SIDN".getBytes();
-		readFeatureFrequencies = new int[] { 100, 90, 10, 10, 1 };
+		cc.readFeatureAlphabet = "$SIDN".getBytes();
+		cc.readFeatureFrequencies = new int[] { 100, 90, 10, 10, 1 };
 
-		setScoreFrequencies(scoreFreqs);
+		cc.setScoreFrequencies(scoreFreqs);
 
-		setDelLengthEncoding(new Encoding(EncodingAlgorithm.GOLOMB_RICE,
+		cc.setDelLengthEncoding(new Encoding(EncodingAlgorithm.GOLOMB_RICE,
 				"1,0,1"));
-		setInReadPosEncoding(new Encoding(EncodingAlgorithm.GOLOMB_RICE,
+		cc.setInReadPosEncoding(new Encoding(EncodingAlgorithm.GOLOMB_RICE,
 				"1,0,1"));
-		setInSeqPosEncoding(new Encoding(EncodingAlgorithm.GOLOMB_RICE, "1,0,1"));
-		setReadLengthEncoding(new Encoding(EncodingAlgorithm.GOLOMB_RICE,
+		cc.setInSeqPosEncoding(new Encoding(EncodingAlgorithm.GOLOMB_RICE,
 				"1,0,1"));
-		setRecordsToNextFragmentEncoding(new Encoding(
+		cc.setReadLengthEncoding(new Encoding(EncodingAlgorithm.GOLOMB_RICE,
+				"1,0,1"));
+		cc.setRecordsToNextFragmentEncoding(new Encoding(
 				EncodingAlgorithm.GOLOMB_RICE, "1,0,1"));
+
+		return cc;
 	}
 
 	@Override
@@ -92,6 +108,26 @@ public class CramCompression implements Serializable {
 				foe.getReadFeatureAlphabet()))
 			return false;
 
+		if (!Arrays.equals(getReadAnnotationFrequencies(),
+				foe.getReadAnnotationFrequencies()))
+			return false;
+		if (!Arrays.equals(getReadAnnotationIndexes(),
+				foe.getReadAnnotationIndexes()))
+			return false;
+
+		if (!Arrays.equals(getReadGroupFrequencies(),
+				foe.getReadGroupFrequencies()))
+			return false;
+		if (!Arrays.equals(getReadGroupIndexes(), foe.getReadGroupIndexes()))
+			return false;
+
+		if (!Arrays.equals(getMappingQualityFrequencies(),
+				foe.getMappingQualityFrequencies()))
+			return false;
+		if (!Arrays.equals(getMappingQualityAlphabet(),
+				foe.getMappingQualityAlphabet()))
+			return false;
+
 		return true;
 	}
 
@@ -118,19 +154,38 @@ public class CramCompression implements Serializable {
 		sb.append("scoreAlphabet=").append(Arrays.toString(getScoreAlphabet()))
 				.append(", ");
 		sb.append("scoreFrequencies=")
-				.append(Arrays.toString(getScoreFrequencies())).append("], ");
+				.append(Arrays.toString(getScoreFrequencies())).append(", ");
 
 		sb.append("readLengthAlphabet=")
 				.append(Arrays.toString(getReadLengthAlphabet())).append(", ");
 		sb.append("readLengthFrequencies=")
 				.append(Arrays.toString(getReadLengthFrequencies()))
-				.append("], ");
+				.append(", ");
 
 		sb.append("readFeatureAlphabet=")
 				.append(Arrays.toString(getReadFeatureAlphabet())).append(", ");
 		sb.append("readFeatureFrequencies=")
 				.append(Arrays.toString(getReadFeatureFrequencies()))
-				.append("]");
+				.append(", ");
+
+		sb.append("readAnnotationIndexes=")
+				.append(Arrays.toString(getReadAnnotationIndexes()))
+				.append(", ");
+		sb.append("readAnnotationFrequencies=")
+				.append(Arrays.toString(getReadAnnotationFrequencies()))
+				.append(", ");
+
+		sb.append("mappingQualityAlphabet=")
+				.append(Arrays.toString(getMappingQualityAlphabet()))
+				.append(", ");
+		sb.append("mappingQualityFrequencies=")
+				.append(Arrays.toString(getMappingQualityFrequencies()))
+				.append(", ");
+
+		sb.append("readGroupIndexes=")
+				.append(Arrays.toString(getReadGroupIndexes())).append(", ");
+		sb.append("readGroupFrequencies=").append(
+				Arrays.toString(getReadGroupFrequencies()));
 
 		return sb.toString();
 	}
@@ -238,5 +293,53 @@ public class CramCompression implements Serializable {
 
 	public void setReadFeatureFrequencies(int[] readFeatureFrequencies) {
 		this.readFeatureFrequencies = readFeatureFrequencies;
+	}
+
+	public int[] getReadAnnotationIndexes() {
+		return readAnnotationIndexes;
+	}
+
+	public void setReadAnnotationIndexes(int[] readAnnotationIndexes) {
+		this.readAnnotationIndexes = readAnnotationIndexes;
+	}
+
+	public int[] getReadAnnotationFrequencies() {
+		return readAnnotationFrequencies;
+	}
+
+	public void setReadAnnotationFrequencies(int[] readAnnotationFrequencies) {
+		this.readAnnotationFrequencies = readAnnotationFrequencies;
+	}
+
+	public int[] getReadGroupIndexes() {
+		return readGroupIndexes;
+	}
+
+	public void setReadGroupIndexes(int[] readGroupIndexes) {
+		this.readGroupIndexes = readGroupIndexes;
+	}
+
+	public int[] getReadGroupFrequencies() {
+		return readGroupFrequencies;
+	}
+
+	public void setReadGroupFrequencies(int[] readGroupFrequencies) {
+		this.readGroupFrequencies = readGroupFrequencies;
+	}
+
+	public byte[] getMappingQualityAlphabet() {
+		return mappingQualityAlphabet;
+	}
+
+	public void setMappingQualityAlphabet(byte[] mappingQualityAlphabet) {
+		this.mappingQualityAlphabet = mappingQualityAlphabet;
+	}
+
+	public int[] getMappingQualityFrequencies() {
+		return mappingQualityFrequencies;
+	}
+
+	public void setMappingQualityFrequencies(int[] mappingQualityFrequencies) {
+		this.mappingQualityFrequencies = mappingQualityFrequencies;
 	}
 }

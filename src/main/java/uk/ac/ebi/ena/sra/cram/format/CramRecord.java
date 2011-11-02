@@ -6,6 +6,8 @@ import java.util.List;
 
 public class CramRecord {
 
+	private Collection<ReadAnnotation> annotations;
+
 	private long alignmentStart;
 	private boolean perfectMatch;
 	private boolean negativeStrand;
@@ -14,12 +16,22 @@ public class CramRecord {
 	private long readLength;
 
 	private boolean lastFragment;
-	private long recordsToNextFragment;
+	private long recordsToNextFragment = -1;
 
 	private byte[] readBases;
 	private byte[] qualityScores;
 
 	private List<ReadFeature> readFeatures;
+
+	private int readGroupID = 0;
+
+	private boolean firstInPair = false;
+	private boolean properPair = false;
+	private boolean duplicate = false;
+
+	private byte mappingQuality;
+	
+	private String sequenceName ;
 
 	public long getAlignmentStart() {
 		return alignmentStart;
@@ -66,6 +78,10 @@ public class CramRecord {
 			return false;
 		if (recordsToNextFragment != r.recordsToNextFragment)
 			return false;
+		if (firstInPair != r.firstInPair)
+			return false;
+		if (mappingQuality != r.mappingQuality)
+			return false;
 
 		if (!deepEquals(readFeatures, r.readFeatures))
 			return false;
@@ -93,7 +109,9 @@ public class CramRecord {
 		sb.append("; alignmentStart=").append(alignmentStart);
 		sb.append("; negativeStrand=").append(negativeStrand);
 		sb.append("; perfectMatch=").append(perfectMatch);
-		
+		sb.append("; firstInPair=").append(firstInPair);
+		sb.append("; mappingQuality=").append(mappingQuality);
+
 		if (readFeatures != null)
 			for (ReadFeature feature : readFeatures)
 				sb.append("; ").append(feature.toString());
@@ -162,5 +180,61 @@ public class CramRecord {
 
 	public void setQualityScores(byte[] qualityScores) {
 		this.qualityScores = qualityScores;
+	}
+
+	public Collection<ReadAnnotation> getAnnotations() {
+		return annotations;
+	}
+
+	public void setAnnotations(Collection<ReadAnnotation> annotations) {
+		this.annotations = annotations;
+	}
+
+	public int getReadGroupID() {
+		return readGroupID;
+	}
+
+	public void setReadGroupID(int readGroupID) {
+		this.readGroupID = readGroupID;
+	}
+
+	public boolean isFirstInPair() {
+		return firstInPair;
+	}
+
+	public void setFirstInPair(boolean firstInPair) {
+		this.firstInPair = firstInPair;
+	}
+
+	public byte getMappingQuality() {
+		return mappingQuality;
+	}
+
+	public void setMappingQuality(byte mappingQuality) {
+		this.mappingQuality = mappingQuality;
+	}
+
+	public boolean isProperPair() {
+		return properPair;
+	}
+
+	public void setProperPair(boolean properPair) {
+		this.properPair = properPair;
+	}
+
+	public boolean isDuplicate() {
+		return duplicate;
+	}
+
+	public void setDuplicate(boolean duplicate) {
+		this.duplicate = duplicate;
+	}
+
+	public String getSequenceName() {
+		return sequenceName;
+	}
+
+	public void setSequenceName(String sequenceName) {
+		this.sequenceName = sequenceName;
 	}
 }

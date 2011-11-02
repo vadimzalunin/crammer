@@ -17,6 +17,7 @@ public class CramRecordFormat {
 	private boolean eolFound = false;
 	private boolean eofFound = false;
 	private ReadFeaturesFormat rfFormat = new DefaultReadFeaturesFormat();
+	private String sequenceID = null;
 
 	public static void main(String[] args) throws IOException {
 
@@ -40,6 +41,13 @@ public class CramRecordFormat {
 
 	public String writeRecord(CramRecord record) throws IOException {
 		StringBuilder sb = new StringBuilder();
+		if (sequenceID != null)
+			sb.append(sequenceID);
+		else
+			sb.appendCodePoint(NO_VALUE);
+
+		sb.appendCodePoint(FIELD_SEPARATOR);
+
 		if (record.getAlignmentStart() > 0)
 			sb.append(record.getAlignmentStart());
 		else
@@ -100,6 +108,12 @@ public class CramRecordFormat {
 
 		int i = 0;
 		String chunk;
+
+		chunk = chunks[i++];
+		if (isNotEmpty(chunk)) {
+			sequenceID = chunk;
+		} else
+			sequenceID = null;
 
 		chunk = chunks[i++];
 		if (isNotEmpty(chunk)) {
@@ -217,5 +231,13 @@ public class CramRecordFormat {
 		byte[] bytes = new byte[buf.limit()];
 		buf.get(bytes);
 		return bytes;
+	}
+
+	public String getSequenceID() {
+		return sequenceID;
+	}
+
+	public void setSequenceID(String sequenceID) {
+		this.sequenceID = sequenceID;
 	}
 }

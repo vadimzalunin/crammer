@@ -96,7 +96,7 @@ public class TRAMRoundTripTests {
 		ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
 				refBases);
 		SequentialCramReader reader = new SequentialCramReader(cramDIS,
-				provider);
+				provider, cramHeader);
 
 		System.out.println();
 		CramRecordFormat format = new CramRecordFormat();
@@ -159,33 +159,40 @@ public class TRAMRoundTripTests {
 		int readCounter = 1;
 		while ((line = reader.readLine()) != null) {
 			CramRecord record = format.fromString(line);
-
 			String derivedString = format.writeRecord(record);
-
 			assertThat(derivedString, notNullValue());
 			assertThat(derivedString, equalTo(line));
-
 			SAMRecord samRecord = iterator.next();
 			byte[] restoredReadBases;
 			if (record.isReadMapped())
 				restoredReadBases = restoreBases.restoreReadBases(record);
 			else
 				restoredReadBases = record.getReadBases();
-
-			assertThat("Mismatch for record: " + samRecord.getReadName()
-					+ " for read number " + readCounter, new String(
-					restoredReadBases),
-					equalTo(new String(samRecord.getReadBases())));
-
-			byte[] restoredScore = restoreQualityScores
-					.restoreQualityScores(record);
-			byte[] bamScores = samRecord.getBaseQualities();
-			for (int i = 0; i < restoredScore.length; i++) {
-				if (restoredScore[i] != 32)
-					assertThat(restoredScore[i], is((byte) (bamScores[i] + 33)));
+			try {
+				assertThat(
+						"Bases mismatch for record: " + samRecord.getReadName()
+								+ " for read number " + readCounter,
+						new String(restoredReadBases), equalTo(new String(
+								samRecord.getReadBases())));
+				byte[] restoredScore = restoreQualityScores
+						.restoreQualityScores(record);
+				byte[] bamScores = samRecord.getBaseQualities();
+				for (int i = 0; i < restoredScore.length; i++) {
+					if (restoredScore[i] != 32)
+						assertThat(
+								"QScores mismatch for record: "
+										+ samRecord.getReadName()
+										+ " for read number " + readCounter,
+								restoredScore[i],
+								is((byte) (bamScores[i] + 33)));
+				}
+				readCounter++;
+			} catch (AssertionError e) {
+				System.err.println(line);
+				System.err.println(derivedString);
+				System.err.println(samRecord.format());
+				throw e ;
 			}
-
-			readCounter++;
 		}
 	}
 }

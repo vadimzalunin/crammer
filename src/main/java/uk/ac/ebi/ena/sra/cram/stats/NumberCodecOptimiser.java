@@ -8,7 +8,7 @@ import uk.ac.ebi.ena.sra.cram.format.compression.EncodingAlgorithm;
 import uk.ac.ebi.ena.sra.cram.format.compression.NumberCodecFactory;
 import uk.ac.ebi.ena.sra.cram.format.compression.NumberCodecStub;
 
-class NumberCodecOptimiser {
+public class NumberCodecOptimiser {
 
 	private NumberCodecStub[] stubs;
 	private long lengths[];

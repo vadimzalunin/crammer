@@ -18,9 +18,12 @@ import uk.ac.ebi.ena.sra.compression.huffman.HuffmanCode;
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanLeaf;
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanNode;
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanTree;
+import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
+import uk.ac.ebi.ena.sra.cram.io.DefaultBitOutputStream;
 
 import com.colloquial.arithcode.AdaptiveUnigramModel;
 import com.colloquial.arithcode.ArithCodeOutputStream;
+import com.colloquial.arithcode.ArithEncoder;
 import com.colloquial.arithcode.BitOutput;
 
 public class TestArithmeticCode {
@@ -30,9 +33,9 @@ public class TestArithmeticCode {
 		// PPMModel modelIn = new PPMModel(1);
 		// UniformModel modelIn = UniformModel.MODEL ;
 		ByteArrayOutputStream arithCodeBaos = new ByteArrayOutputStream();
-		BitOutput bo = new BitOutput(arithCodeBaos);
-		ArithCodeOutputStream arithCodeOutputStream = new ArithCodeOutputStream(
-				bo, modelIn);
+		BitOutputStream bos = new DefaultBitOutputStream(arithCodeBaos) ;
+		ArithEncoder encoder = new ArithEncoder(bos) ;
+		ArithCodeOutputStream arithCodeOutputStream = new ArithCodeOutputStream(encoder, modelIn);
 
 		ByteArrayOutputStream gzipBaos = new ByteArrayOutputStream();
 		GZIPOutputStream gzipOS = new GZIPOutputStream(gzipBaos);

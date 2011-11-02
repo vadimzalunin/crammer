@@ -62,6 +62,8 @@ public class RestoreBases {
 				|| record.getReadFeatures().isEmpty()) {
 			for (posInRead = 1; posInRead <= readLength; posInRead++)
 				bases[posInRead - 1] = refBases[posInSeq++];
+			
+			record.setReadBases(bases) ;
 			return bases;
 		}
 		List<ReadFeature> variations = record.getReadFeatures();
@@ -115,6 +117,8 @@ public class RestoreBases {
 				break;
 			}
 		}
+		
+		record.setReadBases(bases) ;
 		return bases;
 	}
 

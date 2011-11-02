@@ -19,8 +19,8 @@ class CramRecordBlockWriter {
 	public long write(CramRecordBlock block) throws IOException {
 		DataOutputStream dos = new DataOutputStream(delegate);
 
-		dos.write("BLOCKBEGIN".getBytes()) ;
-		
+		dos.write("BLOCKBEGIN".getBytes());
+
 		dos.writeUTF(block.getSequenceName());
 		dos.writeInt(block.getSequenceLength());
 
@@ -33,9 +33,9 @@ class CramRecordBlockWriter {
 		dos.writeBoolean(block.isSubstitutionQualityScoresIncluded());
 		dos.writeBoolean(block.isMaskedQualityScoresIncluded());
 
-		dos.write("COMPRESSIONBEGIN".getBytes()) ;
+		dos.write("COMPRESSIONBEGIN".getBytes());
 		writeCramCompression(dos, block.getCompression());
-		dos.write("BLOCKEND".getBytes()) ;
+		dos.write("BLOCKEND".getBytes());
 		dos.flush();
 		return dos.size() * 8;
 	}
@@ -74,6 +74,15 @@ class CramRecordBlockWriter {
 
 		writeArray(os, compression.getReadLengthAlphabet());
 		writeArray(os, compression.getReadLengthFrequencies());
+
+		writeArray(os, compression.getReadAnnotationIndexes());
+		writeArray(os, compression.getReadAnnotationFrequencies());
+		
+		writeArray(os, compression.getReadGroupIndexes());
+		writeArray(os, compression.getReadGroupFrequencies());
+		
+		writeArray(os, compression.getMappingQualityAlphabet());
+		writeArray(os, compression.getMappingQualityFrequencies());
 	}
 
 	private static final void writeEncoding(DataOutputStream os,

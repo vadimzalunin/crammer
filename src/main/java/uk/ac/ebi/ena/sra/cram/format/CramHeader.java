@@ -1,12 +1,13 @@
 package uk.ac.ebi.ena.sra.cram.format;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
 
 public class CramHeader implements Serializable {
 	private String version;
-	private Collection<CramReferenceSequence> referenceSequences;
+	private List<CramReferenceSequence> referenceSequences;
+	private List<ReadAnnotation> readAnnotations;
+	private List<CramReadGroup> readGroups;
 
 	public String getVersion() {
 		return version;
@@ -16,12 +17,12 @@ public class CramHeader implements Serializable {
 		this.version = version;
 	}
 
-	public Collection<CramReferenceSequence> getReferenceSequences() {
+	public List<CramReferenceSequence> getReferenceSequences() {
 		return referenceSequences;
 	}
 
 	public void setReferenceSequences(
-			Collection<CramReferenceSequence> referenceSequences) {
+			List<CramReferenceSequence> referenceSequences) {
 		this.referenceSequences = referenceSequences;
 	}
 
@@ -37,5 +38,22 @@ public class CramHeader implements Serializable {
 			sb.append(s.toString());
 		}
 		return sb.toString();
+	}
+
+	public List<ReadAnnotation> getReadAnnotations() {
+		return readAnnotations;
+	}
+
+	public void setReadAnnotations(
+			List<ReadAnnotation> readAnnotationDictionary) {
+		this.readAnnotations = readAnnotationDictionary;
+	}
+
+	public List<CramReadGroup> getReadGroups() {
+		return readGroups;
+	}
+
+	public void setReadGroups(List<CramReadGroup> readGroups) {
+		this.readGroups = readGroups;
 	}
 }

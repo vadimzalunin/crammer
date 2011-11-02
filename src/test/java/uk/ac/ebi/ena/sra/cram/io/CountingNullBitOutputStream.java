@@ -48,4 +48,8 @@ public class CountingNullBitOutputStream implements BitOutputStream {
 	public final void flush() throws IOException {
 	}
 
+	@Override
+	public void close() throws IOException {
+	}
+
 }

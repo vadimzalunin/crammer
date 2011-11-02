@@ -18,6 +18,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
+import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
@@ -37,10 +38,8 @@ public class CramRecordCodecRoundTripTests {
 	@Parameters
 	public static Collection<Object[]> data() {
 		Object[][] data = new Object[][] {
-				{ "123	*	*	POS	*	*	*" },
-				{ "124	36	*	POS	M2w!x!y!z!T$M2IAC.M5D2A!C!M13A!C!M2	*	*" },
-				{ "*	34	*	NEG	*	GTGCGGATGCTCTCCTCCAGTTTGGGCTCGTGGTGTGTGTCCAGCAGGGACTGG	BBBBBBB=BBBBBBBBBBBBBBBB?BBBBB?BB?BBBBB?BBBBB?BBB??BBB" },
-
+				{ "1	223022	54	*	POS	M26D1M21y M5g 	*	*" },
+				{ "*	*	16	*	POS	*	AAAAAAAAAAAAAAAA	!!!!!!!!!!!!!!!!" },
 		};
 		return Arrays.asList(data);
 	}
@@ -50,18 +49,18 @@ public class CramRecordCodecRoundTripTests {
 		CramRecordFormat format = new CramRecordFormat();
 		CramRecord record = format.fromString(recordSpec);
 
-		CramStats stats = new CramStats();
+		CramStats stats = new CramStats(new CramHeader(), null);
 		Logger.getLogger(CramStats.class).setLevel(Level.ERROR);
 		stats.addRecord(record);
 
 		RecordCodecFactory factory = new RecordCodecFactory();
 		CramRecordBlock block = new CramRecordBlock();
 		block.setUnmappedReadQualityScoresIncluded(true) ;
-		CramCompression compression = new CramCompression();
+		CramCompression compression = CramCompression.createDefaultCramCompression() ;
 		block.setCompression(compression);
 
 		stats.adjustBlock(block);
-		BitCodec<CramRecord> codec = factory.createRecordCodec(block, null);
+		BitCodec<CramRecord> codec = factory.createRecordCodec(null, block, null);
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);

@@ -8,7 +8,6 @@ public class ByteArraySequenceBaseProvider implements SequenceBaseProvider {
 	private byte[] sequence;
 
 	public ByteArraySequenceBaseProvider(byte[] sequence) {
-		super();
 		this.sequence = sequence;
 	}
 

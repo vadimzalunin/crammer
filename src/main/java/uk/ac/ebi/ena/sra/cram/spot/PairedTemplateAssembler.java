@@ -14,6 +14,7 @@ public class PairedTemplateAssembler {
 
 	private static class Record {
 		SAMRecord samRecord;
+		SAMRecord mateRecord;
 		int nofRecordsToNextFragment = -1;
 		int index = -1;
 	}
@@ -23,14 +24,25 @@ public class PairedTemplateAssembler {
 	private int recordHorizon;
 
 	private int distanceToNextFragment = -1;
+	private SAMRecord mateRecord;
+
+	private String lastAddedReadSeqName;
+
+	public PairedTemplateAssembler() {
+		this(10000, 10000);
+	}
 
 	public PairedTemplateAssembler(int alignmentHorizon, int recordHorizon) {
-		super();
 		this.alignmentHorizon = alignmentHorizon;
 		this.recordHorizon = recordHorizon;
 	}
 
+	public boolean isEmpty() {
+		return recordQueue.isEmpty();
+	}
+
 	public void addSAMRecord(SAMRecord samRecord) {
+		lastAddedReadSeqName = samRecord.getReferenceName() ;
 		counter++;
 
 		Record record = new Record();
@@ -38,25 +50,25 @@ public class PairedTemplateAssembler {
 		record.samRecord = samRecord;
 		recordQueue.add(record);
 
-		if (recordsByNameMap.containsKey(samRecord.getReadName())) {
-			Record foundRecord = recordsByNameMap.get(samRecord.getReadName());
+		String spotName = getSpotName(samRecord.getReadName());
 
-//			/*
-//			 * The following can be simplified because there is no need to
-//			 * compare the whole record for equality. We need to know if the
-//			 * record is the same (which came from another reader) or is it the
-//			 * mate pair with the same name.
-//			 */
-//			if (samRecord.equals(foundRecord.samRecord))
-//				return;
+		if (recordsByNameMap.containsKey(spotName)) {
+			Record foundRecord = recordsByNameMap.remove(spotName);
 
 			foundRecord.nofRecordsToNextFragment = record.index
 					- foundRecord.index;
-			recordsByNameMap.remove(samRecord.getReadName());
+			foundRecord.mateRecord = samRecord;
 			record.nofRecordsToNextFragment = -2;
+			record.mateRecord = foundRecord.samRecord;
 		} else
-			recordsByNameMap.put(samRecord.getReadName(), record);
+			recordsByNameMap.put(spotName, record);
 
+	}
+
+	private static final String getSpotName(String readName) {
+		if (readName.endsWith(".1") || readName.endsWith(".2"))
+			return readName.substring(0, readName.length() - 2);
+		return readName;
 	}
 
 	public SAMRecord nextSAMRecord() {
@@ -64,6 +76,11 @@ public class PairedTemplateAssembler {
 		if (record == null)
 			return null;
 		SAMRecord samRecord = record.samRecord;
+		if (!samRecord.getReferenceName().equals(lastAddedReadSeqName))
+			return fetchNextSAMRecord();
+
+		if (record.nofRecordsToNextFragment == -2)
+			return fetchNextSAMRecord();
 
 		if (!samRecord.getReadPairedFlag())
 			return fetchNextSAMRecord();
@@ -74,8 +91,9 @@ public class PairedTemplateAssembler {
 		if ((samRecord.getMateAlignmentStart() - samRecord.getAlignmentStart()) > alignmentHorizon)
 			return fetchNextSAMRecord();
 
-		if (samRecord.getMateAlignmentStart() < samRecord.getAlignmentStart())
-			return fetchNextSAMRecord();
+		// if (samRecord.getMateAlignmentStart() <
+		// samRecord.getAlignmentStart())
+		// return fetchNextSAMRecord();
 
 		if (recordQueue.size() > recordHorizon)
 			return fetchNextSAMRecord();
@@ -89,12 +107,23 @@ public class PairedTemplateAssembler {
 			return null;
 
 		distanceToNextFragment = record.nofRecordsToNextFragment;
-		recordsByNameMap.remove(record.samRecord.getReadName());
+		mateRecord = record.mateRecord;
+		Record remove = recordsByNameMap.remove(getSpotName(record.samRecord
+				.getReadName()));
+		// System.out
+		// .printf("Fetched: distance=%d; read name=%s; remove.distance=%d; remove.read name=%s\n",
+		// distanceToNextFragment, record.samRecord.getReadName(),
+		// remove == null ? null : remove.nofRecordsToNextFragment,
+		// remove == null ? null : remove.samRecord.getReadName());
 		return record.samRecord;
 	}
 
 	public int distanceToNextFragment() {
 		return distanceToNextFragment;
+	}
+
+	public SAMRecord getMateRecord() {
+		return mateRecord;
 	}
 
 	public void clear() {

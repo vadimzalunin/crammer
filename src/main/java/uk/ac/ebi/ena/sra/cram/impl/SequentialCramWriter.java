@@ -1,7 +1,6 @@
 package uk.ac.ebi.ena.sra.cram.impl;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
@@ -12,12 +11,15 @@ import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.MeasuringCodec;
+import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
 import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
+import uk.ac.ebi.ena.sra.cram.io.DebuggingBitOuputStream;
 import uk.ac.ebi.ena.sra.cram.io.DefaultBitInputStream;
 import uk.ac.ebi.ena.sra.cram.io.DefaultBitOutputStream;
+import uk.ac.ebi.ena.sra.cram.io.ExposedByteArrayOutputStream;
 
 public class SequentialCramWriter {
 	private RecordCodecFactory recordCodecFactory = new RecordCodecFactory();
@@ -39,12 +41,15 @@ public class SequentialCramWriter {
 	private RestoreBases restoreBases;
 
 	private DefaultMutableTreeNode rootNode;
+	private final CramHeader header;
 
 	public SequentialCramWriter(OutputStream os,
-			SequenceBaseProvider referenceBaseProvider) {
+			SequenceBaseProvider referenceBaseProvider, CramHeader header) {
 		this.os = os;
 		this.referenceBaseProvider = referenceBaseProvider;
+		this.header = header;
 		bos = new DefaultBitOutputStream(os);
+//		bos = new DebuggingBitOuputStream(System.out, '\n') ;
 		blockWriter = new CramRecordBlockWriter(os);
 	}
 
@@ -55,15 +60,15 @@ public class SequentialCramWriter {
 		restoreBases = new RestoreBases(referenceBaseProvider,
 				block.getSequenceName());
 
-		rootNode = recordCodecFactory.buildCodecTree(block,
+		rootNode = recordCodecFactory.buildCodecTree(header, block,
 				referenceBaseProvider);
 		checkRecordReadCodec = (BitCodec<CramRecord>) rootNode.getUserObject();
 
-		rootNode = recordCodecFactory.buildCodecTree(block,
+		rootNode = recordCodecFactory.buildCodecTree(header, block,
 				referenceBaseProvider);
 		checkRecordWriteCodec = (BitCodec<CramRecord>) rootNode.getUserObject();
 
-		rootNode = recordCodecFactory.buildCodecTree(block,
+		rootNode = recordCodecFactory.buildCodecTree(header, block,
 				referenceBaseProvider);
 		recordCodec = (BitCodec<CramRecord>) rootNode.getUserObject();
 
@@ -122,17 +127,5 @@ public class SequentialCramWriter {
 								/ firstCodecBits);
 		}
 		recordCodecFactory.dump(rootNode);
-	}
-
-	public static class ExposedByteArrayOutputStream extends
-			ByteArrayOutputStream {
-
-		public ExposedByteArrayOutputStream(int size) {
-			super(size);
-		}
-
-		public byte[] getBuffer() {
-			return buf;
-		}
 	}
 }

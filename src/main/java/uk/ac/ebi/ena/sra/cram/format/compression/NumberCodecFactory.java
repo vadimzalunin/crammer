@@ -5,6 +5,8 @@ public class NumberCodecFactory {
 	public static NumberCodecStub createStub(EncodingAlgorithm encoding)
 			throws CramCompressionException {
 		switch (encoding) {
+		case NULL:
+			return new NullCodecStub();
 		case GOLOMB:
 			return new GolombCodecStub();
 		case UNARY:
@@ -19,7 +21,8 @@ public class NumberCodecFactory {
 			return new BetaCodecStub();
 
 		default:
-			throw new CramCompressionException("Unsupported codec: " + encoding);
+			break ;
 		}
+		throw new CramCompressionException("Unsupported codec: " + encoding);
 	}
 }

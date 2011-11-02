@@ -16,7 +16,6 @@ import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.Utils;
 import uk.ac.ebi.ena.sra.cram.encoding.BaseChange;
 import uk.ac.ebi.ena.sra.cram.encoding.BaseChangeCodec;
-import uk.ac.ebi.ena.sra.cram.encoding.BaseSequenceCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.ByteArrayHuffmanCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.CramRecordCodec;
@@ -25,21 +24,26 @@ import uk.ac.ebi.ena.sra.cram.encoding.HuffmanCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.InsertionVariationCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.MeasuringCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.NullBitCodec;
+import uk.ac.ebi.ena.sra.cram.encoding.ReadAnnotationCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.ReadBaseCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.ReadFeatureCodec;
+import uk.ac.ebi.ena.sra.cram.encoding.SingleValueBitCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.SubstitutionVariationCodec;
 import uk.ac.ebi.ena.sra.cram.format.BaseQualityScore;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
+import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
 import uk.ac.ebi.ena.sra.cram.format.InsertBase;
 import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
+import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
 import uk.ac.ebi.ena.sra.cram.format.ReadBase;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
 import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
+import uk.ac.ebi.ena.sra.cram.format.compression.EncodingAlgorithm;
 import uk.ac.ebi.ena.sra.cram.format.compression.NumberCodecFactory;
 import uk.ac.ebi.ena.sra.cram.format.compression.NumberCodecStub;
 import uk.ac.ebi.ena.sra.cram.io.BitInputStream;
@@ -47,8 +51,8 @@ import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 
 public class RecordCodecFactory {
 
-	public DefaultMutableTreeNode buildCodecTree(CramRecordBlock block,
-			SequenceBaseProvider referenceBaseProvider)
+	public DefaultMutableTreeNode buildCodecTree(CramHeader header,
+			CramRecordBlock block, SequenceBaseProvider referenceBaseProvider)
 			throws CramCompressionException {
 		DefaultMutableTreeNode root = new DefaultMutableTreeNode();
 
@@ -158,11 +162,12 @@ public class RecordCodecFactory {
 				createStub(compression.getDelLengthEncoding()),
 				"Deletion length codec");
 		deletionCodec.dellengthPosCodec = delLenMeasuringCodec;
-		delNode.add(new DefaultMutableTreeNode(delLenMeasuringCodec));
+		// delNode.add(new DefaultMutableTreeNode(delLenMeasuringCodec));
 		MeasuringCodec<DeletionVariation> delMeasuringCodec = new MeasuringCodec<DeletionVariation>(
 				deletionCodec, "Deletion codec");
 		readFearureCodec.deletionCodec = delMeasuringCodec;
-		delNode.setUserObject(delMeasuringCodec);
+		// delNode.setUserObject(delMeasuringCodec);
+		delNode.setUserObject(delLenMeasuringCodec);
 
 		// substitution node:
 		DefaultMutableTreeNode subNode = new DefaultMutableTreeNode();
@@ -172,20 +177,24 @@ public class RecordCodecFactory {
 		MeasuringCodec<BaseChange> baseChangeMeasuringCodec = new MeasuringCodec<BaseChange>(
 				new BaseChangeCodec(), "Base change codec");
 		substitutionCodec.baseChangeCodec = baseChangeMeasuringCodec;
-		subNode.add(new DefaultMutableTreeNode(baseChangeMeasuringCodec));
+		// subNode.add(new DefaultMutableTreeNode(baseChangeMeasuringCodec));
 
 		MeasuringCodec<SubstitutionVariation> subMeasuringCodec = new MeasuringCodec<SubstitutionVariation>(
 				substitutionCodec, "Substitution codec");
 		readFearureCodec.substitutionCodec = subMeasuringCodec;
-		subNode.setUserObject(subMeasuringCodec);
+		// subNode.setUserObject(subMeasuringCodec);
+		subNode.setUserObject(baseChangeMeasuringCodec);
 
 		// insertion node:
 		DefaultMutableTreeNode insNode = new DefaultMutableTreeNode();
 		rflNode.add(insNode);
 
 		InsertionVariationCodec insertionCodec = new InsertionVariationCodec();
-		insertionCodec.insertBasesCodec = new BaseSequenceCodec(
-				BaseSequenceCodec.BaseCodecType.RAISED, "ACGTSN".getBytes());
+		// insertionCodec.insertBasesCodec = new BaseSequenceCodec(
+		// BaseSequenceCodec.BaseCodecType.RAISED, "ACGTSN".getBytes());
+		insertionCodec.insertBasesCodec = new ByteArrayHuffmanCodec(
+				compression.getBaseAlphabet(),
+				compression.getBaseFrequencies(), (byte) '$');
 		MeasuringCodec<InsertionVariation> insMeasuringCodec = new MeasuringCodec<InsertionVariation>(
 				insertionCodec, "Insertion codec");
 		readFearureCodec.insertionCodec = insMeasuringCodec;
@@ -267,6 +276,47 @@ public class RecordCodecFactory {
 				baseQSCodec, "Base QS codec");
 		rflNode.add(new DefaultMutableTreeNode(readFearureCodec.baseQSCodec));
 
+		if (header != null && header.getReadAnnotations() != null
+				&& !header.getReadAnnotations().isEmpty()) {
+			ReadAnnotation[] anns = new ReadAnnotation[compression
+					.getReadAnnotationIndexes().length];
+			for (int i = 0; i < anns.length; i++)
+				anns[i] = header.getReadAnnotations().get(i);
+
+			BitCodec<ReadAnnotation> readAnnoCodec = new ReadAnnotationCodec(
+					anns, compression.getReadAnnotationFrequencies());
+			MeasuringCodec<ReadAnnotation> readAnnoMesuringCodec = new MeasuringCodec<ReadAnnotation>(
+					readAnnoCodec, "Read anno codec");
+			recordCodec.readAnnoCodec = readAnnoMesuringCodec;
+			root.add(new DefaultMutableTreeNode(readAnnoMesuringCodec));
+		}
+
+		if (compression.getReadGroupIndexes() == null
+				|| compression.getReadGroupIndexes().length < 2) {
+			SingleValueBitCodec<Integer> singleValueBitCodec = new SingleValueBitCodec<Integer>();
+			singleValueBitCodec.setValue(compression.getReadGroupIndexes()[0]);
+			recordCodec.readGroupCodec = singleValueBitCodec;
+		} else {
+			HuffmanTree<Integer> readGroupIndexTree = HuffmanCode.buildTree(
+					compression.getReadGroupFrequencies(),
+					Utils.autobox(compression.getReadGroupIndexes()));
+			HuffmanCodec<Integer> readGroupIndexCodec = new HuffmanCodec<Integer>(
+					readGroupIndexTree);
+			MeasuringCodec<Integer> measuringReadGroupIndexCodec = new MeasuringCodec<Integer>(
+					readGroupIndexCodec, "Read group index codec");
+			recordCodec.readGroupCodec = measuringReadGroupIndexCodec;
+			root.add(new DefaultMutableTreeNode(measuringReadGroupIndexCodec));
+		}
+
+		HuffmanTree<Byte> mappingQualityTree = HuffmanCode.buildTree(
+				compression.getMappingQualityFrequencies(),
+				Utils.autobox(compression.getMappingQualityAlphabet()));
+		HuffmanCodec<Byte> fmappingQualityCodec = new HuffmanCodec<Byte>(
+				mappingQualityTree);
+		recordCodec.mappingQualityCodec = new MeasuringCodec<Byte>(
+				fmappingQualityCodec, "Mapping quality codec");
+		root.add(new DefaultMutableTreeNode(recordCodec.mappingQualityCodec));
+
 		return root;
 	}
 
@@ -286,25 +336,27 @@ public class RecordCodecFactory {
 		}
 	}
 
-	public Collection<MeasuringCodec> listAllCodecs(
-			DefaultMutableTreeNode node) {
+	public Collection<MeasuringCodec> listAllCodecs(DefaultMutableTreeNode node) {
 		ArrayList list = Collections.list(node.depthFirstEnumeration());
-		ArrayList<MeasuringCodec> codecs = new ArrayList<MeasuringCodec>() ;
-		for (Object o:list)
-			codecs.add((MeasuringCodec) ((DefaultMutableTreeNode)o).getUserObject()) ;
+		ArrayList<MeasuringCodec> codecs = new ArrayList<MeasuringCodec>();
+		for (Object o : list)
+			codecs.add((MeasuringCodec) ((DefaultMutableTreeNode) o)
+					.getUserObject());
 		Collections.sort(codecs, byBitsComparator);
 		return codecs;
 	}
 
-//	private static Comparator<DefaultMutableTreeNode> byBitsComparator = new Comparator<DefaultMutableTreeNode>() {
-//
-//		@Override
-//		public int compare(DefaultMutableTreeNode o1, DefaultMutableTreeNode o2) {
-//			MeasuringCodec c1 = (MeasuringCodec) o1.getUserObject();
-//			MeasuringCodec c2 = (MeasuringCodec) o2.getUserObject();
-//			return (int) (c1.getWrittenBits() - c2.getWrittenBits());
-//		}
-//	};
+	// private static Comparator<DefaultMutableTreeNode> byBitsComparator = new
+	// Comparator<DefaultMutableTreeNode>() {
+	//
+	// @Override
+	// public int compare(DefaultMutableTreeNode o1, DefaultMutableTreeNode o2)
+	// {
+	// MeasuringCodec c1 = (MeasuringCodec) o1.getUserObject();
+	// MeasuringCodec c2 = (MeasuringCodec) o2.getUserObject();
+	// return (int) (c1.getWrittenBits() - c2.getWrittenBits());
+	// }
+	// };
 
 	private static Comparator<MeasuringCodec> byBitsComparator = new Comparator<MeasuringCodec>() {
 
@@ -314,8 +366,8 @@ public class RecordCodecFactory {
 		}
 	};
 
-	public BitCodec<CramRecord> createRecordCodec(CramRecordBlock block,
-			SequenceBaseProvider referenceBaseProvider)
+	public BitCodec<CramRecord> createRecordCodec(CramHeader header,
+			CramRecordBlock block, SequenceBaseProvider referenceBaseProvider)
 			throws CramCompressionException {
 		CramCompression compression = block.getCompression();
 		// given a bunch of block info and compression info create a codec:
@@ -382,8 +434,11 @@ public class RecordCodecFactory {
 		readFearureCodec.substitutionCodec = substitutionCodec;
 
 		InsertionVariationCodec insertionCodec = new InsertionVariationCodec();
-		insertionCodec.insertBasesCodec = new BaseSequenceCodec(
-				BaseSequenceCodec.BaseCodecType.RAISED, "ACGTSN".getBytes());
+		// insertionCodec.insertBasesCodec = new BaseSequenceCodec(
+		// BaseSequenceCodec.BaseCodecType.RAISED, "ACGTSN".getBytes());
+		insertionCodec.insertBasesCodec = new ByteArrayHuffmanCodec(
+				compression.getBaseAlphabet(),
+				compression.getBaseFrequencies(), (byte) '$');
 		readFearureCodec.insertionCodec = insertionCodec;
 
 		recordCodec.variationsCodec = readFearureCodec;
@@ -447,11 +502,48 @@ public class RecordCodecFactory {
 		};
 		readFearureCodec.baseQSCodec = baseQSCodec;
 
+		if (header != null && header.getReadAnnotations() != null
+				&& !header.getReadAnnotations().isEmpty()) {
+			ReadAnnotation[] anns = new ReadAnnotation[compression
+					.getReadAnnotationIndexes().length];
+			for (int i = 0; i < anns.length; i++)
+				anns[i] = header.getReadAnnotations().get(i);
+
+			BitCodec<ReadAnnotation> readAnnoCodec = new ReadAnnotationCodec(
+					anns, compression.getReadAnnotationFrequencies());
+			recordCodec.readAnnoCodec = readAnnoCodec;
+		}
+
+		if (compression.getReadGroupIndexes() == null
+				|| compression.getReadGroupIndexes().length < 2) {
+			SingleValueBitCodec<Integer> singleValueBitCodec = new SingleValueBitCodec<Integer>();
+			singleValueBitCodec.setValue(compression.getReadGroupIndexes()[0]);
+			recordCodec.readGroupCodec = singleValueBitCodec;
+		} else {
+			HuffmanTree<Integer> readGroupIndexTree = HuffmanCode.buildTree(
+					compression.getReadGroupFrequencies(),
+					Utils.autobox(compression.getReadGroupIndexes()));
+			HuffmanCodec<Integer> readGroupIndexCodec = new HuffmanCodec<Integer>(
+					readGroupIndexTree);
+			recordCodec.readGroupCodec = readGroupIndexCodec;
+		}
+
+		HuffmanTree<Byte> mappingQualityTree = HuffmanCode.buildTree(
+				compression.getMappingQualityFrequencies(),
+				Utils.autobox(compression.getMappingQualityAlphabet()));
+		HuffmanCodec<Byte> fmappingQualityCodec = new HuffmanCodec<Byte>(
+				mappingQualityTree);
+		recordCodec.mappingQualityCodec = fmappingQualityCodec;
+
 		return recordCodec;
 	}
 
 	private static NumberCodecStub createStub(Encoding encoding)
 			throws CramCompressionException {
+		if (encoding == null
+				|| encoding.getAlgorithm() == EncodingAlgorithm.NULL)
+			return NumberCodecFactory.createStub(EncodingAlgorithm.NULL);
+
 		NumberCodecStub stub = NumberCodecFactory.createStub(encoding
 				.getAlgorithm());
 		stub.initFromString(encoding.getParameters());

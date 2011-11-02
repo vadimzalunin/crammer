@@ -180,4 +180,5 @@ public class CramRecordBlock implements Serializable {
 			boolean maskedQualityScoresIncluded) {
 		this.maskedQualityScoresIncluded = maskedQualityScoresIncluded;
 	}
+
 }

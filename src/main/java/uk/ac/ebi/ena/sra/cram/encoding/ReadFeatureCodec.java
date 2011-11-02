@@ -34,7 +34,7 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 	public List<ReadFeature> read(BitInputStream bis) throws IOException {
 		List<ReadFeature> list = new ArrayList<ReadFeature>();
 		byte op;
-		int prevPos = 1;
+		int prevPos = 0;
 		while ((op = featureOperationCodec.read(bis)) != ReadFeature.STOP_OPERATOR) {
 			ReadFeature feature = null;
 			int pos = prevPos + inReadPosCodec.read(bis).intValue();
@@ -86,7 +86,7 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 			throws IOException {
 
 		long len = 0L;
-		int prevPos = 1;
+		int prevPos = 0;
 		for (ReadFeature feature : features) {
 			len += featureOperationCodec.write(bos, feature.getOperator());
 

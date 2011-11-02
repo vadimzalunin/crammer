@@ -25,9 +25,8 @@ public class CramRecordTextFormatTest {
 	@Parameters
 	public static Collection<Object[]> data() {
 		Object[][] data = new Object[][] {
-				{ "123	*	*	POS	*	*	*" },
-				{ "124	35	*	POS	M2w!x!y!z!T$M2IAC.M5D2A!C!M13A!C!M2	*	*" },
-				{ "*	34	*	POS	*	GTGCGGATGCTCTCCTCCAGTTTGGGCTCGTGGTGTGTGTCCAGCAGGGACTGG	BBBBBBB=BBBBBBBBBBBBBBBB?BBBBB?BB?BBBBB?BBBBB?BBB??BBB" },
+				{ "1	223022	54	*	POS	M26D1M21y M5g 	*	*" },
+				{ "*	*	54	*	POS	*	AAAAAAAAAAAAAAAA	!!!!!!!!!!!!!!!!" },
 
 		};
 		return Arrays.asList(data);
