@@ -19,7 +19,6 @@ import net.sf.samtools.BAMFileWriter;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
 import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
 
@@ -30,7 +29,6 @@ import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
-import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.text.CramRecordFormat;
 import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.impl.CramHeaderIO;
@@ -97,14 +95,15 @@ public class Cram2Bam {
 
 		BAMFileWriter writer = new BAMFileWriter(outputBamFile);
 		writer.setSortOrder(SortOrder.coordinate, true);
-		SAMFileHeader header ;
-		
-//		= new SAMFileHeader();
-//
-//		for (CramReferenceSequence cs : cramHeader.getReferenceSequences()) {
-//			SAMSequenceRecord samSequenceRecord = new SAMSequenceRecord(cs.getName(), cs.getLength());
-//			header.addSequence(samSequenceRecord);
-//		}
+		SAMFileHeader header;
+
+		// = new SAMFileHeader();
+		//
+		// for (CramReferenceSequence cs : cramHeader.getReferenceSequences()) {
+		// SAMSequenceRecord samSequenceRecord = new
+		// SAMSequenceRecord(cs.getName(), cs.getLength());
+		// header.addSequence(samSequenceRecord);
+		// }
 
 		// for (CramReadGroup crg : cramHeader.getReadGroups()) {
 		// if (crg.getId() == null)
@@ -137,12 +136,13 @@ public class Cram2Bam {
 
 			SequentialCramReader reader = new SequentialCramReader(nextChunk, null, cramHeader);
 			CramRecordBlock readBlock = reader.readBlock();
+			prevAlStart = readBlock.getFirstRecordPosition();
 			if (readBlock == null)
 				break NEXT_BLOCK;
 
 			if (prevBlock != null) {
 				if (!prevBlock.getSequenceName().equals(readBlock.getSequenceName())) {
-					prevAlStart = 0L;
+					prevAlStart = readBlock.getFirstRecordPosition();
 				}
 			}
 			cramRecordFormat.setSequenceID(readBlock.getSequenceName());
