@@ -39,6 +39,9 @@ public class CramRecordTextFormatTest {
 		CramRecord record = format.fromString(recordSpec);
 
 		String derivedSpec = format.writeRecord(record);
+		
+		System.out.println(record.toString());
+		System.out.println(derivedSpec);
 
 		assertThat(derivedSpec, equalTo(recordSpec));
 		

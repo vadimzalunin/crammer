@@ -67,11 +67,13 @@ public class CramRecordCodecRoundTripTests {
 
 		codec.write(bos, record);
 		bos.close();
+		
 
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+		codec = factory.createRecordCodec(null, block, null);
 		CramRecord derivedRecord = codec.read(bis);
-
+		
 		assertThat(derivedRecord, equalTo(record));
 
 	}

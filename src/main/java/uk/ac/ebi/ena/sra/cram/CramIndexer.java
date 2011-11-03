@@ -34,6 +34,7 @@ import uk.ac.ebi.ena.sra.cram.impl.SequentialCramReader;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.FileConverter;
 
 public class CramIndexer {
@@ -282,6 +283,7 @@ public class CramIndexer {
 		log.info("Decoded in: " + (time2 - time1) + " millis");
 	}
 
+	@Parameters(commandDescription = "Build CRAM index.")
 	static class Params {
 		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to be indexed.")
 		File cramFile;

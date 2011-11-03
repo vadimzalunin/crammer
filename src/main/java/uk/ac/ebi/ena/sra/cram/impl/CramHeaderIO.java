@@ -40,7 +40,6 @@ public class CramHeaderIO {
 		else {
 			headerDOS.writeInt(header.getReadGroups().size());
 			for (CramReadGroup rg : header.getReadGroups()) {
-				System.err.println("Writing read group: " + rg.getId() + ", " + rg.getSample());
 				if (rg.getId() == null)
 					headerDOS.writeUTF("");
 				else

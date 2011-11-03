@@ -134,7 +134,7 @@ public class Bam2Cram {
 		else
 			log.info("No output CRAM file specified, discarding CRAM output.");
 
-		os = createOutputStream(params.outputCramFile, params.gzipOutputCramFile);
+		os = createOutputStream(params.outputCramFile, false);
 
 		statsPS = params.statsOutFile == null ? null : new PrintStream(params.statsOutFile);
 
@@ -479,9 +479,6 @@ public class Bam2Cram {
 
 		@Parameter(names = { "--round-trip-check" }, hidden = true)
 		boolean roundTripCheck = false;
-
-		@Parameter(names = { "--gzip" })
-		boolean gzipOutputCramFile = false;
 
 		@Parameter(names = { "--record-horizon" }, hidden = true)
 		int spotAssemblyRecordsHorizon = 10000;

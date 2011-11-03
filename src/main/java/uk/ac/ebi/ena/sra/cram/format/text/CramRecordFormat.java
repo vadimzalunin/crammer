@@ -119,8 +119,10 @@ public class CramRecordFormat {
 		if (isNotEmpty(chunk)) {
 			record.setAlignmentStart(toLong(chunk));
 			record.setReadMapped(true);
-		} else
+		} else{
+			record.setAlignmentStart(1);
 			record.setReadMapped(false);
+		}
 
 		chunk = chunks[i++];
 		if (isNotEmpty(chunk))
