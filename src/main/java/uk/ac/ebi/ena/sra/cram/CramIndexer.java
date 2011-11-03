@@ -256,8 +256,10 @@ public class CramIndexer {
 						// System.out.println(cramRecord.toString());
 						indexPS.printf("%s\t%d\t%d\t%d\t%d\t%d\t%d\n", readBlock.getSequenceName(), blockNumber,
 								blockStart, i, byteOffset, bitOffset, cramRecord.getAlignmentStart());
-//						System.out.printf("%s\t%d\t%d\t%d\t%d\t%d\t%d\n", readBlock.getSequenceName(), blockNumber,
-//								blockStart, i, byteOffset, bitOffset, cramRecord.getAlignmentStart());
+						// System.out.printf("%s\t%d\t%d\t%d\t%d\t%d\t%d\n",
+						// readBlock.getSequenceName(), blockNumber,
+						// blockStart, i, byteOffset, bitOffset,
+						// cramRecord.getAlignmentStart());
 
 					} else
 						cramRecord = reader.readRecord();
@@ -281,25 +283,25 @@ public class CramIndexer {
 	}
 
 	static class Params {
-		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class)
+		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to be indexed.")
 		File cramFile;
 
-		@Parameter(names = { "--max-sequences" })
+		@Parameter(names = { "--max-sequences" }, description = "Stop after indexing this many reference sequences (chromosomes).")
 		int maxSequences = Integer.MAX_VALUE;
 
-		@Parameter(names = { "--max-records" })
+		@Parameter(names = { "--max-records" }, description = "Stop after indexing this many records.")
 		long maxRecords = Long.MAX_VALUE;
 
-		@Parameter(names = { "--reference-fasta-file" }, converter = FileConverter.class)
+		@Parameter(names = { "--reference-fasta-file" }, converter = FileConverter.class, description = "The path to the reference fasta file, uncompressed and indexed.")
 		File reference;
 
-		@Parameter(names = { "--index-file" }, converter = FileConverter.class)
+		@Parameter(names = { "--index-file" }, converter = FileConverter.class, description = "The path for the output index file. By default a file with '.crai' extention will be created.")
 		File indexFile;
 
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
 		boolean help = false;
 
-		@Parameter(names = { "--resolution" })
+		@Parameter(names = { "--resolution" }, description="Index one record per this many. Bigger value means lower resolution.")
 		int resolution = 1000;
 
 	}
