@@ -88,7 +88,7 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 
 		SAMRecord mate = assembler.getMateRecord();
 		if (mate != null) 
-			SamPairUtil.setMateInfo(samRecord, mate, samFileHeader);
+			Utils.setLooseMateInfo(samRecord, mate, samFileHeader);
 		else {
 			samRecord.setReadPairedFlag(false);
 			samRecord.setProperPairFlag(false);

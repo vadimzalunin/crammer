@@ -15,12 +15,14 @@ import java.util.zip.GZIPInputStream;
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.picard.reference.ReferenceSequenceFileFactory;
+import net.sf.picard.sam.SamPairUtil;
 import net.sf.samtools.Cigar;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
+import net.sf.samtools.SAMTag;
 import net.sf.samtools.util.SeekableStream;
 import uk.ac.ebi.ena.sra.cram.CramIndexer.CountingInputStream;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
@@ -298,5 +300,66 @@ public class Utils {
 		ss.read(buf);
 		ss.reset();
 		return Arrays.toString(buf);
+	}
+	
+	/**
+	 * Copied from net.sf.picard.sam.SamPairUtil. This is a more permissive
+	 * version of the method, which does not reset alignment start and reference
+	 * for unmapped reads.
+	 * 
+	 * @param rec1
+	 * @param rec2
+	 * @param header
+	 */
+	public static void setLooseMateInfo(final SAMRecord rec1, final SAMRecord rec2, final SAMFileHeader header) {
+		// If neither read is unmapped just set their mate info
+		if (!rec1.getReadUnmappedFlag() && !rec2.getReadUnmappedFlag()) {
+
+			rec1.setMateReferenceIndex(rec2.getReferenceIndex());
+			rec1.setMateAlignmentStart(rec2.getAlignmentStart());
+			rec1.setMateNegativeStrandFlag(rec2.getReadNegativeStrandFlag());
+			rec1.setMateUnmappedFlag(false);
+			rec1.setAttribute(SAMTag.MQ.name(), rec2.getMappingQuality());
+
+			rec2.setMateReferenceIndex(rec1.getReferenceIndex());
+			rec2.setMateAlignmentStart(rec1.getAlignmentStart());
+			rec2.setMateNegativeStrandFlag(rec1.getReadNegativeStrandFlag());
+			rec2.setMateUnmappedFlag(false);
+			rec2.setAttribute(SAMTag.MQ.name(), rec1.getMappingQuality());
+		}
+		// Else if they're both unmapped set that straight
+		else if (rec1.getReadUnmappedFlag() && rec2.getReadUnmappedFlag()) {
+			rec1.setMateNegativeStrandFlag(rec2.getReadNegativeStrandFlag());
+			rec1.setMateUnmappedFlag(true);
+			rec1.setAttribute(SAMTag.MQ.name(), null);
+			rec1.setInferredInsertSize(0);
+
+			rec2.setMateNegativeStrandFlag(rec1.getReadNegativeStrandFlag());
+			rec2.setMateUnmappedFlag(true);
+			rec2.setAttribute(SAMTag.MQ.name(), null);
+			rec2.setInferredInsertSize(0);
+		}
+		// And if only one is mapped copy it's coordinate information to the
+		// mate
+		else {
+			final SAMRecord mapped = rec1.getReadUnmappedFlag() ? rec2 : rec1;
+			final SAMRecord unmapped = rec1.getReadUnmappedFlag() ? rec1 : rec2;
+
+			mapped.setMateReferenceIndex(unmapped.getReferenceIndex());
+			mapped.setMateAlignmentStart(unmapped.getAlignmentStart());
+			mapped.setMateNegativeStrandFlag(unmapped.getReadNegativeStrandFlag());
+			mapped.setMateUnmappedFlag(true);
+			mapped.setInferredInsertSize(0);
+
+			unmapped.setMateReferenceIndex(mapped.getReferenceIndex());
+			unmapped.setMateAlignmentStart(mapped.getAlignmentStart());
+			unmapped.setMateNegativeStrandFlag(mapped.getReadNegativeStrandFlag());
+			unmapped.setMateUnmappedFlag(false);
+			unmapped.setInferredInsertSize(0);
+		}
+
+		final int insertSize = SamPairUtil.computeInsertSize(rec1, rec2);
+		rec1.setInferredInsertSize(insertSize);
+		rec2.setInferredInsertSize(-insertSize);
 	}
 }
