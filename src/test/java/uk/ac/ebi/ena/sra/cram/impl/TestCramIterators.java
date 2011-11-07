@@ -26,7 +26,7 @@ import uk.ac.ebi.ena.sra.cram.index.CramIndex;
 import uk.ac.ebi.ena.sra.cram.index.RecordPointer;
 
 public class TestCramIterators {
-	private static long nofRecords = 9998L;
+	private static long nofRecords = 100L;
 	private static File bamFile = new File("data/set5/input.bam");
 	private static File refFile = new File("data/set5/ref.fa");
 	private static File cramFile;
@@ -39,7 +39,7 @@ public class TestCramIterators {
 		cramFile = File.createTempFile(bamFile.getName(), ".cram");
 		cramFile.deleteOnExit();
 		String command = String
-				.format("-l error cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s",
+				.format("-l error cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --max-records 100",
 						bamFile.getAbsolutePath(), refFile.getAbsolutePath(),
 						cramFile.getAbsolutePath());
 		CramTools.main(command.split("\\s+"));

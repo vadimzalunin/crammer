@@ -410,7 +410,7 @@ public class Bam2Cram {
 			else
 				os = new BufferedOutputStream(cramFOS);
 		} else
-			os = new NullOutputStream();
+			os = new BufferedOutputStream(new FileOutputStream(outputCramFile + ".cram"));
 
 		return os;
 	}

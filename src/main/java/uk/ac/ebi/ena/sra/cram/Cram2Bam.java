@@ -1,6 +1,7 @@
 package uk.ac.ebi.ena.sra.cram;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,16 +17,13 @@ import java.util.zip.GZIPInputStream;
 import net.sf.picard.PicardException;
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
-import net.sf.picard.sam.SamPairUtil;
 import net.sf.samtools.BAMFileWriter;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
-import net.sf.samtools.SAMTag;
 
-import org.apache.commons.math.util.ContinuedFraction;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.bam.SAMUtils;
@@ -76,7 +74,11 @@ public class Cram2Bam {
 		}
 
 		ReferenceSequenceFile referenceSequenceFile = SAMUtils.createIndexedFastaSequenceFile(params.reference);
-		InputStream cramIS = createCramInputStream(params.cramFile);
+		InputStream cramIS = null;
+		if (params.cramFile == null)
+			cramIS = new BufferedInputStream(System.in);
+		else
+			cramIS = createCramInputStream(params.cramFile);
 
 		// crook nail:
 		defaultQS = (byte) params.defaultQS;
@@ -98,25 +100,14 @@ public class Cram2Bam {
 
 		CramHeader cramHeader = CramHeaderIO.read(Utils.getNextChunk(cramDIS));
 
-		BAMFileWriter writer = new BAMFileWriter(outputBamFile);
+		BAMFileWriter writer = null;
+		if ("-".equals(outputBamFile))
+			writer = new BAMFileWriter(new BufferedOutputStream(System.out), null);
+		else
+			writer = new BAMFileWriter(outputBamFile);
 		writer.setSortOrder(SortOrder.coordinate, true);
 		SAMFileHeader header;
 
-		// = new SAMFileHeader();
-		//
-		// for (CramReferenceSequence cs : cramHeader.getReferenceSequences()) {
-		// SAMSequenceRecord samSequenceRecord = new
-		// SAMSequenceRecord(cs.getName(), cs.getLength());
-		// header.addSequence(samSequenceRecord);
-		// }
-
-		// for (CramReadGroup crg : cramHeader.getReadGroups()) {
-		// if (crg.getId() == null)
-		// continue;
-		// SAMReadGroupRecord srg = new SAMReadGroupRecord(crg.getId());
-		// srg.setSample(crg.getSample());
-		// header.addReadGroup(srg);
-		// }
 		header = Utils.cramHeader2SamHeader(cramHeader);
 		writer.setHeader(header);
 
@@ -178,12 +169,15 @@ public class Cram2Bam {
 			try {
 				nextSequence = referenceSequenceFile.getSequence(seqName);
 			} catch (PicardException e1) {
-//				// try prepending/removing 'chr':
-//				if (seqName.startsWith("chr"))
-//					nextSequence = referenceSequenceFile.getSequence(seqName.replaceFirst("chr", ""));
-//				else
-//					nextSequence = referenceSequenceFile.getSequence("chr" + seqName);
-				throw (e1) ;
+				// // try prepending/removing 'chr':
+				// if (seqName.startsWith("chr"))
+				// nextSequence =
+				// referenceSequenceFile.getSequence(seqName.replaceFirst("chr",
+				// ""));
+				// else
+				// nextSequence = referenceSequenceFile.getSequence("chr" +
+				// seqName);
+				throw (e1);
 			}
 			byte[] refBases = referenceSequenceFile.getSubsequenceAt(nextSequence.getName(), 1, nextSequence.length())
 					.getBases();
@@ -318,7 +312,6 @@ public class Cram2Bam {
 		log.info("Decoded in: " + (time2 - time1) + " millis");
 	}
 
-
 	private static void fixMateInfo(PairedTemplateAssembler assembler, SAMRecord samRecord, SAMFileHeader header) {
 		if (!samRecord.getReadPairedFlag()) {
 			samRecord.setProperPairFlag(false);
@@ -375,7 +368,7 @@ public class Cram2Bam {
 		@Parameter(names = { "--reference-fasta-file" }, converter = FileConverter.class, description = "Path to the reference fasta file, it must be uncompressed and indexed (use 'samtools faidx' for example).")
 		File reference;
 
-		@Parameter(names = { "--output-bam-file" }, converter = FileConverter.class, description = "The path to the output BAM file.")
+		@Parameter(names = { "--output-bam-file" }, converter = FileConverter.class, description = "The path to the output BAM file. Use '-' for stdout.")
 		File outputFile;
 
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
