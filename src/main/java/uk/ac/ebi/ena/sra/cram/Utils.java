@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import net.sf.picard.reference.IndexedFastaSequenceFile;
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.picard.reference.ReferenceSequenceFileFactory;
@@ -361,5 +363,17 @@ public class Utils {
 		final int insertSize = SamPairUtil.computeInsertSize(rec1, rec2);
 		rec1.setInferredInsertSize(insertSize);
 		rec2.setInferredInsertSize(-insertSize);
+	}
+
+	public static IndexedFastaSequenceFile createIndexedFastaSequenceFile(File file) throws CramException,
+			FileNotFoundException {
+		if (IndexedFastaSequenceFile.canCreateIndexedFastaReader(file)) {
+			IndexedFastaSequenceFile ifsFile = new IndexedFastaSequenceFile(file);
+	
+			return ifsFile;
+		} else
+			throw new CramException(
+					"Reference fasta file is not indexed or index file not found. Try executing 'samtools faidx "
+							+ file.getAbsolutePath() + "'");
 	}
 }

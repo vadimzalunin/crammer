@@ -75,18 +75,18 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 			eof = true;
 		else {
 			if (referenceSequence == null || !block.getSequenceName().equals(referenceSequence.getName())) {
-					referenceSequence = referenceSequenceFile.getSequence(block.getSequenceName());
-
 				try {
-					referenceSequence = referenceSequenceFile.getSubsequenceAt(block.getSequenceName(), 1,
-							referenceSequence.length());
-				} catch (PicardException e) {
-					System.err.println("Reference sequence length: " + referenceSequence.length());
-					System.err.println("offensive block: ");
-					System.err.println(block.toString());
-					throw new RuntimeException(e);
+					referenceSequence = referenceSequenceFile.getSequence(block.getSequenceName());
+				} catch (PicardException e1) {
+					if (block.getSequenceName().startsWith("chr"))
+						referenceSequence = referenceSequenceFile.getSequence(block.getSequenceName().substring(3));
+					else
+						referenceSequence = referenceSequenceFile.getSequence("chr" + block.getSequenceName());
 				}
-				referenceBaseProvider = new ByteArraySequenceBaseProvider(referenceSequence.getBases());
+
+				byte[] refBases = referenceSequence.getBases() ;
+				Utils.capitaliseAndCheckBases(refBases, false) ;
+				referenceBaseProvider = new ByteArraySequenceBaseProvider(refBases);
 
 			}
 

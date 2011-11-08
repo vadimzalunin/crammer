@@ -22,7 +22,6 @@ import net.sf.samtools.ReferenceDiscovery;
 
 import org.apache.log4j.Logger;
 
-import uk.ac.ebi.ena.sra.cram.bam.SAMUtils;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
@@ -68,7 +67,7 @@ public class CramIndexer {
 		if (params.reference == null)
 			referenceSequenceFile = ReferenceDiscovery.findReferenceSequenceFileOrFail(params.cramFile);
 		else
-			referenceSequenceFile = SAMUtils.createIndexedFastaSequenceFile(params.reference);
+			referenceSequenceFile = Utils.createIndexedFastaSequenceFile(params.reference);
 
 		InputStream cramIS = createCramInputStream(params.cramFile);
 

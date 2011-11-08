@@ -31,7 +31,6 @@ import net.sf.samtools.SAMSequenceRecord;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.log4j.Logger;
 
-import uk.ac.ebi.ena.sra.cram.bam.SAMUtils;
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory.TREAT_TYPE;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
@@ -110,7 +109,7 @@ public class Bam2Cram {
 			cramReadGroups.add(new CramReadGroup(rgr.getReadGroupId(), rgr.getSample()));
 		}
 
-		referenceSequenceFile = SAMUtils.createIndexedFastaSequenceFile(params.referenceFasta);
+		referenceSequenceFile = Utils.createIndexedFastaSequenceFile(params.referenceFasta);
 		assembler = new PairedTemplateAssembler(params.spotAssemblyAlignmentHorizon, params.spotAssemblyRecordsHorizon);
 
 		if (params.readQualityMaskFile != null) {

@@ -148,7 +148,7 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 		} catch (ArrayIndexOutOfBoundsException e) {
 			log.error("Reference bases array length=" + refBases.length);
 			log.error("Offensive CRAM record: " + cramRecord.toString());
-			log.error("Offensive SAM record: " + SAMUtils.toString(samRecord));
+			log.error("Offensive SAM record: " + samRecord.getSAMString());
 			throw e;
 		}
 	}

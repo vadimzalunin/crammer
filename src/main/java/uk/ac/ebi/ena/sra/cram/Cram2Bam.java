@@ -26,7 +26,6 @@ import net.sf.samtools.SAMSequenceRecord;
 
 import org.apache.log4j.Logger;
 
-import uk.ac.ebi.ena.sra.cram.bam.SAMUtils;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
@@ -73,7 +72,7 @@ public class Cram2Bam {
 			return;
 		}
 
-		ReferenceSequenceFile referenceSequenceFile = SAMUtils.createIndexedFastaSequenceFile(params.reference);
+		ReferenceSequenceFile referenceSequenceFile = Utils.createIndexedFastaSequenceFile(params.reference);
 		InputStream cramIS = null;
 		if (params.cramFile == null)
 			cramIS = new BufferedInputStream(System.in);

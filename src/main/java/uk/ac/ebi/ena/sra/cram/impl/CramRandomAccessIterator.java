@@ -15,7 +15,6 @@ import net.sf.samtools.util.SeekableStream;
 import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.Utils;
-import uk.ac.ebi.ena.sra.cram.bam.SAMUtils;
 import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
 import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
@@ -53,7 +52,7 @@ public class CramRandomAccessIterator implements CloseableIterator<CramRecord> {
 		CramIndex index = CramIndex.fromFile(cramIndexFile);
 
 		File refFile = new File("c:/temp/chr20.fa");
-		ReferenceSequenceFile referenceSequenceFile = SAMUtils
+		ReferenceSequenceFile referenceSequenceFile = Utils
 				.createIndexedFastaSequenceFile(refFile);
 
 		ReferenceSequence nextSequence = referenceSequenceFile
