@@ -35,6 +35,15 @@ java -cp cramtools.jar net.sf.picard.sam.ValidateSamFile INPUT=data.cram
 However, please note that the following will not work: 
 java -cp cramtools.jar net.sf.picard.sam.ValidateSamFile -jar ValidateSamFile.jar INPUT=data.cram
 
+Reference sequence discovery
+For tools that use Picard API the following rules describe how the reference sequence file is discovered: 
+1. Given an input file '<some name>.cram' search for a '<some name>.fa' file in the same directory.
+2. Given an input file '<some name>.cram' search for a '<some name>.fa' file in the same directory, which should contain a full path to the reference file.
+3. Use java property 'reference=<path to ref file>', usage: java -Dreference=<path to ref file> -cp cramtools.jar ...
+
+There is a modification of ViewSam tool which allows to query alignment slices, for example: 
+java -Dreference=human_g1k_v37.fasta -cp cramtools.jar net.sf.picard.sam.ViewSam2 /nfs/1000g-archive/vol1/ftp/data/HG00096/exome_alignment/HG00096.mapped.illumina.mosaik.GBR.exome.20110411.bam 1:1-50000 2:1-15000
+Please note that this tool will probably disappear (or will be replaced) in the future releases.
 
 Please check for more on our web site: 
 http://www.ebi.ac.uk/ena/about/cram_toolkit
