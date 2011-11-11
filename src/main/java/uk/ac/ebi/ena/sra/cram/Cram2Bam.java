@@ -100,7 +100,7 @@ public class Cram2Bam {
 		CramHeader cramHeader = CramHeaderIO.read(Utils.getNextChunk(cramDIS));
 
 		BAMFileWriter writer = null;
-		if ("-".equals(outputBamFile))
+		if (outputBamFile == null)
 			writer = new BAMFileWriter(new BufferedOutputStream(System.out), null);
 		else
 			writer = new BAMFileWriter(outputBamFile);
@@ -355,7 +355,7 @@ public class Cram2Bam {
 
 	@Parameters(commandDescription = "CRAM to BAM conversion")
 	static class Params {
-		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to uncompress.")
+		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to uncompress. Omit if standard input (pipe).")
 		File cramFile;
 
 		@Parameter(names = { "--max-sequences" }, description = "Stop after uncomressing this many reference sequences (chromosomes).")
@@ -367,13 +367,13 @@ public class Cram2Bam {
 		@Parameter(names = { "--reference-fasta-file" }, converter = FileConverter.class, description = "Path to the reference fasta file, it must be uncompressed and indexed (use 'samtools faidx' for example).")
 		File reference;
 
-		@Parameter(names = { "--output-bam-file" }, converter = FileConverter.class, description = "The path to the output BAM file. Use '-' for stdout.")
+		@Parameter(names = { "--output-bam-file" }, converter = FileConverter.class, description = "The path to the output BAM file. Omit if standard output (pipe).")
 		File outputFile;
 
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
 		boolean help = false;
 
-		@Parameter(names = { "--print-cram-records" }, description = "Print CRAM records while uncompressing.")
+		@Parameter(names = { "--print-cram-records" }, description = "Print CRAM records while uncompressing.", hidden = true)
 		boolean printCramRecords = false;
 
 		@Parameter(names = { "--default-quality-score" }, description = "Use this quality score (decimal representation of ASCII symbol) as a default value when the original quality score was lost due to compression. Minimum is 33.")

@@ -90,7 +90,11 @@ public class Bam2Cram {
 	public void init() throws IOException, CramException {
 		log.info("Input BAM file: " + params.bamFile.getAbsolutePath());
 
-		samReader = new SAMFileReader(params.bamFile);
+		if (params.bamFile == null)
+			samReader = new SAMFileReader(System.in);
+		else
+			samReader = new SAMFileReader(params.bamFile);
+		
 		samReader.setValidationStringency(ValidationStringency.SILENT);
 		sequences = new ArrayList<CramReferenceSequence>();
 		for (SAMSequenceRecord seq : samReader.getFileHeader().getSequenceDictionary().getSequences()) {
@@ -128,10 +132,11 @@ public class Bam2Cram {
 		unmappedRecordCount = 0;
 		baseCount = 0;
 
-		if (params.outputCramFile != null)
-			log.info("Output CRAM file: " + params.outputCramFile.getAbsolutePath());
-		else
-			log.info("No output CRAM file specified, discarding CRAM output.");
+		// if (params.outputCramFile != null)
+		// log.info("Output CRAM file: " +
+		// params.outputCramFile.getAbsolutePath());
+		// else
+		// log.info("No output CRAM file specified, discarding CRAM output.");
 
 		os = createOutputStream(params.outputCramFile, false);
 
@@ -409,7 +414,7 @@ public class Bam2Cram {
 			else
 				os = new BufferedOutputStream(cramFOS);
 		} else
-			os = new BufferedOutputStream(new FileOutputStream(outputCramFile + ".cram"));
+			os = new BufferedOutputStream(System.out);
 
 		return os;
 	}
@@ -455,13 +460,13 @@ public class Bam2Cram {
 
 	@Parameters(commandDescription = "BAM to CRAM converter.")
 	static class Params {
-		@Parameter(names = { "--input-bam-file" }, converter = FileConverter.class, description = "Path to a BAM file to be converted to CRAM.")
+		@Parameter(names = { "--input-bam-file" }, converter = FileConverter.class, description = "Path to a BAM file to be converted to CRAM. Omit if standard input (pipe).")
 		File bamFile;
 
 		@Parameter(names = { "--reference-fasta-file" }, converter = FileConverter.class, description = "The reference fasta file, uncompressed and indexed (.fai file, use 'samtools faidx'). ")
 		File referenceFasta;
 
-		@Parameter(names = { "--output-cram-file" }, converter = FileConverter.class, description = "The path for the output CRAM file.")
+		@Parameter(names = { "--output-cram-file" }, converter = FileConverter.class, description = "The path for the output CRAM file. Omit if standard output (pipe).")
 		File outputCramFile = null;
 
 		@Parameter(names = { "--max-records" }, description = "Stop after compressing this many records. ")
