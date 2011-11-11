@@ -1,7 +1,6 @@
 package uk.ac.ebi.ena.sra.cram;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -82,8 +81,12 @@ public class Cram2Bam {
 		// crook nail:
 		defaultQS = (byte) params.defaultQS;
 		log.info("Using default quality score: " + (char) defaultQS);
-		if (params.outputFile == null)
+
+		if (params.outputFile == null) {
+			if (params.cramFile == null)
+				throw new RuntimeException("Output BAM file name is required.");
 			params.outputFile = new File(params.cramFile.getAbsolutePath() + ".bam");
+		}
 
 		convert(referenceSequenceFile, cramIS, params.outputFile, params.maxRecords, params.printCramRecords,
 				params.sequences);
@@ -99,11 +102,7 @@ public class Cram2Bam {
 
 		CramHeader cramHeader = CramHeaderIO.read(Utils.getNextChunk(cramDIS));
 
-		BAMFileWriter writer = null;
-		if (outputBamFile == null)
-			writer = new BAMFileWriter(new BufferedOutputStream(System.out), null);
-		else
-			writer = new BAMFileWriter(outputBamFile);
+		BAMFileWriter writer = new BAMFileWriter(outputBamFile);
 		writer.setSortOrder(SortOrder.coordinate, true);
 		SAMFileHeader header;
 
@@ -367,7 +366,7 @@ public class Cram2Bam {
 		@Parameter(names = { "--reference-fasta-file" }, converter = FileConverter.class, description = "Path to the reference fasta file, it must be uncompressed and indexed (use 'samtools faidx' for example).")
 		File reference;
 
-		@Parameter(names = { "--output-bam-file" }, converter = FileConverter.class, description = "The path to the output BAM file. Omit if standard output (pipe).")
+		@Parameter(names = { "--output-bam-file" }, converter = FileConverter.class, description = "The path to the output BAM file.")
 		File outputFile;
 
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")

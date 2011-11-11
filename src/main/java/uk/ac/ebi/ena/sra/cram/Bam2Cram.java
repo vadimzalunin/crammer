@@ -28,7 +28,6 @@ import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceRecord;
 
-import org.apache.commons.io.output.NullOutputStream;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
@@ -88,13 +87,12 @@ public class Bam2Cram {
 	}
 
 	public void init() throws IOException, CramException {
-		log.info("Input BAM file: " + params.bamFile.getAbsolutePath());
-
-		if (params.bamFile == null)
-			samReader = new SAMFileReader(System.in);
-		else
+		if (params.bamFile == null) {
+			if (params.bamFile == null)
+				throw new RuntimeException("Input BAM file name is required.");
+		} else
 			samReader = new SAMFileReader(params.bamFile);
-		
+
 		samReader.setValidationStringency(ValidationStringency.SILENT);
 		sequences = new ArrayList<CramReferenceSequence>();
 		for (SAMSequenceRecord seq : samReader.getFileHeader().getSequenceDictionary().getSequences()) {
