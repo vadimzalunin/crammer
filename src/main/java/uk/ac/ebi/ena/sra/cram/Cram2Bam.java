@@ -116,7 +116,7 @@ public class Cram2Bam {
 		long time1 = System.currentTimeMillis();
 		CramRecordFormat cramRecordFormat = new CramRecordFormat();
 
-		PairedTemplateAssembler assembler = new PairedTemplateAssembler(10000, 10000);
+		PairedTemplateAssembler assembler = new PairedTemplateAssembler(Integer.MAX_VALUE, Integer.MAX_VALUE);
 		String prevSeqName = null;
 		Map<Long, Long> indexes = new TreeMap<Long, Long>();
 
@@ -258,11 +258,14 @@ public class Cram2Bam {
 					}
 				}
 
-				samRecord.setMappingQuality(cramRecord.getMappingQuality());
+				samRecord.setMappingQuality((int) cramRecord.getMappingQuality() & 0xFF);
 				if (cramRecord.isReadMapped()) {
 					samRecord.setAlignmentStart((int) cramRecord.getAlignmentStart());
 					samRecord.setReadBases(restoreBases.restoreReadBases(cramRecord));
-					byte[] scores = restoreQualityScores.restoreQualityScores(cramRecord);
+					byte[] scores = cramRecord.getQualityScores();
+					if (scores == null || scores.length == 0) 
+						scores = restoreQualityScores.restoreQualityScores(cramRecord);
+					
 					injectQualityScores(scores, samRecord);
 					prevAlStart = samRecord.getAlignmentStart();
 				} else {
@@ -290,7 +293,7 @@ public class Cram2Bam {
 						Utils.setLooseMateInfo(samRecord, mate, header);
 
 					writeSAMRecord(samRecord, writer);
-					// System.out.println(samRecord.format());
+//					 System.out.println(samRecord.format());
 				}
 
 				if (counter++ >= maxRecords) {

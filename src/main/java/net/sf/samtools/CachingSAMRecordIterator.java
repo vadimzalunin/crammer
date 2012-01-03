@@ -82,12 +82,12 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 
 	private void fixMateInfo(SAMRecord samRecord) {
 		if (!samRecord.getReadPairedFlag()) {
-			samRecord.setProperPairFlag(false) ;
+			samRecord.setProperPairFlag(false);
 			return;
 		}
 
 		SAMRecord mate = assembler.getMateRecord();
-		if (mate != null) 
+		if (mate != null)
 			Utils.setLooseMateInfo(samRecord, mate, samFileHeader);
 		else {
 			samRecord.setReadPairedFlag(false);
@@ -159,7 +159,7 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 			}
 		}
 
-		samRecord.setMappingQuality(cramRecord.getMappingQuality());
+		samRecord.setMappingQuality(cramRecord.getMappingQuality() & 0xFF);
 		if (cramRecord.isReadMapped()) {
 			samRecord.setAlignmentStart((int) cramRecord.getAlignmentStart());
 			samRecord.setReadBases(cramRecord.getReadBases());
