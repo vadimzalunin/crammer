@@ -8,10 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
+import net.sf.samtools.SAMRecord;
+
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
+import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
@@ -19,6 +22,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
 import uk.ac.ebi.ena.sra.cram.io.ExposedByteArrayOutputStream;
+import uk.ac.ebi.ena.sra.cram.spot.PairedTemplateAssembler;
 import uk.ac.ebi.ena.sra.cram.stats.CramStats;
 
 public class CramWriter {
@@ -42,14 +46,17 @@ public class CramWriter {
 	private final List<ReadAnnotation> readAnnotations;
 	private final PrintStream statsPS;
 	private final List<CramReadGroup> cramReadGroups;
+	private final boolean captureAllQS;
 
-	public CramWriter(OutputStream os, SequenceBaseProvider provider,
-			List<CramReferenceSequence> sequences, boolean roundTripCheck,
-			int maxRecordsPerBlock, boolean captureUnammpedQualityScortes,
-			boolean captureSubstituionQualityScore,
-			boolean captureMaskedQualityScores,
-			List<ReadAnnotation> readAnnotations, PrintStream statsPS,
-			List<CramReadGroup> cramReadGroups) {
+	private long blockCreationTime = -1;
+	private long beyondHorizon = 0;
+	private long extraChromosomePairs = 0;
+
+	public CramWriter(OutputStream os, SequenceBaseProvider provider, List<CramReferenceSequence> sequences,
+			boolean roundTripCheck, int maxRecordsPerBlock, boolean captureUnammpedQualityScortes,
+			boolean captureSubstituionQualityScore, boolean captureMaskedQualityScores,
+			List<ReadAnnotation> readAnnotations, PrintStream statsPS, List<CramReadGroup> cramReadGroups,
+			boolean captureAllQS) {
 		this.os = os;
 		this.provider = provider;
 		this.sequences = sequences;
@@ -61,6 +68,7 @@ public class CramWriter {
 		this.readAnnotations = readAnnotations;
 		this.statsPS = statsPS;
 		this.cramReadGroups = cramReadGroups;
+		this.captureAllQS = captureAllQS;
 	}
 
 	public void dump() {
@@ -69,8 +77,9 @@ public class CramWriter {
 
 	private void flushWriterOS() throws IOException {
 		// stream for in-memory compressed data:
-		ExposedByteArrayOutputStream compressedOS = new ExposedByteArrayOutputStream(
-				1024);
+		ExposedByteArrayOutputStream compressedOS = new ExposedByteArrayOutputStream(1024);
+		// BZip2CompressorOutputStream gos = new
+		// BZip2CompressorOutputStream(compressedOS);
 		GZIPOutputStream gos = new GZIPOutputStream(compressedOS);
 
 		// compress data into memory:
@@ -90,12 +99,12 @@ public class CramWriter {
 
 	public void init() throws IOException {
 		// magick:
-		os.write("CRAM".getBytes()) ;
-		
+		os.write("CRAM".getBytes());
+
 		writerOS = new ExposedByteArrayOutputStream(1024 * 1024 * 10);
 
 		header = new CramHeader();
-		header.setVersion("0.5");
+		header.setVersion("0.6");
 		header.setReferenceSequences(sequences);
 		header.setReadAnnotations(readAnnotations);
 		header.setReadGroups(cramReadGroups);
@@ -114,24 +123,41 @@ public class CramWriter {
 		return null;
 	}
 
-	public void startSequence(String name, byte[] bases) throws IOException,
-			CramException {
-		CramReferenceSequence sequence = findSequenceByName(name);
-		if (sequence == null)
-			throw new IllegalArgumentException(
-					"Unknown reference sequence name: " + name);
+	public void startSequence(String name, byte[] bases) throws IOException, CramException {
+		if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(name)) {
 
-		bitsWritten += purgeBlock(block);
+			bitsWritten += purgeBlock(block);
 
-		provider = new ByteArraySequenceBaseProvider(bases);
-		writer = new SequentialCramWriter(writerOS, provider, header);
+			provider = new ByteArraySequenceBaseProvider(new byte[] {});
+			writer = new SequentialCramWriter(writerOS, provider, header);
 
-		block.setSequenceName(sequence.getName());
-		block.setSequenceLength(sequence.getLength());
-		stats = new CramStats(header, statsPS);
+			block.setSequenceName(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+			block.setSequenceLength(0);
+			stats = new CramStats(header, statsPS, captureAllQS ? 1F : 0F);
+		} else {
+			CramReferenceSequence sequence = findSequenceByName(name);
+			if (sequence == null)
+				throw new IllegalArgumentException("Unknown reference sequence name: " + name);
+
+			bitsWritten += purgeBlock(block);
+
+			provider = new ByteArraySequenceBaseProvider(bases);
+			writer = new SequentialCramWriter(writerOS, provider, header);
+
+			block.setSequenceName(sequence.getName());
+			block.setSequenceLength(sequence.getLength());
+			stats = new CramStats(header, statsPS, captureAllQS ? 1F : 0F);
+		}
 	}
 
 	public void addRecord(CramRecord record) throws IOException, CramException {
+		if (record.next != null || record.previous != null) {
+			CramRecord mate = record.next == null ? record.previous : record.next;
+			if (block.getSequenceName().equals(mate.getSequenceName()))
+				beyondHorizon++;
+			else
+				extraChromosomePairs++;
+		}
 		stats.addRecord(record);
 		block.getRecords().add(record);
 
@@ -139,37 +165,36 @@ public class CramWriter {
 			bitsWritten += purgeBlock(block);
 	}
 
-	private long purgeBlock(CramRecordBlock block) throws IOException,
-			CramException {
+	private long purgeBlock(CramRecordBlock block) throws IOException, CramException {
 		long len = 0;
-		if (block != null && block.getRecords() != null
-				&& !block.getRecords().isEmpty()) {
+		if (block != null && block.getRecords() != null && !block.getRecords().isEmpty()) {
 			if (statsPS != null)
-				statsPS.printf("Sequence name: %s; ref length=%d\n",
-						block.getSequenceName(), block.getSequenceLength());
+				statsPS.printf("Sequence name: %s; ref length=%d\n", block.getSequenceName(), block.getSequenceLength());
 			stats.adjustBlock(block);
 			block.setRecordCount(block.getRecords().size());
 			log.debug(block.toString());
 			len = write(block);
-			log.debug(String.format("Block purged: %d\t%d\t%.2f\t%.4f",
-					block.getRecordCount(), len,
-					(float) len / block.getRecordCount(),
-					(float) len / stats.getBaseCount()));
+			log.info(String.format("Block purged: %s\t%d\t%d\t%.2f\t%.4f\t%.3fs\t%d\t%d", block.getSequenceName(), block.getRecordCount(), len,
+					(float) len / block.getRecordCount(), (float) len / stats.getBaseCount(),
+					(System.currentTimeMillis() - blockCreationTime) / 1000f, beyondHorizon, extraChromosomePairs));
 		}
 
-		stats = new CramStats(header, statsPS);
+		beyondHorizon = 0;
+		extraChromosomePairs = 0;
+		blockCreationTime = System.currentTimeMillis();
+		stats = new CramStats(header, statsPS, captureAllQS ? 1F : 0F);
 		this.block = new CramRecordBlock();
 		if (block != null) {
 			this.block.setSequenceName(block.getSequenceName());
 			this.block.setSequenceLength(block.getSequenceLength());
 		}
-		this.block
-				.setRecords(new ArrayList<CramRecord>(maxRecordsPerBlock + 1));
-		this.block
-				.setUnmappedReadQualityScoresIncluded(captureUnammpedQualityScortes);
-		this.block
-				.setSubstitutionQualityScoresIncluded(captureSubstituionQualityScore);
+		this.block.setRecords(new ArrayList<CramRecord>(maxRecordsPerBlock + 1));
+		this.block.setUnmappedReadQualityScoresIncluded(captureUnammpedQualityScortes);
+		this.block.setSubstitutionQualityScoresIncluded(captureSubstituionQualityScore);
 		this.block.setMaskedQualityScoresIncluded(captureMaskedQualityScores);
+		if (this.block.getCompression() == null)
+			this.block.setCompression(new CramCompression());
+		this.block.losslessQualityScores = captureAllQS;
 
 		return len;
 	}

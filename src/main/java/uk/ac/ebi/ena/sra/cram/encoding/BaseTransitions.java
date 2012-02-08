@@ -17,7 +17,7 @@ class BaseTransitions {
 			default:
 				throw new IllegalArgumentException(
 						String.format(
-								"Unknown transition when restoring base from transition: ",
+								"Unknown transition when restoring base from transition: %c, %d",
 								(char) reference, transition));
 			}
 
@@ -35,7 +35,7 @@ class BaseTransitions {
 			default:
 				throw new IllegalArgumentException(
 						String.format(
-								"Unknown transition when restoring base from transition: ",
+								"Unknown transition when restoring base from transition: %c, %d",
 								(char) reference, transition));
 			}
 		case 'G':
@@ -52,7 +52,7 @@ class BaseTransitions {
 			default:
 				throw new IllegalArgumentException(
 						String.format(
-								"Unknown transition when restoring base from transition: ",
+								"Unknown transition when restoring base from transition: %c, %d",
 								(char) reference, transition));
 			}
 		case 'T':
@@ -69,7 +69,7 @@ class BaseTransitions {
 			default:
 				throw new IllegalArgumentException(
 						String.format(
-								"Unknown transition when restoring base from transition: ",
+								"Unknown transition when restoring base from transition: %c, %d",
 								(char) reference, transition));
 			}
 		case 'N':
@@ -86,7 +86,7 @@ class BaseTransitions {
 			default:
 				throw new IllegalArgumentException(
 						String.format(
-								"Unknown transition when restoring base from transition: ",
+								"Unknown transition when restoring base from transition: %c, %d",
 								(char) reference, transition));
 			}
 

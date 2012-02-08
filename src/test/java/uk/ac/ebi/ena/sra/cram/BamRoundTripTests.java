@@ -55,7 +55,7 @@ public class BamRoundTripTests {
 		cramFileGeneration1.deleteOnExit();
 
 		String cmd1 = String
-				.format("-l ERROR cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --quality-cutoff 1000 --capture-unmapped-quality-scores",
+				.format("-l ERROR cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores",
 						inputBamPath, refPath,
 						cramFileGeneration1.getAbsolutePath());
 		// System.out.println(cmd1);
@@ -86,7 +86,7 @@ public class BamRoundTripTests {
 		cramFileGeneration2.deleteOnExit();
 
 		String cmd3 = String
-				.format("-l ERROR cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --quality-cutoff 1000 --capture-unmapped-quality-scores",
+				.format("-l ERROR cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores",
 						bamFile, refPath, cramFileGeneration2.getAbsolutePath());
 		// System.out.println(cmd3);
 

@@ -8,6 +8,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import net.sf.samtools.SAMRecord;
 
 public class PairedTemplateAssembler {
+	public static final int POINTEE_DISTANCE_NOT_SET = -2;
+	public static final int DISTANCE_NOT_SET = -1;
 
 	private Queue<Record> recordQueue = new LinkedBlockingQueue<PairedTemplateAssembler.Record>();
 	private Map<String, Record> recordsByNameMap = new TreeMap<String, PairedTemplateAssembler.Record>();
@@ -15,15 +17,16 @@ public class PairedTemplateAssembler {
 	private static class Record {
 		SAMRecord samRecord;
 		SAMRecord mateRecord;
-		int nofRecordsToNextFragment = -1;
+		int nofRecordsToNextFragment = DISTANCE_NOT_SET;
 		int index = -1;
+		boolean needsAssembly = true;
 	}
 
 	private int counter = 0;
 	private int alignmentHorizon;
 	private int recordHorizon;
 
-	private int distanceToNextFragment = -1;
+	private int distanceToNextFragment = DISTANCE_NOT_SET;
 	private SAMRecord mateRecord;
 
 	private String lastAddedReadSeqName;
@@ -42,7 +45,7 @@ public class PairedTemplateAssembler {
 	}
 
 	public void addSAMRecord(SAMRecord samRecord) {
-		lastAddedReadSeqName = samRecord.getReferenceName() ;
+		lastAddedReadSeqName = samRecord.getReferenceName();
 		counter++;
 
 		Record record = new Record();
@@ -50,36 +53,49 @@ public class PairedTemplateAssembler {
 		record.samRecord = samRecord;
 		recordQueue.add(record);
 
-		String spotName = getSpotName(samRecord.getReadName());
+		if (!samRecord.getMateReferenceName().equals("=")
+				&& !SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getMateReferenceName())
+				&& !SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getReferenceName())
+				&& !samRecord.getReferenceName().equals(samRecord.getMateReferenceName()))
+			return;
+
+		String spotName = samRecord.getReadName();
 
 		if (recordsByNameMap.containsKey(spotName)) {
 			Record foundRecord = recordsByNameMap.remove(spotName);
 
-			foundRecord.nofRecordsToNextFragment = record.index
-					- foundRecord.index;
+			foundRecord.nofRecordsToNextFragment = record.index - foundRecord.index;
 			foundRecord.mateRecord = samRecord;
-			record.nofRecordsToNextFragment = -2;
+			record.nofRecordsToNextFragment = POINTEE_DISTANCE_NOT_SET;
 			record.mateRecord = foundRecord.samRecord;
 		} else
 			recordsByNameMap.put(spotName, record);
 
 	}
 
-	private static final String getSpotName(String readName) {
-		if (readName.endsWith(".1") || readName.endsWith(".2"))
-			return readName.substring(0, readName.length() - 2);
-		return readName;
+	public void addSAMRecordNoAssembly(SAMRecord samRecord) {
+		lastAddedReadSeqName = samRecord.getReferenceName();
+		counter++;
+
+		Record record = new Record();
+		record.needsAssembly = false;
+		record.index = counter;
+		record.samRecord = samRecord;
+		recordQueue.add(record);
 	}
 
 	public SAMRecord nextSAMRecord() {
 		Record record = recordQueue.peek();
 		if (record == null)
 			return null;
+		if (!record.needsAssembly)
+			return fetchNextSAMRecord();
+		
 		SAMRecord samRecord = record.samRecord;
 		if (!samRecord.getReferenceName().equals(lastAddedReadSeqName))
 			return fetchNextSAMRecord();
 
-		if (record.nofRecordsToNextFragment == -2)
+		if (record.nofRecordsToNextFragment == POINTEE_DISTANCE_NOT_SET)
 			return fetchNextSAMRecord();
 
 		if (!samRecord.getReadPairedFlag())
@@ -90,10 +106,6 @@ public class PairedTemplateAssembler {
 
 		if ((samRecord.getMateAlignmentStart() - samRecord.getAlignmentStart()) > alignmentHorizon)
 			return fetchNextSAMRecord();
-
-		// if (samRecord.getMateAlignmentStart() <
-		// samRecord.getAlignmentStart())
-		// return fetchNextSAMRecord();
 
 		if (recordQueue.size() > recordHorizon)
 			return fetchNextSAMRecord();
@@ -108,13 +120,7 @@ public class PairedTemplateAssembler {
 
 		distanceToNextFragment = record.nofRecordsToNextFragment;
 		mateRecord = record.mateRecord;
-		Record remove = recordsByNameMap.remove(getSpotName(record.samRecord
-				.getReadName()));
-		// System.out
-		// .printf("Fetched: distance=%d; read name=%s; remove.distance=%d; remove.read name=%s\n",
-		// distanceToNextFragment, record.samRecord.getReadName(),
-		// remove == null ? null : remove.nofRecordsToNextFragment,
-		// remove == null ? null : remove.samRecord.getReadName());
+		Record remove = recordsByNameMap.remove(record.samRecord.getReadName());
 		return record.samRecord;
 	}
 
@@ -131,5 +137,25 @@ public class PairedTemplateAssembler {
 		distanceToNextFragment = -1;
 		recordQueue.clear();
 		recordsByNameMap.clear();
+	}
+
+	public void dumpHead() {
+		System.out.println("PairedTemplateAssembler record queue size: " + recordQueue.size());
+		System.out.println("PairedTemplateAssembler records by name map size: " + recordsByNameMap.size());
+		Record head = recordQueue.peek();
+		if (head == null)
+			System.out.println("PairedTemplateAssembler head is null.");
+		else {
+			if (head.samRecord != null)
+				System.out.println(head.samRecord.getSAMString());
+			else
+				System.out.println("PairedTemplateAssembler head: samRecord is null.");
+			if (head.mateRecord != null)
+				System.out.println(head.mateRecord.getSAMString());
+			else
+				System.out.println("PairedTemplateAssembler head: mateRecord is null.");
+			System.out.println("distance=" + head.nofRecordsToNextFragment);
+
+		}
 	}
 }

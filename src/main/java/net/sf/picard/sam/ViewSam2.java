@@ -78,6 +78,8 @@ public class ViewSam2 extends CommandLineProgram {
 	public List<String> queries;
 
 	public static void main(final String[] args) {
+		// hack to avoid 'java.io.IOException: Not enough storage is available to process this command':
+		IoUtil.STANDARD_BUFFER_SIZE = 1024 * 32;
 		new ViewSam2().instanceMain(args);
 	}
 
@@ -88,7 +90,12 @@ public class ViewSam2 extends CommandLineProgram {
 				System.out.println(q);
 
 		IoUtil.assertFileIsReadable(INPUT);
-		final SAMFileReader in = new SAMFileReader(INPUT);
+		File index = new File(INPUT + ".bai");
+		if (!index.exists())
+			index = new File(INPUT + ".crai");
+		if (!index.exists()) index = null ;
+
+		final SAMFileReader in = new SAMFileReader(INPUT, index);
 		final SAMFileHeader header = in.getFileHeader();
 
 		final SAMFileWriter out = new SAMFileWriterFactory().makeSAMWriter(header, true, System.out);

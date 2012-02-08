@@ -32,6 +32,7 @@ class CramRecordBlockWriter {
 		dos.writeBoolean(block.isUnmappedReadQualityScoresIncluded());
 		dos.writeBoolean(block.isSubstitutionQualityScoresIncluded());
 		dos.writeBoolean(block.isMaskedQualityScoresIncluded());
+		dos.writeBoolean(block.losslessQualityScores);
 
 		dos.write("COMPRESSIONBEGIN".getBytes());
 		writeCramCompression(dos, block.getCompression());
@@ -68,6 +69,12 @@ class CramRecordBlockWriter {
 
 		writeArray(os, compression.getScoreAlphabet());
 		writeArray(os, compression.getScoreFrequencies());
+		
+		writeArray(os, compression.getStopBaseAlphabet());
+		writeArray(os, compression.getStopBaseFrequencies());
+
+		writeArray(os, compression.getStopScoreAlphabet());
+		writeArray(os, compression.getStopScoreFrequencies());
 
 		writeArray(os, compression.getReadFeatureAlphabet());
 		writeArray(os, compression.getReadFeatureFrequencies());
@@ -83,6 +90,9 @@ class CramRecordBlockWriter {
 		
 		writeArray(os, compression.getMappingQualityAlphabet());
 		writeArray(os, compression.getMappingQualityFrequencies());
+		
+		writeArray(os, compression.getHeapByteAlphabet());
+		writeArray(os, compression.getHeapByteFrequencies());
 	}
 
 	private static final void writeEncoding(DataOutputStream os,

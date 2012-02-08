@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.Utils;
@@ -40,8 +39,7 @@ public class CRAMFileWriter implements SAMFileWriter {
 	private LinkedList<SAMRecord> recordBuffer = new LinkedList<SAMRecord>();
 	private byte[] refBases;
 
-	public CRAMFileWriter(ReferenceSequenceFile rsf, OutputStream os,
-			SAMFileHeader samHeader) throws IOException {
+	public CRAMFileWriter(ReferenceSequenceFile rsf, OutputStream os, SAMFileHeader samHeader) throws IOException {
 		this.referenceSequenceFile = rsf;
 		this.os = os;
 		this.samHeader = samHeader;
@@ -52,24 +50,20 @@ public class CRAMFileWriter implements SAMFileWriter {
 	private void init() throws IOException {
 		List<CramReferenceSequence> sequences;
 		sequences = new ArrayList<CramReferenceSequence>();
-		for (SAMSequenceRecord seq : samHeader.getSequenceDictionary()
-				.getSequences()) {
-			CramReferenceSequence cramSeq = new CramReferenceSequence(
-					seq.getSequenceName(), seq.getSequenceLength());
+		for (SAMSequenceRecord seq : samHeader.getSequenceDictionary().getSequences()) {
+			CramReferenceSequence cramSeq = new CramReferenceSequence(seq.getSequenceName(), seq.getSequenceLength());
 			sequences.add(cramSeq);
 		}
 
-		List<CramReadGroup> cramReadGroups = new ArrayList<CramReadGroup>(
-				samHeader.getReadGroups().size() + 1);
+		List<CramReadGroup> cramReadGroups = new ArrayList<CramReadGroup>(samHeader.getReadGroups().size() + 1);
 		cramReadGroups.add(new CramReadGroup(null));
 		for (SAMReadGroupRecord rgr : samHeader.getReadGroups()) {
-			readGroupIdToIndexMap.put(rgr.getReadGroupId(),
-					readGroupIdToIndexMap.size() + 1);
+			readGroupIdToIndexMap.put(rgr.getReadGroupId(), readGroupIdToIndexMap.size() + 1);
 			cramReadGroups.add(new CramReadGroup(rgr.getId(), rgr.getSample()));
 		}
 
-		cramWriter = new CramWriter(os, null, sequences, false, 100000, true,
-				true, false, null, null, cramReadGroups);
+		cramWriter = new CramWriter(os, null, sequences, false, 100000, true, true, false, null, null, cramReadGroups,
+				false);
 		cramWriter.init();
 
 		cramRecordFactory = new Sam2CramRecordFactory();
@@ -78,10 +72,10 @@ public class CRAMFileWriter implements SAMFileWriter {
 		cramRecordFactory.setCaptureUnmappedScores(true);
 		cramRecordFactory.setUncategorisedQualityScoreCutoff(0);
 		cramRecordFactory.setTreatSoftClipsAs(TREAT_TYPE.IGNORE);
+		cramRecordFactory.losslessQS = false;
 	}
 
-	private static byte[] refPos2RefSNPs(InputStream is, int refLen,
-			byte onValue) throws IOException {
+	private static byte[] refPos2RefSNPs(InputStream is, int refLen, byte onValue) throws IOException {
 		if (is == null)
 			return null;
 		byte[] refSNPs = new byte[refLen];
@@ -102,29 +96,22 @@ public class CRAMFileWriter implements SAMFileWriter {
 		if (assembler != null) {
 			SAMRecord assembledRecord = null;
 			while ((assembledRecord = assembler.fetchNextSAMRecord()) != null) {
-				writeSAMRecord(assembledRecord,
-						assembler.distanceToNextFragment());
+				writeSAMRecord(assembledRecord, assembler.distanceToNextFragment());
 			}
 		}
 	}
 
-	private void startSequence(String sequenceName) throws IOException,
-			CramException {
+	private void startSequence(String sequenceName) throws IOException, CramException {
 		flush();
 
 		assembler = new PairedTemplateAssembler();
 
-		ReferenceSequence sequence = referenceSequenceFile
-				.getSequence(sequenceName);
-		refBases = referenceSequenceFile.getSubsequenceAt(sequence.getName(),
-				1, sequence.length()).getBases();
-		Utils.capitaliseAndCheckBases(refBases, false);
+		refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, sequenceName);
 
 		cramWriter.startSequence(sequenceName, refBases);
 		cramRecordFactory.setRefBases(refBases);
 
-		byte[] refSNPs = refPos2RefSNPs(refSnpPosInputStream, refBases.length,
-				(byte) '+');
+		byte[] refSNPs = refPos2RefSNPs(refSnpPosInputStream, refBases.length, (byte) '+');
 		cramRecordFactory.setRefSNPs(refSNPs);
 
 		refPileMasks = new RefMaskUtils.RefMask(refBases.length, 2);
@@ -133,8 +120,7 @@ public class CRAMFileWriter implements SAMFileWriter {
 		currentSequenceName = sequenceName;
 	}
 
-	private void writeSAMRecord(SAMRecord record, int distanceToNextFragment)
-			throws IOException, CramException {
+	private void writeSAMRecord(SAMRecord record, int distanceToNextFragment) throws IOException, CramException {
 		CramRecord cramRecord = buildCramRecord(record);
 		if (record.getReadGroup() != null) {
 			String readGroupId = record.getReadGroup().getReadGroupId();
@@ -155,8 +141,7 @@ public class CRAMFileWriter implements SAMFileWriter {
 		return cramRecordFactory.createCramRecord(samRecord);
 	}
 
-	private void assembleTemplateAndWrite(SAMRecord samRecord)
-			throws IOException, CramException {
+	private void assembleTemplateAndWrite(SAMRecord samRecord) throws IOException, CramException {
 		assembler.addSAMRecord(samRecord);
 		SAMRecord assembledRecord = null;
 		while ((assembledRecord = assembler.nextSAMRecord()) != null) {
@@ -164,8 +149,7 @@ public class CRAMFileWriter implements SAMFileWriter {
 		}
 	}
 
-	private void addRefMask(SAMRecord record, byte[] refBases,
-			RefMaskUtils.RefMask refMask) {
+	private void addRefMask(SAMRecord record, byte[] refBases, RefMaskUtils.RefMask refMask) {
 		int refStartInBlock;
 		int readStartInBlock;
 		int refStart;
@@ -189,9 +173,7 @@ public class CRAMFileWriter implements SAMFileWriter {
 	@Override
 	public void addAlignment(SAMRecord samRecord) {
 		try {
-			if (currentSequenceName == null
-					|| !currentSequenceName
-							.equals(samRecord.getReferenceName())) {
+			if (currentSequenceName == null || !currentSequenceName.equals(samRecord.getReferenceName())) {
 				startSequence(samRecord.getReferenceName());
 			}
 
@@ -206,8 +188,7 @@ public class CRAMFileWriter implements SAMFileWriter {
 			while (!recordBuffer.isEmpty()) {
 				tempRecord = recordBuffer.peekFirst();
 				if (tempRecord.getReadUnmappedFlag())
-					alEnd = tempRecord.getAlignmentStart()
-							+ tempRecord.getReadLength();
+					alEnd = tempRecord.getAlignmentStart() + tempRecord.getReadLength();
 				else
 					alEnd = tempRecord.getAlignmentEnd();
 
@@ -232,12 +213,12 @@ public class CRAMFileWriter implements SAMFileWriter {
 	@Override
 	public void close() {
 		try {
-			flush () ;
-			cramWriter.close() ;
+			flush();
+			cramWriter.close();
 		} catch (IOException e) {
-			throw new RuntimeException(e) ;
+			throw new RuntimeException(e);
 		} catch (CramException e) {
-			throw new RuntimeException(e) ;
+			throw new RuntimeException(e);
 		}
 	}
 

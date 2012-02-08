@@ -68,8 +68,8 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 	public Sam2CramRecordFactory(byte[] refBases, byte[] refSNPs, RefMaskUtils.RefMask refPile,
 			Map<String, Integer> readGroupMap) {
 		this.refPile = refPile;
-		if (refBases == null)
-			throw new NullPointerException("Reference bases array is null.");
+//		if (refBases == null)
+//			throw new NullPointerException("Reference bases array is null.");
 		this.refBases = refBases;
 		this.refSNPs = refSNPs;
 		this.readGroupMap = readGroupMap;

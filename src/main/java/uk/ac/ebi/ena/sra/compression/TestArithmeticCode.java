@@ -12,7 +12,7 @@ import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.math.MathException;
 import org.apache.commons.math.distribution.ExponentialDistributionImpl;
-import org.apache.commons.math.stat.Frequency;
+import org.apache.commons.math.stat.HashMapFrequency;
 
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanCode;
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanLeaf;
@@ -44,7 +44,7 @@ public class TestArithmeticCode {
 
 		ExponentialDistributionImpl expDistr = new ExponentialDistributionImpl(
 				0.001);
-		Frequency freq = new Frequency();
+		HashMapFrequency freq = new HashMapFrequency();
 		Random random = new Random() ;
 		for (long i = 0; i < testSize; i++) {
 //			byte randomValue = (byte) (255 * expDistr.sample());

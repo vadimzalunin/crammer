@@ -71,6 +71,9 @@ public class SequentialCramWriter {
 		rootNode = recordCodecFactory.buildCodecTree(header, block,
 				referenceBaseProvider);
 		recordCodec = (BitCodec<CramRecord>) rootNode.getUserObject();
+		
+		
+//		recordCodec = recordCodecFactory.createRecordCodec(header, block, referenceBaseProvider) ;
 
 		return blockWriter.write(block);
 	}

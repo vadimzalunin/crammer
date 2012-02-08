@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 
 public class CramTools {
 	public static final String CRAM2BAM_COMMAND = "bam";
@@ -58,7 +59,8 @@ public class CramTools {
 
 	}
 
-	private static class Params {
+	@Parameters(commandDescription = "CRAM tools. Version 0.6")
+	private static class Params  {
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
 		private boolean help = false;
 

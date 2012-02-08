@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.zip.GZIPOutputStream;
 
-import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.AlignmentBlock;
 import net.sf.samtools.Cigar;
@@ -76,6 +75,8 @@ public class Bam2Cram {
 	private long landedRefMaskScores = 0;
 	private long landedPiledScores = 0;
 	private long landedTotalScores = 0;
+	private long beyondHorizon = 0;
+	private long extraChromosomePairs = 0;
 
 	private Map<String, Integer> readGroupIdToIndexMap = new TreeMap<String, Integer>();
 	private LocalReorderingSAMRecordQueue reoderingQueue = new LocalReorderingSAMRecordQueue(10000);
@@ -95,13 +96,18 @@ public class Bam2Cram {
 
 		samReader.setValidationStringency(ValidationStringency.SILENT);
 		sequences = new ArrayList<CramReferenceSequence>();
-		for (SAMSequenceRecord seq : samReader.getFileHeader().getSequenceDictionary().getSequences()) {
-			if (params.sequences != null && !params.sequences.isEmpty()
-					&& !params.sequences.contains(seq.getSequenceName()))
-				continue;
-			CramReferenceSequence cramSeq = new CramReferenceSequence(seq.getSequenceName(), seq.getSequenceLength());
-			sequences.add(cramSeq);
+		referenceSequenceFile = Utils.createIndexedFastaSequenceFile(params.referenceFasta);
+
+		if (!params.exlcudeMappedReads) {
+			for (SAMSequenceRecord seq : samReader.getFileHeader().getSequenceDictionary().getSequences()) {
+				CramReferenceSequence cramSeq = new CramReferenceSequence(seq.getSequenceName(),
+						seq.getSequenceLength());
+				sequences.add(cramSeq);
+			}
 		}
+
+		if (params.inlcudeUnmappedReads)
+			sequences.add(new CramReferenceSequence(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, 0));
 
 		List<CramReadGroup> cramReadGroups = new ArrayList<CramReadGroup>(samReader.getFileHeader().getReadGroups()
 				.size() + 1);
@@ -111,7 +117,6 @@ public class Bam2Cram {
 			cramReadGroups.add(new CramReadGroup(rgr.getReadGroupId(), rgr.getSample()));
 		}
 
-		referenceSequenceFile = Utils.createIndexedFastaSequenceFile(params.referenceFasta);
 		assembler = new PairedTemplateAssembler(params.spotAssemblyAlignmentHorizon, params.spotAssemblyRecordsHorizon);
 
 		if (params.readQualityMaskFile != null) {
@@ -130,12 +135,6 @@ public class Bam2Cram {
 		unmappedRecordCount = 0;
 		baseCount = 0;
 
-		// if (params.outputCramFile != null)
-		// log.info("Output CRAM file: " +
-		// params.outputCramFile.getAbsolutePath());
-		// else
-		// log.info("No output CRAM file specified, discarding CRAM output.");
-
 		os = createOutputStream(params.outputCramFile, false);
 
 		statsPS = params.statsOutFile == null ? null : new PrintStream(params.statsOutFile);
@@ -145,8 +144,8 @@ public class Bam2Cram {
 		cramWriter = new CramWriter(os, provider, sequences, params.roundTripCheck, params.maxBlockSize,
 				params.captureUnmappedQualityScore, params.captureSubstitutionQualityScore,
 				params.captureMaskedQualityScore, readAnnoReader == null ? null : readAnnoReader.listUniqAnnotations(),
-				statsPS, cramReadGroups);
-		cramWriter.setAutodump(log.isInfoEnabled());
+				statsPS, cramReadGroups, params.captureAllQualityScore);
+		cramWriter.setAutodump(log.isDebugEnabled());
 		cramWriter.init();
 	}
 
@@ -165,23 +164,20 @@ public class Bam2Cram {
 		for (CramReferenceSequence ref : sequences) {
 			if (recordCount >= params.maxRecords)
 				break;
+			if (params.sequences != null && !params.sequences.isEmpty() && !params.sequences.contains(ref.getName()))
+				continue;
 			compressAllRecordsForSequence2(ref.getName());
 		}
 		cramWriter.close();
 
 		log.info(String.format("Found SAM records: %d\tunmapped: %d", recordCount, unmappedRecordCount));
+		log.info(String.format("Beyond horizon pairs: %d, extra chromosomal pairs: %d", beyondHorizon,
+				extraChromosomePairs));
 		log.info(String.format("Compressed bases: %d", baseCount));
 		log.info(String.format("Landed ref masked qscores: %d", landedRefMaskScores));
 		log.info(String.format("Landed piled qscores: %d", landedPiledScores));
 		log.info(String.format("Landed total qscores: %d", landedTotalScores));
 		log.info(String.format("Quality budget: %.2f%%", baseCount == 0 ? 0 : 100f * landedTotalScores / baseCount));
-	}
-
-	private byte[] getReferenceSequenceBases(String seqName) {
-		ReferenceSequence sequence = referenceSequenceFile.getSequence(seqName);
-		byte[] refBases = referenceSequenceFile.getSubsequenceAt(sequence.getName(), 1, sequence.length()).getBases();
-		Utils.capitaliseAndCheckBases(refBases, false);
-		return refBases;
 	}
 
 	private static byte[] refPos2RefSNPs(File file, int refLen, byte onValue) throws IOException {
@@ -199,20 +195,31 @@ public class Bam2Cram {
 	}
 
 	private void compressAllRecordsForSequence2(String name) throws IOException, CramException {
+		boolean unmapped = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(name);
+
 		assembler.clear();
 		cramRecordFormat.setSequenceID(name);
 
-		SAMRecordIterator iterator = samReader.query(name, 0, 0, false);
+		SAMRecordIterator iterator;
+		if (unmapped)
+			iterator = samReader.queryUnmapped();
+		else
+			iterator = samReader.query(name, 0, 0, false);
 
 		long recordsInSequence = 0L;
 		try {
 			if (!iterator.hasNext())
 				return;
-			byte[] refBases = getReferenceSequenceBases(name);
-			byte[] refSNPs = refPos2RefSNPs(params.refSnpPosFile, refBases.length, (byte) '+');
+			byte[] refBases = null;
+			byte[] refSNPs = null;
 			RefMaskUtils.RefMask refPileMasks = null;
-			if (params.capturePiledQualityScores) {
-				refPileMasks = new RefMaskUtils.RefMask(refBases.length, params.minPiledHits);
+
+			if (!unmapped) {
+				refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, name);
+				refSNPs = refPos2RefSNPs(params.refSnpPosFile, refBases.length, (byte) '+');
+				if (params.capturePiledQualityScores) {
+					refPileMasks = new RefMaskUtils.RefMask(refBases.length, params.minPiledHits);
+				}
 			}
 
 			cramRecordFactory = new Sam2CramRecordFactory(refBases, refSNPs, refPileMasks, readGroupIdToIndexMap);
@@ -220,39 +227,66 @@ public class Bam2Cram {
 			cramRecordFactory.setCaptureSubtitutionScores(params.captureSubstitutionQualityScore);
 			cramRecordFactory.setCaptureUnmappedScores(params.captureUnmappedQualityScore);
 			cramRecordFactory.setUncategorisedQualityScoreCutoff(params.qualityCutoff);
+			if (params.captureAllQualityScore) {
+				cramRecordFactory.losslessQS = true;
+			} else {
+				cramRecordFactory.losslessQS = false;
+			}
 
 			if (params.ignoreSoftClips)
 				cramRecordFactory.setTreatSoftClipsAs(TREAT_TYPE.IGNORE);
 			else
 				cramRecordFactory.setTreatSoftClipsAs(TREAT_TYPE.INSERTION);
+			boolean enforceAlignmentOrder = false;
 
 			cramWriter.startSequence(name, refBases);
-			LinkedList<SAMRecord> recordBuffer = new LinkedList<SAMRecord>();
-			SAMRecord tempRecord = null;
-			int alEnd = 0;
-			while (iterator.hasNext() && recordCount++ < params.maxRecords
-					&& recordsInSequence++ < params.maxRecordsPerSequence) {
-				SAMRecord samRecord = iterator.next();
-				recordBuffer.add(samRecord);
 
-				if (refPileMasks != null)
-					addRefMask(samRecord, refBases, refPileMasks);
-
-				while (!recordBuffer.isEmpty()) {
-					tempRecord = recordBuffer.peekFirst();
-					if (tempRecord.getReadUnmappedFlag())
-						alEnd = tempRecord.getAlignmentStart() + tempRecord.getReadLength();
-					else
-						alEnd = tempRecord.getAlignmentEnd();
-
-					if (alEnd < samRecord.getAlignmentStart()) {
-						compressRecord(recordBuffer.pollFirst());
-					} else
-						break;
+			if (unmapped || !enforceAlignmentOrder) {
+				while (iterator.hasNext() && recordCount++ < params.maxRecords
+						&& recordsInSequence++ < params.maxRecordsPerSequence) {
+					SAMRecord samRecord = iterator.next();
+					if ((params.excludeReadsWithFlags & samRecord.getFlags()) != 0 || params.excludeUnmappedPlacedReads
+							&& params.excludeUnmappedPlacedReads && samRecord.getReadUnmappedFlag())
+						continue;
+					compressRecord(samRecord);
 				}
+			} else {
+				/*
+				 * this block should take care of the cases when the alignment
+				 * order has been changed, for example if soft clips are treated
+				 * as match/mismatch.
+				 */
+				LinkedList<SAMRecord> recordBuffer = new LinkedList<SAMRecord>();
+				SAMRecord tempRecord = null;
+				int alEnd = 0;
+				while (iterator.hasNext() && recordCount++ < params.maxRecords
+						&& recordsInSequence++ < params.maxRecordsPerSequence) {
+					SAMRecord samRecord = iterator.next();
+					if ((params.excludeReadsWithFlags & samRecord.getFlags()) != 0 || params.excludeUnmappedPlacedReads
+							&& samRecord.getReadUnmappedFlag())
+						continue;
+
+					recordBuffer.add(samRecord);
+
+					if (refPileMasks != null)
+						addRefMask(samRecord, refBases, refPileMasks);
+
+					while (!recordBuffer.isEmpty()) {
+						tempRecord = recordBuffer.peekFirst();
+						if (tempRecord.getReadUnmappedFlag())
+							alEnd = tempRecord.getAlignmentStart() + tempRecord.getReadLength();
+						else
+							alEnd = tempRecord.getAlignmentEnd();
+
+						if (alEnd < samRecord.getAlignmentStart()) {
+							compressRecord(recordBuffer.pollFirst());
+						} else
+							break;
+					}
+				}
+				while (!recordBuffer.isEmpty())
+					compressRecord(recordBuffer.pollFirst());
 			}
-			while (!recordBuffer.isEmpty())
-				compressRecord(recordBuffer.pollFirst());
 
 			flushSpotAssembler();
 			assembler.clear();
@@ -268,19 +302,16 @@ public class Bam2Cram {
 	}
 
 	private void compressRecord(SAMRecord samRecord) throws IOException, CramException {
-		// if (params.qualityCutoff > 0) {
-		// byte[] originalScores = new
-		// byte[samRecord.getBaseQualities().length];
-		// System.arraycopy(samRecord.getBaseQualities(), 0, originalScores, 0,
-		// originalScores.length);
-		// for (int i = 0; i < originalScores.length; i++) {
-		// if (originalScores[i] < params.qualityCutoff)
-		// samRecord.getBaseQualities()[i] = originalScores[i];
-		// else
-		// samRecord.getBaseQualities()[i] =
-		// Sam2CramRecordFactory.ignorePositionsWithQualityScore;
-		// }
-		// }
+		if (params.qualityCutoff > 0) {
+			byte[] originalScores = new byte[samRecord.getBaseQualities().length];
+			System.arraycopy(samRecord.getBaseQualities(), 0, originalScores, 0, originalScores.length);
+			for (int i = 0; i < originalScores.length; i++) {
+				if (originalScores[i] < params.qualityCutoff)
+					samRecord.getBaseQualities()[i] = originalScores[i];
+				else
+					samRecord.getBaseQualities()[i] = Sam2CramRecordFactory.ignorePositionsWithQualityScore;
+			}
+		}
 
 		addSAMRecord(samRecord);
 	}
@@ -351,8 +382,10 @@ public class Bam2Cram {
 	}
 
 	private void addSAMRecord(SAMRecord samRecord) throws IOException, CramException {
+		if (samRecord.getMateReferenceName().equals("="))
+			samRecord.setMateReferenceName(samRecord.getReferenceName());
 		assembler.addSAMRecord(samRecord);
-		SAMRecord assembledRecord = null;
+		SAMRecord assembledRecord = samRecord;
 		while ((assembledRecord = assembler.nextSAMRecord()) != null) {
 			writeSAMRecord(assembledRecord, assembler.distanceToNextFragment());
 		}
@@ -378,9 +411,47 @@ public class Bam2Cram {
 		if (!cramRecord.isReadMapped())
 			unmappedRecordCount++;
 
-		if (distanceToNextFragment > 0) {
-			cramRecord.setLastFragment(false);
-			cramRecord.setRecordsToNextFragment(distanceToNextFragment);
+		if (record.getReadPairedFlag()) {
+			if (distanceToNextFragment > 0) {
+				cramRecord.setLastFragment(false);
+				cramRecord.setRecordsToNextFragment(distanceToNextFragment);
+			} else {
+				if (distanceToNextFragment == PairedTemplateAssembler.POINTEE_DISTANCE_NOT_SET)
+					cramRecord.setLastFragment(true);
+				else {
+					cramRecord.setLastFragment(false);
+					if (distanceToNextFragment == PairedTemplateAssembler.DISTANCE_NOT_SET) {
+						if (record.getReferenceName().equals(record.getMateReferenceName())) {
+							beyondHorizon++;
+							// if (Math.abs(record.getInferredInsertSize()) <
+							// params.spotAssemblyAlignmentHorizon) {
+							// System.out.println("Insert size less then alignment horizon but assemling failed:");
+							// assembler.dumpHead();
+							// }
+						} else
+							extraChromosomePairs++;
+
+						cramRecord.setReadName(record.getReadName());
+						cramRecord.setSequenceName(record.getReferenceName());
+						CramRecord mate = new CramRecord();
+						mate.setAlignmentStart(record.getMateAlignmentStart());
+						mate.setNegativeStrand(record.getMateNegativeStrandFlag());
+						mate.setSequenceName(record.getMateReferenceName());
+						mate.setReadName(record.getReadName());
+						mate.setReadMapped(!record.getMateUnmappedFlag());
+
+						mate.detached = true;
+						if (record.getFirstOfPairFlag()) {
+							cramRecord.next = mate;
+							mate.previous = cramRecord;
+						} else {
+							cramRecord.previous = mate;
+							mate.next = cramRecord;
+						}
+					} else
+						throw new RuntimeException("Unknown paired distance code: " + distanceToNextFragment);
+				}
+			}
 		} else
 			cramRecord.setLastFragment(true);
 
@@ -431,14 +502,26 @@ public class Bam2Cram {
 		try {
 			jc.parse(args);
 		} catch (Exception e) {
+			System.out.println("Failed to parse parameteres, detailed message below: ");
 			System.out.println(e.getMessage());
-			printUsage(jc);
-			return;
+			System.out.println();
+			System.out.println("See usage: -h");
+			System.exit(1);
 		}
 
 		if (args.length == 0 || params.help) {
 			printUsage(jc);
-			return;
+			System.exit(1);
+		}
+
+		if (params.referenceFasta == null) {
+			System.out.println("A reference fasta file is required.");
+			System.exit(1);
+		}
+
+		if (params.bamFile == null) {
+			System.out.println("A BAM file is required. ");
+			System.exit(1);
 		}
 
 		Bam2Cram b2c = new Bam2Cram(params);
@@ -456,7 +539,7 @@ public class Bam2Cram {
 		// os.close();
 	}
 
-	@Parameters(commandDescription = "BAM to CRAM converter.")
+	@Parameters(commandDescription = "BAM to CRAM converter. Version 0.6")
 	static class Params {
 		@Parameter(names = { "--input-bam-file" }, converter = FileConverter.class, description = "Path to a BAM file to be converted to CRAM. Omit if standard input (pipe).")
 		File bamFile;
@@ -509,6 +592,9 @@ public class Bam2Cram {
 		@Parameter(names = { "--capture-masked-quality-scores" }, description = "Preserve quality scores for masked bases.")
 		boolean captureMaskedQualityScore = false;
 
+		@Parameter(names = { "--capture-all-quality-scores" }, description = "Preserve all quality scores.")
+		boolean captureAllQualityScore = false;
+
 		@Parameter(names = { "--print-cram-records" }, description = "Print CRAM records while compressing.")
 		boolean printCramRecords = false;
 
@@ -535,5 +621,17 @@ public class Bam2Cram {
 
 		@Parameter(names = { "--min-piled-hits" }, description = "Preserve quality score where at least this many reads disagree with the reference.")
 		int minPiledHits = 2;
+
+		@Parameter(names = { "--include-unmapped-reads" }, description = "Include unmapped reads, namely those that are not assigned to any reference sequence.")
+		boolean inlcudeUnmappedReads = false;
+
+		@Parameter(names = { "--exclude-mapped-reads" }, description = "Exclude mapped reads, namely those that are assigned to a reference sequence.")
+		boolean exlcudeMappedReads = false;
+
+		@Parameter(names = { "--exclude-unmapped-placed-reads" }, description = "Exclude any unmapped reads, including those with a mapped mate.")
+		boolean excludeUnmappedPlacedReads = false;
+
+		@Parameter(names = { "--exclude-reads-with-flags" }, description = "Exclude reads with these bit flags, for example 512 designates the vendor filtered flag.")
+		int excludeReadsWithFlags = 0;
 	}
 }

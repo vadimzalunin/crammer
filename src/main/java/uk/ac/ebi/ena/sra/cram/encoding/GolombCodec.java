@@ -31,7 +31,7 @@ public class GolombCodec implements BitCodec<Long> {
 			quotient++;
 
 		long numbits = quotient + 1;
-		long ceiling = (long) Math.ceil(Math.log(m) / Math.log(2));
+		long ceiling = (long) (Math.log(m) / Math.log(2)+1);
 		long reminder = bis.readBits((int) (ceiling - 1));
 		numbits += ceiling - 1;
 		if (reminder >= Math.pow(2, ceiling) - m) {
@@ -47,9 +47,9 @@ public class GolombCodec implements BitCodec<Long> {
 	public final long write(final BitOutputStream bos, final Long value)
 			throws IOException {
 		long newValue = value + offset;
-		long quotient = (long) Math.floor(newValue / m);
+		long quotient = (long) (newValue / m);
 		long reminder = newValue % m;
-		long ceiling = (long) Math.ceil(Math.log(m) / Math.log(2));
+		long ceiling = (long) (Math.log(m) / Math.log(2)+1);
 
 		long len = quotient + 1;
 		bos.write(quotientBit, quotient);
@@ -69,9 +69,9 @@ public class GolombCodec implements BitCodec<Long> {
 	@Override
 	public final long numberOfBits(Long value) {
 		long newValue = value + offset;
-		long quotient = (long) Math.floor(newValue / m);
+		long quotient = (long) (newValue / m);
 		long reminder = newValue % m;
-		long ceiling = (long) Math.ceil(Math.log(m) / Math.log(2));
+		long ceiling = (long) (Math.log(m) / Math.log(2)+1);
 		long l = quotient + 1;
 
 		if (reminder < Math.pow(2, ceiling) - m)

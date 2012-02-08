@@ -13,12 +13,12 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
 
-import net.sf.picard.PicardException;
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.BAMFileWriter;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
+import net.sf.samtools.util.SequenceUtil;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
@@ -57,18 +57,32 @@ public class Cram2Bam {
 		return new BufferedInputStream(new FileInputStream(file));
 	}
 
+	public static void usage(JCommander jc) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("\n");
+		jc.usage(sb);
+
+		System.out.println(sb.toString());
+	}
+
 	public static void main(String[] args) throws Exception {
 		Params params = new Params();
 		JCommander jc = new JCommander(params);
 		jc.parse(args);
 
 		if (args.length == 0 || params.help) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("\n");
-			jc.usage(sb);
+			usage(jc);
+			System.exit(1);
+		}
 
-			System.out.println(sb.toString());
-			return;
+		if (params.reference == null) {
+			System.out.println("A reference fasta file is required.");
+			System.exit(1);
+		}
+
+		if (params.cramFile == null) {
+			System.out.println("A CRAM file is required.");
+			System.exit(1);
 		}
 
 		ReferenceSequenceFile referenceSequenceFile = Utils.createIndexedFastaSequenceFile(params.reference);
@@ -108,6 +122,10 @@ public class Cram2Bam {
 
 		header = Utils.cramHeader2SamHeader(cramHeader);
 		writer.setHeader(header);
+		Map<String, Integer> seqNameToIndexMap = new TreeMap<String, Integer>();
+		for (SAMSequenceRecord seq : header.getSequenceDictionary().getSequences()) {
+			seqNameToIndexMap.put(seq.getSequenceName(), seq.getSequenceIndex());
+		}
 
 		long indexOfFirstRecordInTheBlock = 0L;
 		CramRecordBlock prevBlock = null;
@@ -121,6 +139,7 @@ public class Cram2Bam {
 		Map<Long, Long> indexes = new TreeMap<Long, Long>();
 
 		long counter = 1;
+		ByteArraySequenceBaseProvider provider = null;
 
 		NEXT_BLOCK: while (true) {
 
@@ -133,8 +152,6 @@ public class Cram2Bam {
 			if (sequences != null && !sequences.contains(readBlock.getSequenceName()))
 				continue;
 			prevAlStart = readBlock.getFirstRecordPosition();
-			if (readBlock == null)
-				break NEXT_BLOCK;
 
 			if (prevBlock != null) {
 				if (!prevBlock.getSequenceName().equals(readBlock.getSequenceName())) {
@@ -161,27 +178,18 @@ public class Cram2Bam {
 				// counter = 1;
 			}
 
-			prevSeqName = seqName;
 
-			ReferenceSequence nextSequence = null;
-			try {
-				nextSequence = referenceSequenceFile.getSequence(seqName);
-			} catch (PicardException e1) {
-				// // try prepending/removing 'chr':
-				// if (seqName.startsWith("chr"))
-				// nextSequence =
-				// referenceSequenceFile.getSequence(seqName.replaceFirst("chr",
-				// ""));
-				// else
-				// nextSequence = referenceSequenceFile.getSequence("chr" +
-				// seqName);
-				throw (e1);
+			if ("*".equals(seqName)) {
+				byte[] refBases = new byte[] {};
+				provider = new ByteArraySequenceBaseProvider(refBases);
+			} else {
+				if (provider == null || !seqName.equals(prevSeqName)) {
+					byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, seqName);
+					provider = new ByteArraySequenceBaseProvider(refBases);
+				}
 			}
-			byte[] refBases = referenceSequenceFile.getSubsequenceAt(nextSequence.getName(), 1, nextSequence.length())
-					.getBases();
-			Utils.capitaliseAndCheckBases(refBases, false);
-			ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(refBases);
 			reader.setReferenceBaseProvider(provider);
+			prevSeqName = seqName;
 
 			CramRecord cramRecord = null;
 			RestoreBases restoreBases = new RestoreBases();
@@ -212,20 +220,8 @@ public class Cram2Bam {
 
 			for (CramRecord record : records) {
 				cramRecord = record;
-				if (!cramRecord.isLastFragment()) {
-					// if (cramRecord.getRecordsToNextFragment() + counter >
-					// records
-					// .size())
-					// cramRecord.setLastFragment(true);
-					// else {
-					indexes.put(counter + cramRecord.getRecordsToNextFragment(), counter);
-
-					// }
-				}
-				Long index = indexes.remove(counter);
 
 				SAMRecord samRecord = new SAMRecord(header);
-
 				if (cramHeader.getReadGroups() != null) {
 					if (!cramHeader.getReadGroups().isEmpty()) {
 						CramReadGroup cramReadGroup = cramHeader.getReadGroups().get(cramRecord.getReadGroupID());
@@ -234,27 +230,64 @@ public class Cram2Bam {
 							samRecord.setAttribute("RG", rgId);
 					}
 				}
-				if (index != null) {
-					samRecord.setReadName(String.valueOf(index.intValue())
-					// + ".2"
-							);
-					samRecord.setFirstOfPairFlag(cramRecord.isFirstInPair());
-					samRecord.setSecondOfPairFlag(!cramRecord.isFirstInPair());
+
+				boolean longJump = false;
+				if (cramRecord.next != null || cramRecord.previous != null) {
+					longJump = true;
+					CramRecord mate = cramRecord.next == null ? cramRecord.previous : cramRecord.next;
 					samRecord.setReadPairedFlag(true);
-				} else {
-					if (cramRecord.isLastFragment()) {
-						samRecord.setReadName(String.valueOf(counter));
+					samRecord.setMateAlignmentStart((int) mate.getAlignmentStart());
+					samRecord.setMateNegativeStrandFlag(mate.isNegativeStrand());
+					// System.out.println(mate);
+					// System.out.println(mate.getSequenceName());
+					// System.out.println(seqNameToIndexMap);
+					// System.out.println(seqNameToIndexMap.get(mate.getSequenceName()));
+					if (mate.getSequenceName() == null || !seqNameToIndexMap.containsKey(mate.getSequenceName())) {
 						samRecord.setReadPairedFlag(false);
-						samRecord.setFirstOfPairFlag(false);
-						samRecord.setSecondOfPairFlag(false);
+						samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+						samRecord.setMateNegativeStrandFlag(false);
 					} else {
-						samRecord.setReadName(String.valueOf(counter)
-						// + ".1"
+						int seqIndex = seqNameToIndexMap.get(mate.getSequenceName());
+						samRecord.setMateReferenceIndex(seqIndex);
+						// samRecord.setMateReferenceName(mate.getSequenceName());
+						samRecord.setMateUnmappedFlag(!mate.isReadMapped());
+						if (cramRecord.isFirstInPair()) {
+							samRecord.setFirstOfPairFlag(true);
+							samRecord.setSecondOfPairFlag(false);
+						} else {
+							samRecord.setFirstOfPairFlag(false);
+							samRecord.setSecondOfPairFlag(true);
+						}
+					}
+					samRecord.setReadName(cramRecord.getReadName());
+				} else {
+					if (!cramRecord.isLastFragment())
+						indexes.put(counter + cramRecord.getRecordsToNextFragment(), counter);
+
+					Long index = indexes.remove(counter);
+
+					if (index != null) {
+						samRecord.setReadName(String.valueOf(index.intValue())
+						// + ".2"
 								);
 						samRecord.setFirstOfPairFlag(cramRecord.isFirstInPair());
 						samRecord.setSecondOfPairFlag(!cramRecord.isFirstInPair());
 						samRecord.setReadPairedFlag(true);
-						// samRecord.setMateReferenceName(readBlock.getSequenceName());
+					} else {
+						if (cramRecord.isLastFragment()) {
+							samRecord.setReadName(String.valueOf(counter));
+							samRecord.setReadPairedFlag(false);
+							samRecord.setFirstOfPairFlag(false);
+							samRecord.setSecondOfPairFlag(false);
+						} else {
+							samRecord.setReadName(String.valueOf(counter)
+							// + ".1"
+									);
+							samRecord.setFirstOfPairFlag(cramRecord.isFirstInPair());
+							samRecord.setSecondOfPairFlag(!cramRecord.isFirstInPair());
+							samRecord.setReadPairedFlag(true);
+							// samRecord.setMateReferenceName(readBlock.getSequenceName());
+						}
 					}
 				}
 
@@ -263,13 +296,14 @@ public class Cram2Bam {
 					samRecord.setAlignmentStart((int) cramRecord.getAlignmentStart());
 					samRecord.setReadBases(restoreBases.restoreReadBases(cramRecord));
 					byte[] scores = cramRecord.getQualityScores();
-					if (scores == null || scores.length == 0) 
+					if (scores == null || scores.length == 0)
 						scores = restoreQualityScores.restoreQualityScores(cramRecord);
-					
+
 					injectQualityScores(scores, samRecord);
 					prevAlStart = samRecord.getAlignmentStart();
 				} else {
-					samRecord.setAlignmentStart((int) prevAlStart);
+					samRecord.setAlignmentStart((int) cramRecord.getAlignmentStart());
+					// samRecord.setAlignmentStart((int) prevAlStart);
 					samRecord.setReadBases(cramRecord.getReadBases());
 					byte[] scores = cramRecord.getQualityScores();
 					injectQualityScores(scores, samRecord);
@@ -282,18 +316,21 @@ public class Cram2Bam {
 				samRecord.setProperPairFlag(cramRecord.isProperPair());
 				samRecord.setDuplicateReadFlag(cramRecord.isDuplicate());
 
-				assembler.addSAMRecord(samRecord);
-
 				if (printCramRecords)
 					System.out.println(cramRecordFormat.writeRecord(cramRecord));
 
+				if (longJump)
+					assembler.addSAMRecordNoAssembly(samRecord);
+				else
+					assembler.addSAMRecord(samRecord);
+
 				while ((samRecord = assembler.nextSAMRecord()) != null) {
 					SAMRecord mate = assembler.getMateRecord();
+
 					if (mate != null)
 						Utils.setLooseMateInfo(samRecord, mate, header);
 
 					writeSAMRecord(samRecord, writer);
-//					 System.out.println(samRecord.format());
 				}
 
 				if (counter++ >= maxRecords) {
@@ -319,6 +356,9 @@ public class Cram2Bam {
 			return;
 		}
 
+		if (samRecord.getMateReferenceName() != null
+				&& !SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getMateReferenceName()))
+			return;
 		SAMRecord mate = assembler.getMateRecord();
 		if (mate != null)
 			Utils.setLooseMateInfo(samRecord, mate, header);
@@ -346,6 +386,15 @@ public class Cram2Bam {
 
 	private static final void writeSAMRecord(SAMRecord samRecord, SAMFileWriter writer) {
 		try {
+			// quick fixes:
+			if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getReferenceName())) {
+				samRecord.setAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+				samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
+			}
+
+			if (samRecord.getReadUnmappedFlag())
+				samRecord.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
+			//
 			writer.addAlignment(samRecord);
 			// System.out.println(samRecord.format());
 		} catch (IllegalArgumentException e) {
@@ -355,7 +404,7 @@ public class Cram2Bam {
 		}
 	}
 
-	@Parameters(commandDescription = "CRAM to BAM conversion")
+	@Parameters(commandDescription = "CRAM to BAM conversion. Version 0.6")
 	static class Params {
 		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to uncompress. Omit if standard input (pipe).")
 		File cramFile;

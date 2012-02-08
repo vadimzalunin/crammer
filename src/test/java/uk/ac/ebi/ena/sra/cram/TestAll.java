@@ -28,7 +28,7 @@ import uk.ac.ebi.ena.sra.cram.mask.SingleLineMaskReaderTest;
 		FastaByteArrayMaskFactoryTest.class, IntegerListMaskFactoryTest.class,
 		SingleLineMaskReaderTest.class, /* text formating needs re-design: CramRecordTextFormatTest.class,
 		DefaultReadFeatureFormatTest.class,*/
-		CramRecordCodecRoundTripTests.class, TRAMRoundTripTests.class })
+		CramRecordCodecRoundTripTests.class, TRAMRoundTripTests.class, TestLongJumps.class })
 public class TestAll {
 
 }

@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.util.CloseableIterator;
 import net.sf.samtools.util.SeekableFileStream;
@@ -42,12 +41,13 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 	private BitCodec<CramRecord> recordCodec;
 	private DefaultBitInputStream bis;
 	private RestoreBases restoreBases;
+	private RestoreQualityScores restoreScores;
 	private final RecordPointer start;
 	private DataInputStream blockDIS;
 
 	private CramRecord nextRecord;
 	private ReferenceSequenceFile referenceSequenceFile;
-	private ReferenceSequence referenceSequence;
+	private String refSequenceName;
 
 	private long alStartAddjustment = 0;
 
@@ -80,7 +80,7 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 
 	private static List<CramRecord> getRecordsStartingFrom(File cramFile, CramIndex index,
 			ReferenceSequenceFile referenceSequenceFile, String seqName, long queryStart, int nofRecords)
-			throws CramFormatException, CramCompressionException, IOException {
+			throws IOException, CramException {
 
 		SeekableFileStream stream = new SeekableFileStream(cramFile);
 
@@ -97,7 +97,7 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 			if (record.getAlignmentStart() < queryStart)
 				continue;
 			records.add(record);
-			if (++counter >= 10)
+			if (++counter >= nofRecords)
 				break;
 		}
 
@@ -105,7 +105,7 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 	}
 
 	public CramPreemptiveRandomAccessIterator(SeekableStream stream, ReferenceSequenceFile referenceSequenceFile,
-			RecordPointer start) throws IOException, CramFormatException, CramCompressionException {
+			RecordPointer start) throws IOException, CramException {
 		if (!Utils.isCRAM(stream))
 			throw new RuntimeException("Not a valid CRAM format.");
 
@@ -125,17 +125,19 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 		recordCounter = start.getRecordNumber();
 		CramRecordCodec codec = null;
 
-		// // ugly hack:
-		// if (recordCodec instanceof MeasuringCodec)
-		// codec = (CramRecordCodec) ((MeasuringCodec)
-		// recordCodec).getDelegate();
-		// else
-		// codec = (CramRecordCodec) recordCodec;
-		// codec.prevPosInSeq = start.getAlignmentStart();
-
 		alStartAddjustment = start.getAlignmentStart() - block.getFirstRecordPosition();
 
 		advance();
+
+		// ugly hack:
+		nextRecord.setAlignmentStart(start.getAlignmentStart());
+		if (nextRecord.isReadMapped())
+			restoreBases.restoreReadBases(nextRecord);
+		if (recordCodec instanceof MeasuringCodec)
+			codec = (CramRecordCodec) ((MeasuringCodec) recordCodec).getDelegate();
+		else
+			codec = (CramRecordCodec) recordCodec;
+		codec.prevPosInSeq = start.getAlignmentStart();
 	}
 
 	public CramHeader getCramHeader() {
@@ -146,7 +148,7 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 		header = CramHeaderIO.read(Utils.getNextChunk(dis));
 	}
 
-	private void readNextBlock() throws CramFormatException, IOException, CramCompressionException {
+	private void readNextBlock() throws IOException, CramException {
 		blockDIS = Utils.getNextChunk(this.dis);
 		if (blockDIS == null) {
 			eof = true;
@@ -159,18 +161,16 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 		if (block == null)
 			eof = true;
 		else {
-			if (referenceSequence == null || !block.getSequenceName().equals(referenceSequence.getName())) {
-				if (referenceSequence == null)
-					referenceSequence = referenceSequenceFile.getSequence(block.getSequenceName());
-
-				referenceSequence = referenceSequenceFile.getSubsequenceAt(block.getSequenceName(), 1,
-						referenceSequence.length());
-				referenceBaseProvider = new ByteArraySequenceBaseProvider(referenceSequence.getBases());
+			if (refSequenceName == null || !block.getSequenceName().equals(refSequenceName)) {
+				refSequenceName = block.getSequenceName();
+				byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, refSequenceName);
+				referenceBaseProvider = new ByteArraySequenceBaseProvider(refBases);
 
 			}
 
 			recordCodec = recordCodecFactory.createRecordCodec(header, block, referenceBaseProvider);
 			restoreBases = new RestoreBases(referenceBaseProvider, block.getSequenceName());
+			restoreScores = new RestoreQualityScores();
 			bis = new DefaultBitInputStream(blockDIS);
 			alStartAddjustment = 0;
 		}
@@ -220,6 +220,8 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 			throw new RuntimeException(e.getMessage(), e);
 		} catch (CramCompressionException e) {
 			throw new RuntimeException(e.getMessage(), e);
+		} catch (CramException e) {
+			throw new RuntimeException(e.getMessage(), e);
 		}
 	}
 
@@ -229,11 +231,13 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 	private CramRecord getNextRecord() throws IOException {
 		CramRecord record = recordCodec.read(bis);
 		record.setSequenceName(block.getSequenceName());
-		record.setAlignmentStart(record.getAlignmentStart() + alStartAddjustment);
+		// record.setAlignmentStart(record.getAlignmentStart() +
+		// alStartAddjustment);
 		recordCounter++;
 
 		if (record.isReadMapped())
 			restoreBases.restoreReadBases(record);
+		restoreScores.restoreQualityScores(record);
 
 		return record;
 	}

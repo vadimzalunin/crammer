@@ -20,10 +20,10 @@ import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.ByteArrayHuffmanCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.CramRecordCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.DeletionVariationCodec;
+import uk.ac.ebi.ena.sra.cram.encoding.HuffmanByteCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.HuffmanCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.InsertionVariationCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.MeasuringCodec;
-import uk.ac.ebi.ena.sra.cram.encoding.NullBitCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.ReadAnnotationCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.ReadBaseCodec;
 import uk.ac.ebi.ena.sra.cram.encoding.ReadFeatureCodec;
@@ -51,14 +51,12 @@ import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 
 public class RecordCodecFactory {
 
-	public DefaultMutableTreeNode buildCodecTree(CramHeader header,
-			CramRecordBlock block, SequenceBaseProvider referenceBaseProvider)
-			throws CramCompressionException {
+	public DefaultMutableTreeNode buildCodecTree(CramHeader header, CramRecordBlock block,
+			SequenceBaseProvider referenceBaseProvider) throws CramCompressionException {
 		DefaultMutableTreeNode root = new DefaultMutableTreeNode();
 
 		CramRecordCodec recordCodec = new CramRecordCodec();
-		root.setUserObject(new MeasuringCodec<CramRecord>(recordCodec,
-				"Cram record codec"));
+		root.setUserObject(new MeasuringCodec<CramRecord>(recordCodec, "Cram record codec"));
 
 		CramCompression compression = block.getCompression();
 		// given a bunch of block info and compression info create a codec:
@@ -69,24 +67,19 @@ public class RecordCodecFactory {
 		root.add(new DefaultMutableTreeNode(refPosMeasuringCodec));
 
 		// hack:
-		Long[] readLengthAlphabet = new Long[compression
-				.getReadLengthAlphabet().length];
+		Long[] readLengthAlphabet = new Long[compression.getReadLengthAlphabet().length];
 		for (int i = 0; i < readLengthAlphabet.length; i++)
-			readLengthAlphabet[i] = new Long(
-					compression.getReadLengthAlphabet()[i]);
-		HuffmanTree<Long> readlengthTree = HuffmanCode.buildTree(
-				compression.getReadLengthFrequencies(), readLengthAlphabet);
-		HuffmanCodec<Long> readlengthCodec = new HuffmanCodec<Long>(
-				readlengthTree);
+			readLengthAlphabet[i] = new Long(compression.getReadLengthAlphabet()[i]);
+		HuffmanTree<Long> readlengthTree = HuffmanCode.buildTree(compression.getReadLengthFrequencies(),
+				readLengthAlphabet);
+		HuffmanCodec<Long> readlengthCodec = new HuffmanCodec<Long>(readlengthTree);
 		// createStub(compression.getReadLengthEncoding());
-		MeasuringCodec<Long> readlengthMeasuringCodec = new MeasuringCodec<Long>(
-				readlengthCodec, "Read length codec");
+		MeasuringCodec<Long> readlengthMeasuringCodec = new MeasuringCodec<Long>(readlengthCodec, "Read length codec");
 		recordCodec.readlengthCodec = readlengthMeasuringCodec;
 		root.add(new DefaultMutableTreeNode(readlengthMeasuringCodec));
 
 		MeasuringCodec<Long> rankCodec = new MeasuringCodec<Long>(
-				createStub(compression.getRecordsToNextFragmentEncoding()),
-				"Rank codec");
+				createStub(compression.getRecordsToNextFragmentEncoding()), "Rank codec");
 		recordCodec.recordsToNextFragmentCodec = rankCodec;
 		root.add(new DefaultMutableTreeNode(rankCodec));
 
@@ -98,38 +91,35 @@ public class RecordCodecFactory {
 		DefaultMutableTreeNode rflNode = new DefaultMutableTreeNode();
 		root.add(rflNode);
 
-		NumberCodecStub inReadPosCodecStub = createStub(compression
-				.getInReadPosEncoding());
+		NumberCodecStub inReadPosCodecStub = createStub(compression.getInReadPosEncoding());
 
-		HuffmanTree<Byte> baseTree = HuffmanCode.buildTree(
-				compression.getBaseFrequencies(),
+		HuffmanTree<Byte> baseTree = HuffmanCode.buildTree(compression.getBaseFrequencies(),
 				Utils.autobox(compression.getBaseAlphabet()));
-		MeasuringCodec<Byte> baseMeasuringCodec = new MeasuringCodec<Byte>(
-				new HuffmanCodec<Byte>(baseTree), "Base codec");
+		MeasuringCodec<Byte> baseMeasuringCodec = new MeasuringCodec<Byte>(new HuffmanByteCodec(baseTree),
+				"Base codec");
 		final BitCodec<Byte> baseCodec = baseMeasuringCodec;
 		rflNode.add(new DefaultMutableTreeNode(baseCodec));
 
-		HuffmanTree<Byte> qualityScoreTree = HuffmanCode.buildTree(
-				compression.getScoreFrequencies(),
+		HuffmanTree<Byte> qualityScoreTree = HuffmanCode.buildTree(compression.getScoreFrequencies(),
 				Utils.autobox(compression.getScoreAlphabet()));
-		MeasuringCodec<Byte> qsMeasuringCodec = new MeasuringCodec<Byte>(
-				new HuffmanCodec<Byte>(qualityScoreTree), "Quality score codec");
+		// MeasuringCodec<Byte> qsMeasuringCodec = new MeasuringCodec<Byte>(new
+		// PPMCodec(3),
+		// "Quality score codec");
+		MeasuringCodec<Byte> qsMeasuringCodec = new MeasuringCodec<Byte>(new HuffmanByteCodec(qualityScoreTree),
+				"Quality score codec");
 		final BitCodec<Byte> qualityScoreCodec = qsMeasuringCodec;
 		rflNode.add(new DefaultMutableTreeNode(qsMeasuringCodec));
 
 		ReadFeatureCodec readFearureCodec = new ReadFeatureCodec();
-		MeasuringCodec<Long> posInReadMeasuringCodec = new MeasuringCodec<Long>(
-				inReadPosCodecStub, "Position in read");
+		MeasuringCodec<Long> posInReadMeasuringCodec = new MeasuringCodec<Long>(inReadPosCodecStub, "Position in read");
 		readFearureCodec.inReadPosCodec = posInReadMeasuringCodec;
 		rflNode.add(new DefaultMutableTreeNode(posInReadMeasuringCodec));
 
-		HuffmanTree<Byte> featureOperatorTree = HuffmanCode.buildTree(
-				compression.getReadFeatureFrequencies(),
+		HuffmanTree<Byte> featureOperatorTree = HuffmanCode.buildTree(compression.getReadFeatureFrequencies(),
 				Utils.autobox(compression.getReadFeatureAlphabet()));
-		HuffmanCodec<Byte> featureOperatorCodec = new HuffmanCodec<Byte>(
-				featureOperatorTree);
-		MeasuringCodec<Byte> rfopsMeasuringCodec = new MeasuringCodec<Byte>(
-				featureOperatorCodec, "Read feature operators");
+		HuffmanByteCodec featureOperatorCodec = new HuffmanByteCodec(featureOperatorTree);
+		MeasuringCodec<Byte> rfopsMeasuringCodec = new MeasuringCodec<Byte>(featureOperatorCodec,
+				"Read feature operators");
 		readFearureCodec.featureOperationCodec = rfopsMeasuringCodec;
 		rflNode.add(new DefaultMutableTreeNode(rfopsMeasuringCodec));
 
@@ -138,18 +128,14 @@ public class RecordCodecFactory {
 		rflNode.add(rbNode);
 
 		ReadBaseCodec readBaseCodec = new ReadBaseCodec();
-		MeasuringCodec<Byte> rbBaseMeasuringCodec = new MeasuringCodec<Byte>(
-				baseCodec, "RBQS codec");
+		MeasuringCodec<Byte> rbBaseMeasuringCodec = new MeasuringCodec<Byte>(baseCodec, "RBQS codec");
 		readBaseCodec.baseCodec = rbBaseMeasuringCodec;
 		rbNode.add(new DefaultMutableTreeNode(rbBaseMeasuringCodec));
 
-		MeasuringCodec<Byte> rbqsMeasuringCodec = new MeasuringCodec<Byte>(
-				block.isMaskedQualityScoresIncluded() ? qualityScoreCodec
-						: new NullBitCodec<Byte>(), "RBQS codec");
+		MeasuringCodec<Byte> rbqsMeasuringCodec = new MeasuringCodec<Byte>(qualityScoreCodec, "RBQS codec");
 		readBaseCodec.qualityScoreCodec = rbqsMeasuringCodec;
 		rbNode.add(new DefaultMutableTreeNode(rbqsMeasuringCodec));
-		MeasuringCodec<ReadBase> readBaseMeasuringCodec = new MeasuringCodec<ReadBase>(
-				readBaseCodec, "Read base codec");
+		MeasuringCodec<ReadBase> readBaseMeasuringCodec = new MeasuringCodec<ReadBase>(readBaseCodec, "Read base codec");
 		readFearureCodec.readBaseCodec = readBaseMeasuringCodec;
 		rbNode.setUserObject(readBaseMeasuringCodec);
 
@@ -159,12 +145,11 @@ public class RecordCodecFactory {
 
 		DeletionVariationCodec deletionCodec = new DeletionVariationCodec();
 		MeasuringCodec<Long> delLenMeasuringCodec = new MeasuringCodec<Long>(
-				createStub(compression.getDelLengthEncoding()),
-				"Deletion length codec");
+				createStub(compression.getDelLengthEncoding()), "Deletion length codec");
 		deletionCodec.dellengthPosCodec = delLenMeasuringCodec;
 		// delNode.add(new DefaultMutableTreeNode(delLenMeasuringCodec));
-		MeasuringCodec<DeletionVariation> delMeasuringCodec = new MeasuringCodec<DeletionVariation>(
-				deletionCodec, "Deletion codec");
+		MeasuringCodec<DeletionVariation> delMeasuringCodec = new MeasuringCodec<DeletionVariation>(deletionCodec,
+				"Deletion codec");
 		readFearureCodec.deletionCodec = delMeasuringCodec;
 		// delNode.setUserObject(delMeasuringCodec);
 		delNode.setUserObject(delLenMeasuringCodec);
@@ -174,8 +159,8 @@ public class RecordCodecFactory {
 		rflNode.add(subNode);
 
 		SubstitutionVariationCodec substitutionCodec = new SubstitutionVariationCodec();
-		MeasuringCodec<BaseChange> baseChangeMeasuringCodec = new MeasuringCodec<BaseChange>(
-				new BaseChangeCodec(), "Base change codec");
+		MeasuringCodec<BaseChange> baseChangeMeasuringCodec = new MeasuringCodec<BaseChange>(new BaseChangeCodec(),
+				"Base change codec");
 		substitutionCodec.baseChangeCodec = baseChangeMeasuringCodec;
 		// subNode.add(new DefaultMutableTreeNode(baseChangeMeasuringCodec));
 
@@ -190,43 +175,17 @@ public class RecordCodecFactory {
 		rflNode.add(insNode);
 
 		InsertionVariationCodec insertionCodec = new InsertionVariationCodec();
-		// insertionCodec.insertBasesCodec = new BaseSequenceCodec(
-		// BaseSequenceCodec.BaseCodecType.RAISED, "ACGTSN".getBytes());
-		insertionCodec.insertBasesCodec = new ByteArrayHuffmanCodec(
-				compression.getBaseAlphabet(),
-				compression.getBaseFrequencies(), (byte) '$');
-		MeasuringCodec<InsertionVariation> insMeasuringCodec = new MeasuringCodec<InsertionVariation>(
-				insertionCodec, "Insertion codec");
+		insertionCodec.insertBasesCodec = new ByteArrayHuffmanCodec(compression.getBaseAlphabet(),
+				compression.getStopBaseFrequencies(), (byte) '$');
+		MeasuringCodec<InsertionVariation> insMeasuringCodec = new MeasuringCodec<InsertionVariation>(insertionCodec,
+				"Insertion codec");
 		readFearureCodec.insertionCodec = insMeasuringCodec;
 		insNode.setUserObject(insMeasuringCodec);
 
-		MeasuringCodec<List<ReadFeature>> varMeasuringCodec = new MeasuringCodec<List<ReadFeature>>(
-				readFearureCodec, "Variations codec");
+		MeasuringCodec<List<ReadFeature>> varMeasuringCodec = new MeasuringCodec<List<ReadFeature>>(readFearureCodec,
+				"Variations codec");
 		recordCodec.variationsCodec = varMeasuringCodec;
 		rflNode.setUserObject(varMeasuringCodec);
-
-		// unampped bases:
-		ByteArrayHuffmanCodec unmappedBasesCodec = new ByteArrayHuffmanCodec(
-				compression.getBaseAlphabet(),
-				compression.getBaseFrequencies(), (byte) '$');
-		MeasuringCodec<byte[]> unmappedBasesMeasuringCodec = new MeasuringCodec<byte[]>(
-				unmappedBasesCodec, "Unmapped bases codec");
-		recordCodec.basesCodec = unmappedBasesMeasuringCodec;
-		root.add(new DefaultMutableTreeNode(unmappedBasesMeasuringCodec));
-
-		// unampped quality scores:
-		BitCodec<byte[]> unmappedScoresCodec = null;
-		if (block.isUnmappedReadQualityScoresIncluded()) {
-			unmappedScoresCodec = new ByteArrayHuffmanCodec(
-					compression.getScoreAlphabet(),
-					compression.getScoreFrequencies(), (byte) -1);
-		} else
-			unmappedScoresCodec = new NullBitCodec<byte[]>();
-
-		MeasuringCodec<byte[]> unmappedScoresMeasuringCodec = new MeasuringCodec<byte[]>(
-				unmappedScoresCodec, "Unmapped quality scores codec");
-		recordCodec.qualitiesCodec = unmappedScoresMeasuringCodec;
-		root.add(new DefaultMutableTreeNode(unmappedScoresMeasuringCodec));
 
 		BitCodec<InsertBase> insertBaseCodec = new BitCodec<InsertBase>() {
 
@@ -238,8 +197,7 @@ public class RecordCodecFactory {
 			}
 
 			@Override
-			public long write(BitOutputStream bos, InsertBase ib)
-					throws IOException {
+			public long write(BitOutputStream bos, InsertBase ib) throws IOException {
 				return baseCodec.write(bos, ib.getBase());
 			}
 
@@ -248,22 +206,19 @@ public class RecordCodecFactory {
 				return baseCodec.numberOfBits(ib.getBase());
 			}
 		};
-		readFearureCodec.insertBaseCodec = new MeasuringCodec<InsertBase>(
-				insertBaseCodec, "Insert base codec");
+		readFearureCodec.insertBaseCodec = new MeasuringCodec<InsertBase>(insertBaseCodec, "Insert base codec");
 		rflNode.add(new DefaultMutableTreeNode(readFearureCodec.insertBaseCodec));
 
 		BitCodec<BaseQualityScore> baseQSCodec = new BitCodec<BaseQualityScore>() {
 
 			@Override
 			public BaseQualityScore read(BitInputStream bis) throws IOException {
-				BaseQualityScore bqs = new BaseQualityScore(-1,
-						qualityScoreCodec.read(bis));
+				BaseQualityScore bqs = new BaseQualityScore(-1, qualityScoreCodec.read(bis));
 				return bqs;
 			}
 
 			@Override
-			public long write(BitOutputStream bos, BaseQualityScore bqs)
-					throws IOException {
+			public long write(BitOutputStream bos, BaseQualityScore bqs) throws IOException {
 				return qualityScoreCodec.write(bos, bqs.getQualityScore());
 			}
 
@@ -272,50 +227,53 @@ public class RecordCodecFactory {
 				return qualityScoreCodec.numberOfBits(bqs.getQualityScore());
 			}
 		};
-		readFearureCodec.baseQSCodec = new MeasuringCodec<BaseQualityScore>(
-				baseQSCodec, "Base QS codec");
+		readFearureCodec.baseQSCodec = new MeasuringCodec<BaseQualityScore>(baseQSCodec, "Base QS codec");
 		rflNode.add(new DefaultMutableTreeNode(readFearureCodec.baseQSCodec));
 
-		if (header != null && header.getReadAnnotations() != null
-				&& !header.getReadAnnotations().isEmpty()) {
-			ReadAnnotation[] anns = new ReadAnnotation[compression
-					.getReadAnnotationIndexes().length];
+		if (header != null && header.getReadAnnotations() != null && !header.getReadAnnotations().isEmpty()) {
+			ReadAnnotation[] anns = new ReadAnnotation[compression.getReadAnnotationIndexes().length];
 			for (int i = 0; i < anns.length; i++)
 				anns[i] = header.getReadAnnotations().get(i);
 
-			BitCodec<ReadAnnotation> readAnnoCodec = new ReadAnnotationCodec(
-					anns, compression.getReadAnnotationFrequencies());
-			MeasuringCodec<ReadAnnotation> readAnnoMesuringCodec = new MeasuringCodec<ReadAnnotation>(
-					readAnnoCodec, "Read anno codec");
+			BitCodec<ReadAnnotation> readAnnoCodec = new ReadAnnotationCodec(anns,
+					compression.getReadAnnotationFrequencies());
+			MeasuringCodec<ReadAnnotation> readAnnoMesuringCodec = new MeasuringCodec<ReadAnnotation>(readAnnoCodec,
+					"Read anno codec");
 			recordCodec.readAnnoCodec = readAnnoMesuringCodec;
 			root.add(new DefaultMutableTreeNode(readAnnoMesuringCodec));
 		}
 
-		if (compression.getReadGroupIndexes() == null
-				|| compression.getReadGroupIndexes().length < 2) {
+		if (compression.getReadGroupIndexes() == null || compression.getReadGroupIndexes().length < 2) {
 			SingleValueBitCodec<Integer> singleValueBitCodec = new SingleValueBitCodec<Integer>();
 			singleValueBitCodec.setValue(compression.getReadGroupIndexes()[0]);
 			recordCodec.readGroupCodec = singleValueBitCodec;
 		} else {
-			HuffmanTree<Integer> readGroupIndexTree = HuffmanCode.buildTree(
-					compression.getReadGroupFrequencies(),
+			HuffmanTree<Integer> readGroupIndexTree = HuffmanCode.buildTree(compression.getReadGroupFrequencies(),
 					Utils.autobox(compression.getReadGroupIndexes()));
-			HuffmanCodec<Integer> readGroupIndexCodec = new HuffmanCodec<Integer>(
-					readGroupIndexTree);
-			MeasuringCodec<Integer> measuringReadGroupIndexCodec = new MeasuringCodec<Integer>(
-					readGroupIndexCodec, "Read group index codec");
+			HuffmanCodec<Integer> readGroupIndexCodec = new HuffmanCodec<Integer>(readGroupIndexTree);
+			MeasuringCodec<Integer> measuringReadGroupIndexCodec = new MeasuringCodec<Integer>(readGroupIndexCodec,
+					"Read group index codec");
 			recordCodec.readGroupCodec = measuringReadGroupIndexCodec;
 			root.add(new DefaultMutableTreeNode(measuringReadGroupIndexCodec));
 		}
 
-		HuffmanTree<Byte> mappingQualityTree = HuffmanCode.buildTree(
-				compression.getMappingQualityFrequencies(),
+		HuffmanTree<Byte> mappingQualityTree = HuffmanCode.buildTree(compression.getMappingQualityFrequencies(),
 				Utils.autobox(compression.getMappingQualityAlphabet()));
-		HuffmanCodec<Byte> fmappingQualityCodec = new HuffmanCodec<Byte>(
-				mappingQualityTree);
-		recordCodec.mappingQualityCodec = new MeasuringCodec<Byte>(
-				fmappingQualityCodec, "Mapping quality codec");
+		HuffmanByteCodec mappingQualityCodec = new HuffmanByteCodec(mappingQualityTree);
+		recordCodec.mappingQualityCodec = new MeasuringCodec<Byte>(mappingQualityCodec, "Mapping quality codec");
 		root.add(new DefaultMutableTreeNode(recordCodec.mappingQualityCodec));
+
+		recordCodec.storeMappedQualityScores = block.losslessQualityScores;
+
+		recordCodec.baseCodec = new MeasuringCodec<Byte>(baseCodec, "Record base codec");
+		recordCodec.qualityCodec = new MeasuringCodec<Byte>(qualityScoreCodec, "Record quality codec");
+		
+		
+		HuffmanTree<Byte> heapByteTree = HuffmanCode.buildTree(compression.getHeapByteFrequencies(),
+				Utils.autobox(compression.getHeapByteAlphabet()));
+		HuffmanByteCodec heapByteCodec = new HuffmanByteCodec(heapByteTree);
+		recordCodec.heapByteCodec = new MeasuringCodec<Byte>(heapByteCodec, "Heap bytes codec");
+		root.add(new DefaultMutableTreeNode(recordCodec.heapByteCodec));
 
 		return root;
 	}
@@ -329,8 +287,7 @@ public class RecordCodecFactory {
 		if (!node.isLeaf()) {
 			Enumeration children = node.children();
 			while (children.hasMoreElements()) {
-				DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) children
-						.nextElement();
+				DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) children.nextElement();
 				dump(childNode);
 			}
 		}
@@ -340,8 +297,7 @@ public class RecordCodecFactory {
 		ArrayList list = Collections.list(node.depthFirstEnumeration());
 		ArrayList<MeasuringCodec> codecs = new ArrayList<MeasuringCodec>();
 		for (Object o : list)
-			codecs.add((MeasuringCodec) ((DefaultMutableTreeNode) o)
-					.getUserObject());
+			codecs.add((MeasuringCodec) ((DefaultMutableTreeNode) o).getUserObject());
 		Collections.sort(codecs, byBitsComparator);
 		return codecs;
 	}
@@ -366,67 +322,54 @@ public class RecordCodecFactory {
 		}
 	};
 
-	public BitCodec<CramRecord> createRecordCodec(CramHeader header,
-			CramRecordBlock block, SequenceBaseProvider referenceBaseProvider)
-			throws CramCompressionException {
+	public BitCodec<CramRecord> createRecordCodec(CramHeader header, CramRecordBlock block,
+			SequenceBaseProvider referenceBaseProvider) throws CramCompressionException {
 		CramCompression compression = block.getCompression();
 		// given a bunch of block info and compression info create a codec:
 		CramRecordCodec recordCodec = new CramRecordCodec();
 		recordCodec.prevPosInSeq = block.getFirstRecordPosition();
-		recordCodec.inSeqPosCodec = createStub(compression
-				.getInSeqPosEncoding());
+		recordCodec.inSeqPosCodec = createStub(compression.getInSeqPosEncoding());
 
 		// hack:
-		Long[] readLengthAlphabet = new Long[compression
-				.getReadLengthAlphabet().length];
+		Long[] readLengthAlphabet = new Long[compression.getReadLengthAlphabet().length];
 		for (int i = 0; i < readLengthAlphabet.length; i++)
-			readLengthAlphabet[i] = new Long(
-					compression.getReadLengthAlphabet()[i]);
-		HuffmanTree<Long> readlengthTree = HuffmanCode.buildTree(
-				compression.getReadLengthFrequencies(), readLengthAlphabet);
-		HuffmanCodec<Long> readlengthCodec = new HuffmanCodec<Long>(
-				readlengthTree);
+			readLengthAlphabet[i] = new Long(compression.getReadLengthAlphabet()[i]);
+		HuffmanTree<Long> readlengthTree = HuffmanCode.buildTree(compression.getReadLengthFrequencies(),
+				readLengthAlphabet);
+		HuffmanCodec<Long> readlengthCodec = new HuffmanCodec<Long>(readlengthTree);
 		// createStub(compression.getReadLengthEncoding());
 		recordCodec.readlengthCodec = readlengthCodec;
-		recordCodec.recordsToNextFragmentCodec = createStub(compression
-				.getRecordsToNextFragmentEncoding());
+		recordCodec.recordsToNextFragmentCodec = createStub(compression.getRecordsToNextFragmentEncoding());
 		recordCodec.sequenceBaseProvider = referenceBaseProvider;
 		recordCodec.defaultReadLength = block.getReadLength();
 
-		NumberCodecStub inReadPosCodecStub = createStub(compression
-				.getInReadPosEncoding());
+		NumberCodecStub inReadPosCodecStub = createStub(compression.getInReadPosEncoding());
 
-		HuffmanTree<Byte> baseTree = HuffmanCode.buildTree(
-				compression.getBaseFrequencies(),
+		HuffmanTree<Byte> baseTree = HuffmanCode.buildTree(compression.getBaseFrequencies(),
 				Utils.autobox(compression.getBaseAlphabet()));
-		final BitCodec<Byte> baseCodec = new HuffmanCodec<Byte>(baseTree);
-		HuffmanTree<Byte> qualityScoreTree = HuffmanCode.buildTree(
-				compression.getScoreFrequencies(),
-				Utils.autobox(compression.getScoreAlphabet()));
+		final BitCodec<Byte> baseCodec = new HuffmanByteCodec(baseTree);
 
-		final BitCodec<Byte> qualityScoreCodec = new HuffmanCodec<Byte>(
-				qualityScoreTree);
+		HuffmanTree<Byte> qualityScoreTree = HuffmanCode.buildTree(compression.getScoreFrequencies(),
+				Utils.autobox(compression.getScoreAlphabet()));
+		final BitCodec<Byte> qualityScoreCodec = new HuffmanByteCodec(qualityScoreTree);
 
 		ReadFeatureCodec readFearureCodec = new ReadFeatureCodec();
 		readFearureCodec.inReadPosCodec = inReadPosCodecStub;
-		HuffmanTree<Byte> featureOperatorTree = HuffmanCode.buildTree(
-				compression.getReadFeatureFrequencies(),
+		HuffmanTree<Byte> featureOperatorTree = HuffmanCode.buildTree(compression.getReadFeatureFrequencies(),
 				Utils.autobox(compression.getReadFeatureAlphabet()));
-		HuffmanCodec<Byte> featureOperatorCodec = new HuffmanCodec<Byte>(
-				featureOperatorTree);
+		HuffmanByteCodec featureOperatorCodec = new HuffmanByteCodec(featureOperatorTree);
 		readFearureCodec.featureOperationCodec = featureOperatorCodec;
 
 		ReadBaseCodec readBaseCodec = new ReadBaseCodec();
 		readBaseCodec.baseCodec = baseCodec;
-		if (block.isMaskedQualityScoresIncluded())
-			readBaseCodec.qualityScoreCodec = qualityScoreCodec;
-		else
-			readBaseCodec.qualityScoreCodec = new NullBitCodec<Byte>();
+		// if (block.isMaskedQualityScoresIncluded())
+		readBaseCodec.qualityScoreCodec = qualityScoreCodec;
+		// else
+		// readBaseCodec.qualityScoreCodec = new NullBitCodec<Byte>();
 		readFearureCodec.readBaseCodec = readBaseCodec;
 
 		DeletionVariationCodec deletionCodec = new DeletionVariationCodec();
-		deletionCodec.dellengthPosCodec = createStub(compression
-				.getDelLengthEncoding());
+		deletionCodec.dellengthPosCodec = createStub(compression.getDelLengthEncoding());
 		readFearureCodec.deletionCodec = deletionCodec;
 
 		SubstitutionVariationCodec substitutionCodec = new SubstitutionVariationCodec();
@@ -436,27 +379,26 @@ public class RecordCodecFactory {
 		InsertionVariationCodec insertionCodec = new InsertionVariationCodec();
 		// insertionCodec.insertBasesCodec = new BaseSequenceCodec(
 		// BaseSequenceCodec.BaseCodecType.RAISED, "ACGTSN".getBytes());
-		insertionCodec.insertBasesCodec = new ByteArrayHuffmanCodec(
-				compression.getBaseAlphabet(),
-				compression.getBaseFrequencies(), (byte) '$');
+		insertionCodec.insertBasesCodec = new ByteArrayHuffmanCodec(compression.getBaseAlphabet(),
+				compression.getStopBaseFrequencies(), (byte) '$');
 		readFearureCodec.insertionCodec = insertionCodec;
 
 		recordCodec.variationsCodec = readFearureCodec;
 
-		// unampped bases:
-		final ByteArrayHuffmanCodec unmappedBasesCodec = new ByteArrayHuffmanCodec(
-				compression.getBaseAlphabet(),
-				compression.getBaseFrequencies(), (byte) '$');
-		recordCodec.basesCodec = unmappedBasesCodec;
-
-		// unampped quality scores:
-		if (block.isUnmappedReadQualityScoresIncluded()) {
-			ByteArrayHuffmanCodec unmappedScoresCodec = new ByteArrayHuffmanCodec(
-					compression.getScoreAlphabet(),
-					compression.getScoreFrequencies(), (byte) -1);
-			recordCodec.qualitiesCodec = unmappedScoresCodec;
-		} else
-			recordCodec.qualitiesCodec = new NullBitCodec<byte[]>();
+		// // unampped bases:
+		// final ByteArrayHuffmanCodec unmappedBasesCodec = new
+		// ByteArrayHuffmanCodec(compression.getBaseAlphabet(),
+		// compression.getBaseFrequencies(), (byte) '$');
+		// recordCodec.basesCodec = unmappedBasesCodec;
+		//
+		// // unampped quality scores:
+		// if (block.isUnmappedReadQualityScoresIncluded()) {
+		// ByteArrayHuffmanCodec unmappedScoresCodec = new
+		// ByteArrayHuffmanCodec(compression.getScoreAlphabet(),
+		// compression.getScoreFrequencies(), (byte) -1);
+		// recordCodec.qualitiesCodec = unmappedScoresCodec;
+		// } else
+		// recordCodec.qualitiesCodec = new NullBitCodec<byte[]>();
 
 		BitCodec<InsertBase> insertBaseCodec = new BitCodec<InsertBase>() {
 
@@ -468,8 +410,7 @@ public class RecordCodecFactory {
 			}
 
 			@Override
-			public long write(BitOutputStream bos, InsertBase ib)
-					throws IOException {
+			public long write(BitOutputStream bos, InsertBase ib) throws IOException {
 				return baseCodec.write(bos, ib.getBase());
 			}
 
@@ -484,14 +425,12 @@ public class RecordCodecFactory {
 
 			@Override
 			public BaseQualityScore read(BitInputStream bis) throws IOException {
-				BaseQualityScore bqs = new BaseQualityScore(-1,
-						qualityScoreCodec.read(bis));
+				BaseQualityScore bqs = new BaseQualityScore(-1, qualityScoreCodec.read(bis));
 				return bqs;
 			}
 
 			@Override
-			public long write(BitOutputStream bos, BaseQualityScore bqs)
-					throws IOException {
+			public long write(BitOutputStream bos, BaseQualityScore bqs) throws IOException {
 				return qualityScoreCodec.write(bos, bqs.getQualityScore());
 			}
 
@@ -502,50 +441,49 @@ public class RecordCodecFactory {
 		};
 		readFearureCodec.baseQSCodec = baseQSCodec;
 
-		if (header != null && header.getReadAnnotations() != null
-				&& !header.getReadAnnotations().isEmpty()) {
-			ReadAnnotation[] anns = new ReadAnnotation[compression
-					.getReadAnnotationIndexes().length];
+		if (header != null && header.getReadAnnotations() != null && !header.getReadAnnotations().isEmpty()) {
+			ReadAnnotation[] anns = new ReadAnnotation[compression.getReadAnnotationIndexes().length];
 			for (int i = 0; i < anns.length; i++)
 				anns[i] = header.getReadAnnotations().get(i);
 
-			BitCodec<ReadAnnotation> readAnnoCodec = new ReadAnnotationCodec(
-					anns, compression.getReadAnnotationFrequencies());
+			BitCodec<ReadAnnotation> readAnnoCodec = new ReadAnnotationCodec(anns,
+					compression.getReadAnnotationFrequencies());
 			recordCodec.readAnnoCodec = readAnnoCodec;
 		}
 
-		if (compression.getReadGroupIndexes() == null
-				|| compression.getReadGroupIndexes().length < 2) {
+		if (compression.getReadGroupIndexes() == null || compression.getReadGroupIndexes().length < 2) {
 			SingleValueBitCodec<Integer> singleValueBitCodec = new SingleValueBitCodec<Integer>();
 			singleValueBitCodec.setValue(compression.getReadGroupIndexes()[0]);
 			recordCodec.readGroupCodec = singleValueBitCodec;
 		} else {
-			HuffmanTree<Integer> readGroupIndexTree = HuffmanCode.buildTree(
-					compression.getReadGroupFrequencies(),
+			HuffmanTree<Integer> readGroupIndexTree = HuffmanCode.buildTree(compression.getReadGroupFrequencies(),
 					Utils.autobox(compression.getReadGroupIndexes()));
-			HuffmanCodec<Integer> readGroupIndexCodec = new HuffmanCodec<Integer>(
-					readGroupIndexTree);
+			HuffmanCodec<Integer> readGroupIndexCodec = new HuffmanCodec<Integer>(readGroupIndexTree);
 			recordCodec.readGroupCodec = readGroupIndexCodec;
 		}
 
-		HuffmanTree<Byte> mappingQualityTree = HuffmanCode.buildTree(
-				compression.getMappingQualityFrequencies(),
+		HuffmanTree<Byte> mappingQualityTree = HuffmanCode.buildTree(compression.getMappingQualityFrequencies(),
 				Utils.autobox(compression.getMappingQualityAlphabet()));
-		HuffmanCodec<Byte> fmappingQualityCodec = new HuffmanCodec<Byte>(
-				mappingQualityTree);
+		HuffmanByteCodec fmappingQualityCodec = new HuffmanByteCodec(mappingQualityTree);
 		recordCodec.mappingQualityCodec = fmappingQualityCodec;
+
+		recordCodec.storeMappedQualityScores = block.losslessQualityScores;
+
+		recordCodec.baseCodec = baseCodec;
+		recordCodec.qualityCodec = qualityScoreCodec;
+		
+		HuffmanTree<Byte> heapByteTree = HuffmanCode.buildTree(compression.getHeapByteFrequencies(),
+				Utils.autobox(compression.getHeapByteAlphabet()));
+		recordCodec.heapByteCodec = new HuffmanByteCodec(heapByteTree);
 
 		return recordCodec;
 	}
 
-	private static NumberCodecStub createStub(Encoding encoding)
-			throws CramCompressionException {
-		if (encoding == null
-				|| encoding.getAlgorithm() == EncodingAlgorithm.NULL)
+	private static NumberCodecStub createStub(Encoding encoding) throws CramCompressionException {
+		if (encoding == null || encoding.getAlgorithm() == EncodingAlgorithm.NULL)
 			return NumberCodecFactory.createStub(EncodingAlgorithm.NULL);
 
-		NumberCodecStub stub = NumberCodecFactory.createStub(encoding
-				.getAlgorithm());
+		NumberCodecStub stub = NumberCodecFactory.createStub(encoding.getAlgorithm());
 		stub.initFromString(encoding.getParameters());
 		return stub;
 	}

@@ -55,6 +55,7 @@ class CramRecordBlockReader {
 		block.setUnmappedReadQualityScoresIncluded(dis.readBoolean());
 		block.setSubstitutionQualityScoresIncluded(dis.readBoolean());
 		block.setMaskedQualityScoresIncluded(dis.readBoolean());
+		block.losslessQualityScores = dis.readBoolean();
 
 		ensureExpectedBytes("COMPRESSIONBEGIN".getBytes());
 		block.setCompression(readCompression());
@@ -92,6 +93,12 @@ class CramRecordBlockReader {
 
 		compression.setScoreAlphabet(readByteArray());
 		compression.setScoreFrequencies(readIntArray());
+		
+		compression.setStopBaseAlphabet(readByteArray());
+		compression.setStopBaseFrequencies(readIntArray());
+
+		compression.setStopScoreAlphabet(readByteArray());
+		compression.setStopScoreFrequencies(readIntArray());
 
 		compression.setReadFeatureAlphabet(readByteArray());
 		compression.setReadFeatureFrequencies(readIntArray());
@@ -107,6 +114,9 @@ class CramRecordBlockReader {
 
 		compression.setMappingQualityAlphabet(readByteArray());
 		compression.setMappingQualityFrequencies(readIntArray());
+		
+		compression.setHeapByteAlphabet(readByteArray());
+		compression.setHeapByteFrequencies(readIntArray());
 
 		return compression;
 	}

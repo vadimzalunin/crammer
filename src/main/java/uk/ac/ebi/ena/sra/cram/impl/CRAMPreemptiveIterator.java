@@ -3,12 +3,15 @@ package uk.ac.ebi.ena.sra.cram.impl;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.zip.GZIPInputStream;
 
 import net.sf.picard.PicardException;
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.util.CloseableIterator;
+
+import org.apache.log4j.Logger;
+
+import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.Utils;
 import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
@@ -20,6 +23,7 @@ import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
 import uk.ac.ebi.ena.sra.cram.io.DefaultBitInputStream;
 
 public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
+	private static Logger log = Logger.getLogger(CRAMPreemptiveIterator.class);
 	private DataInputStream is;
 	private CramHeader header;
 	private CramRecordBlock block;
@@ -33,12 +37,12 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 	private DefaultBitInputStream bis;
 	private RestoreBases restoreBases;
 	private ReferenceSequenceFile referenceSequenceFile;
-	private ReferenceSequence referenceSequence;
+	private String refSequenceName ;
 
 	private CramRecord mNextRecord;
 
 	public CRAMPreemptiveIterator(InputStream is, ReferenceSequenceFile referenceSequenceFile, CramHeader header)
-			throws IOException, CramFormatException, CramCompressionException {
+			throws IOException, CramException {
 		if (!Utils.isCRAM(is))
 			throw new RuntimeException("Not a valid CRAM format.");
 
@@ -62,7 +66,7 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 		header = CramHeaderIO.read(Utils.getNextChunk(is));
 	}
 
-	private void readNextBlock() throws CramFormatException, IOException, CramCompressionException {
+	private void readNextBlock() throws IOException, CramException {
 		DataInputStream dis = Utils.getNextChunk(is);
 		if (dis == null) {
 			eof = true;
@@ -74,20 +78,10 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 		if (block == null)
 			eof = true;
 		else {
-			if (referenceSequence == null || !block.getSequenceName().equals(referenceSequence.getName())) {
-				try {
-					referenceSequence = referenceSequenceFile.getSequence(block.getSequenceName());
-				} catch (PicardException e1) {
-					if (block.getSequenceName().startsWith("chr"))
-						referenceSequence = referenceSequenceFile.getSequence(block.getSequenceName().substring(3));
-					else
-						referenceSequence = referenceSequenceFile.getSequence("chr" + block.getSequenceName());
-				}
-
-				byte[] refBases = referenceSequence.getBases() ;
-				Utils.capitaliseAndCheckBases(refBases, false) ;
+			if (refSequenceName == null || !block.getSequenceName().equals(refSequenceName)) {
+				refSequenceName = block.getSequenceName() ;
+				byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, refSequenceName);
 				referenceBaseProvider = new ByteArraySequenceBaseProvider(refBases);
-
 			}
 
 			recordCodec = recordCodecFactory.createRecordCodec(header, block, referenceBaseProvider);
@@ -106,7 +100,11 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 
 	public CramRecord next() {
 		final CramRecord result = mNextRecord;
-		advance();
+		try {
+			advance();
+		} catch (CramException e) {
+			throw new RuntimeException(e);
+		}
 		return result;
 	}
 
@@ -118,7 +116,7 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 		return block == null || recordCounter < block.getRecordCount();
 	}
 
-	private void advance() {
+	private void advance() throws CramException {
 		if (eof) {
 			mNextRecord = null;
 			return;

@@ -7,7 +7,7 @@ import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 
 public class SAMRecordIteratorJob implements Runnable {
-	public static SAMRecord STOP_SAMRECORD = new SAMRecord(null);
+	public final static SAMRecord STOP_SAMRECORD = new SAMRecord(null);
 	private static final long DEFAULT_SLEEP_TIME = 100;
 	private SAMRecordIterator iterator;
 	private Queue<SAMRecord> queue;
@@ -16,51 +16,41 @@ public class SAMRecordIteratorJob implements Runnable {
 	private long sleepTime;
 	private Throwable exception;
 
-	public SAMRecordIteratorJob(SAMRecordIterator iterator,
-			Queue<SAMRecord> queue, long sleepTime) {
+	public SAMRecordIteratorJob(SAMRecordIterator iterator, Queue<SAMRecord> queue, long sleepTime) {
 		this.iterator = iterator;
 		this.queue = queue;
 		this.sleepTime = sleepTime;
 	}
 
-	public SAMRecordIteratorJob(SAMRecordIterator iterator,
-			Queue<SAMRecord> queue) {
+	public SAMRecordIteratorJob(SAMRecordIterator iterator, Queue<SAMRecord> queue) {
 		this(iterator, queue, DEFAULT_SLEEP_TIME);
 	}
 
 	@Override
 	public void run() {
-		long counter = 0;
-		long nullCounter = 0;
+		long tries = 0;
 
 		try {
 			while (!abort.get() && iterator.hasNext()) {
 				SAMRecord record = iterator.next();
-				counter++;
+				tries = 0;
 				while (!abort.get() && !queue.offer(record)) {
-					nullCounter++;
-					// try {
-					// Thread.sleep(sleepTime);
-					// } catch (InterruptedException e) {
-					// return;
-					// }
+					Thread.sleep(sleepTime);
+					tries++ ;
 				}
 			}
-			queue.add(STOP_SAMRECORD);
+
+			tries = 0;
+			while (!abort.get() && !queue.offer(STOP_SAMRECORD)) 
+				Thread.sleep(sleepTime);
+			
 		} catch (Throwable e) {
 			e.printStackTrace();
 			exception = e;
 		} finally {
-			System.err.println("SAMRecordIteratorJob exiting.");
-			System.err.println("nullCounter=" + nullCounter);
 			finished.set(true);
-			try {
-				iterator.close();
-			} catch (Throwable t) {
-				t.printStackTrace();
-			}
+//			System.out.println("SAMRecordIteratorJob: tries=" + tries);
 		}
-		System.out.println("SAMRecordIteratorJob: " + counter);
 	}
 
 	public void abort() {

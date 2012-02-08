@@ -11,15 +11,20 @@ import java.io.InputStream;
  * @author vadim
  * 
  */
-public class DefaultBitInputStream extends DataInputStream implements
-		BitInputStream {
+public class DefaultBitInputStream extends DataInputStream implements BitInputStream {
 
 	private int nofBufferedBits = 0;
 	private int byteBuffer = 0;
 	private boolean endOfStream = false;
+	private boolean throwEOF = false;
 
 	public DefaultBitInputStream(InputStream in) {
+		this(in, true);
+	}
+
+	public DefaultBitInputStream(InputStream in, boolean throwEOF) {
 		super(in);
+		this.throwEOF = throwEOF;
 	}
 
 	public final boolean readBit() throws IOException {
@@ -30,14 +35,16 @@ public class DefaultBitInputStream extends DataInputStream implements
 		byteBuffer = in.read();
 		if (byteBuffer == -1) {
 			endOfStream = true;
-			throw new EOFException("End of stream.");
+			if (throwEOF)
+				throw new EOFException("End of stream.");
 		}
 
 		return ((byteBuffer >>> 7) & 1) == 1;
 	}
 
 	public final int readBits(int n) throws IOException {
-		if (n == 0) return 0 ;
+		if (n == 0)
+			return 0;
 		int x = 0;
 		while (n > nofBufferedBits) {
 			n -= nofBufferedBits;
@@ -60,8 +67,7 @@ public class DefaultBitInputStream extends DataInputStream implements
 
 	public final long readLongBits(int len) throws IOException {
 		if (len > 64)
-			throw new RuntimeException(
-					"More then 64 bits are requested in one read from bit stream.");
+			throw new RuntimeException("More then 64 bits are requested in one read from bit stream.");
 
 		long result = 0;
 		final long last = len - 1;

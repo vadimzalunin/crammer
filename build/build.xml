@@ -33,11 +33,11 @@
 
 	<target name="runnable" depends="clean,compile">
 		<jar destfile="${basedir}/cramtools.jar" filesetmanifest="skip" duplicate="preserve">
-			<fileset dir="${classes}" />
+			<fileset dir="${classes}"  excludes="**/uk/ac/ebi/ena/sra/cram/lossy/*.class"/>
 			<zipgroupfileset dir="lib" includes="*.jar" excludes="colloquial_arithcode-1_1.jar">
 				<exclude name="**/SAMFileReader.class" />
 			</zipgroupfileset>
-
+			
 			<manifest>
 				<attribute name="Main-Class" value="uk.ac.ebi.ena.sra.cram.CramTools" />
 				<attribute name="Class-Path" value="" />

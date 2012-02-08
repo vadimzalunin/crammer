@@ -55,7 +55,7 @@ public class SubexpCodec implements BitCodec<Long> {
 			b = k;
 			u = 0;
 		} else {
-			b = (long) Math.floor(Math.log(newValue) / Math.log(2));
+			b = (long) (Math.log(newValue) / Math.log(2));
 			u = b - k + 1;
 		}
 

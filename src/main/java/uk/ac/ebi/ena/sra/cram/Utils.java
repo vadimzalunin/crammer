@@ -11,8 +11,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
+import net.sf.picard.PicardException;
 import net.sf.picard.reference.IndexedFastaSequenceFile;
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
@@ -26,6 +28,9 @@ import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
 import net.sf.samtools.SAMTag;
 import net.sf.samtools.util.SeekableStream;
+
+import org.apache.log4j.Logger;
+
 import uk.ac.ebi.ena.sra.cram.CramIndexer.CountingInputStream;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
@@ -34,6 +39,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 
 public class Utils {
+	private static Logger log = Logger.getLogger(Utils.class);
 
 	public final static byte[] toBytes(int value) {
 		final byte[] bytes = new byte[4];
@@ -303,7 +309,7 @@ public class Utils {
 		ss.reset();
 		return Arrays.toString(buf);
 	}
-	
+
 	/**
 	 * Copied from net.sf.picard.sam.SamPairUtil. This is a more permissive
 	 * version of the method, which does not reset alignment start and reference
@@ -369,11 +375,64 @@ public class Utils {
 			FileNotFoundException {
 		if (IndexedFastaSequenceFile.canCreateIndexedFastaReader(file)) {
 			IndexedFastaSequenceFile ifsFile = new IndexedFastaSequenceFile(file);
-	
+
 			return ifsFile;
 		} else
 			throw new CramException(
 					"Reference fasta file is not indexed or index file not found. Try executing 'samtools faidx "
 							+ file.getAbsolutePath() + "'");
+	}
+
+	public static ReferenceSequence getReferenceSequenceOrNull(ReferenceSequenceFile rsFile, String name) {
+		ReferenceSequence rs = null;
+		try {
+			return rsFile.getSequence(name);
+		} catch (PicardException e) {
+			return null;
+		}
+	}
+
+	private static final Pattern chrPattern = Pattern.compile("chr.*", Pattern.CASE_INSENSITIVE);
+
+	public static byte[] getBasesOrNull(ReferenceSequenceFile rsFile, String name, int start, int len) {
+		ReferenceSequence rs = getReferenceSequenceOrNull(rsFile, name);
+		if (rs == null && name.equals("M")) {
+			rs = getReferenceSequenceOrNull(rsFile, "MT");
+		}
+
+		if (rs == null && name.equals("MT")) {
+			rs = getReferenceSequenceOrNull(rsFile, "M");
+		}
+
+		boolean chrPatternMatch = chrPattern.matcher(name).matches();
+		if (rs == null) {
+			if (chrPatternMatch)
+				rs = getReferenceSequenceOrNull(rsFile, name.substring(3));
+			else
+				rs = getReferenceSequenceOrNull(rsFile, "chr" + name);
+		}
+
+		if (len < 1)
+			return rs.getBases();
+		else
+			return rsFile.getSubsequenceAt(rs.getName(), 1, len).getBases();
+	}
+
+	public static byte[] getReferenceSequenceBases(ReferenceSequenceFile referenceSequenceFile, String seqName)
+			throws CramException {
+		long time1 = System.currentTimeMillis();
+		byte[] refBases = Utils.getBasesOrNull(referenceSequenceFile, seqName, 1, 0);
+		if (refBases == null)
+			throw new CramException("Reference sequence " + seqName + " not found in the fasta file "
+					+ referenceSequenceFile.toString());
+		
+		long time2 = System.currentTimeMillis();
+		log.debug(String.format("Reference sequence %s read in %.2f seconds.", seqName, (time2 - time1) / 1000f));
+		
+		Utils.capitaliseAndCheckBases(refBases, false);
+		
+		long time3 = System.currentTimeMillis();
+		log.debug(String.format("Reference sequence normalized in %.2f seconds.", (time3 - time2) / 1000f));
+		return refBases;
 	}
 }

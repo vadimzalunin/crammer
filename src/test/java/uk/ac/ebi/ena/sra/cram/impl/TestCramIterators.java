@@ -17,6 +17,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.CramIndexer;
 import uk.ac.ebi.ena.sra.cram.CramTools;
 import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
@@ -80,7 +81,7 @@ public class TestCramIterators {
 
 	@Test
 	public void test2() throws FileNotFoundException, IOException,
-			CramFormatException, CramCompressionException {
+			CramException {
 		CloseableIterator<CramRecord> iterator = new CRAMPreemptiveIterator(
 				new FileInputStream(cramFile),
 				ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile),
@@ -102,7 +103,7 @@ public class TestCramIterators {
 	
 	@Test
 	public void test4() throws FileNotFoundException, IOException,
-			CramFormatException, CramCompressionException {
+			CramException {
 		CloseableIterator<CramRecord> iterator = new CramPreemptiveRandomAccessIterator(
 				new SeekableFileStream(cramFile),
 				ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile),

@@ -1,12 +1,13 @@
 package uk.ac.ebi.ena.sra.cram.stats;
 
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.commons.collections.bag.HashBag;
-import org.apache.commons.math.stat.Frequency;
+import org.apache.commons.math.stat.HashMapFrequency;
 
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanCode;
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanTree;
@@ -30,16 +31,21 @@ import uk.ac.ebi.ena.sra.cram.format.compression.NumberCodecStub;
 
 public class CramStats {
 	private CramRecord prevRecord;
-	private Frequency inSeqPosFreq = new Frequency();
-	private Frequency inReadPosFreq = new Frequency();
-	private Frequency qualityScoreFreq = new Frequency();
-	private Frequency basesFreq = new Frequency();
-	private Frequency readLengthFreq = new Frequency();
-	private Frequency delLengthFreq = new Frequency();
-	private Frequency readFeatureFreq = new Frequency();
-	private Frequency distanceToNextFragmentFreq = new Frequency();
-	private Frequency readGroupIndexFreq = new Frequency();
-	private Frequency mappingQualityFreq = new Frequency();
+	private HashMapFrequency inSeqPosFreq = new HashMapFrequency();
+	private HashMapFrequency inReadPosFreq = new HashMapFrequency();
+
+	private int[] stopBaseFreqArray = new int[256];
+	private int[] stopQSFreqArray = new int[256];
+
+	private HashMapFrequency readLengthFreq = new HashMapFrequency();
+	private HashMapFrequency delLengthFreq = new HashMapFrequency();
+	private HashMapFrequency readFeatureFreq = new HashMapFrequency();
+	private HashMapFrequency distanceToNextFragmentFreq = new HashMapFrequency();
+	private HashMapFrequency readGroupIndexFreq = new HashMapFrequency();
+	private HashMapFrequency mappingQualityFreq = new HashMapFrequency();
+
+	private int[] baseFreqArray = new int[256];
+	private int[] qsFreqArray = new int[256];
 
 	private long nofSubstituions = 0L;
 	private long nofInsertions = 0L;
@@ -56,6 +62,8 @@ public class CramStats {
 	private final CramHeader header;
 	private final PrintStream statsPS;
 	private final float qualityBudget;
+
+	private int[] heapByteFreqArray = new int[256];
 
 	public CramStats(CramHeader header, PrintStream statsPS, float qualityBudget) {
 		this.header = header;
@@ -80,8 +88,7 @@ public class CramStats {
 		readGroupIndexFreq.addValue(record.getReadGroupID());
 
 		if (!record.isLastFragment())
-			distanceToNextFragmentFreq.addValue(record
-					.getRecordsToNextFragment());
+			distanceToNextFragmentFreq.addValue(record.getRecordsToNextFragment());
 
 		if (record.getAlignmentStart() > 0) {
 			if (firstRecordPosition < 0)
@@ -90,28 +97,25 @@ public class CramStats {
 			if (prevRecord == null) {
 				inSeqPosFreq.addValue(0);
 			} else {
-				inSeqPosFreq.addValue(record.getAlignmentStart()
-						- prevRecord.getAlignmentStart());
+				inSeqPosFreq.addValue(record.getAlignmentStart() - prevRecord.getAlignmentStart());
 			}
 			prevRecord = record;
 		}
 
-		if (!record.isReadMapped()) {
+		if (!record.isReadMapped() || qualityBudget > 0.5) {
 			byte[] bases = record.getReadBases();
 			byte[] scores = record.getQualityScores();
 			for (int i = 0; i < record.getReadLength(); i++) {
-				if (bases != null)
-					basesFreq.addValue(bases[i]);
-				if (scores != null && scores.length != 0)
-					qualityScoreFreq.addValue(scores[i]);
+				if (bases != null) {
+					baseFreqArray[bases[i]]++;
+				}
+				if (scores != null && scores.length != 0) {
+					qsFreqArray[scores[i]]++;
+				}
 			}
 
-			basesFreq.addValue((byte) '$');
-			qualityScoreFreq.addValue((byte) -1);
-
-			return;
-		} else
-			mappingQualityFreq.addValue(record.getMappingQuality());
+		}
+		mappingQualityFreq.addValue(record.getMappingQuality());
 
 		Collection<ReadFeature> variationsByPosition = record.getReadFeatures();
 		if (variationsByPosition != null) {
@@ -123,23 +127,27 @@ public class CramStats {
 				switch (f.getOperator()) {
 				case SubstitutionVariation.operator:
 					SubstitutionVariation sv = (SubstitutionVariation) f;
-					if (sv.getBase() != 0)
-						basesFreq.addValue(sv.getBase());
+					if (sv.getBase() != 0) {
+						baseFreqArray[sv.getBase()]++;
+					}
 					nofSubstituions++;
 					break;
 				case ReadBase.operator:
 					ReadBase rb = (ReadBase) f;
-					basesFreq.addValue(rb.getBase());
-					qualityScoreFreq.addValue(rb.getQualityScore());
+					baseFreqArray[rb.getBase()]++;
+					qsFreqArray[rb.getQualityScore()]++;
 					break;
 				case InsertionVariation.operator:
 					InsertionVariation iv = (InsertionVariation) f;
 					for (byte base : iv.getSequence())
-						basesFreq.addValue(base);
+						stopBaseFreqArray[base]++;
 					nofInsertions++;
 					nofInsertedBases += iv.getSequence().length;
-					basesFreq.addValue((byte) '$');
-					// inserts.add(new String (iv.getSequence())) ;
+
+					// the only use of stop- freqs are insertions, because they
+					// are short sequences:
+					stopBaseFreqArray['$']++;
+					stopQSFreqArray[-1]++;
 					break;
 				case DeletionVariation.operator:
 					DeletionVariation dv = (DeletionVariation) f;
@@ -148,13 +156,13 @@ public class CramStats {
 					break;
 				case InsertBase.operator:
 					InsertBase ib = (InsertBase) f;
-					basesFreq.addValue(ib.getBase());
+					baseFreqArray[ib.getBase()]++;
 					nofInsertions++;
 					nofInsertedBases++;
 					break;
 				case BaseQualityScore.operator:
 					BaseQualityScore bqs = (BaseQualityScore) f;
-					qualityScoreFreq.addValue(bqs.getQualityScore());
+					qsFreqArray[bqs.getQualityScore()]++;
 					break;
 
 				default:
@@ -165,10 +173,28 @@ public class CramStats {
 			if (!variationsByPosition.isEmpty())
 				readFeatureFreq.addValue(ReadFeature.STOP_OPERATOR);
 		}
+
+		if (record.getReadName() != null)
+			addString(record.getReadName());
+		if (record.next != null)
+			addMate(record.next);
+		if (record.previous != null)
+			addMate(record.previous);
 	}
 
-	public void adjustBlock(CramRecordBlock block)
-			throws CramCompressionException {
+	private void addMate(CramRecord mate) {
+		addString(mate.getReadName());
+		addString(String.valueOf(mate.getAlignmentStart()));
+		addString(String.valueOf(mate.getSequenceName()));
+	}
+
+	private void addString(String s) {
+		for (byte b : s.getBytes())
+			heapByteFreqArray[b]++;
+		heapByteFreqArray[0]++;
+	}
+
+	public void adjustBlock(CramRecordBlock block) throws CramCompressionException {
 		block.setFirstRecordPosition(firstRecordPosition);
 		block.setRecordCount(recordCount);
 
@@ -178,17 +204,24 @@ public class CramStats {
 			compression = block.getCompression();
 		}
 
-		ValueFrequencyHolder holder = getValueFrequencies(basesFreq);
+		ValueFrequencyHolder holder = getValueFrequencies(baseFreqArray);
 		compression.setBaseAlphabet(holder.values);
 		compression.setBaseFrequencies(holder.frequencies);
 
-		holder = getValueFrequencies(qualityScoreFreq);
+		holder = getValueFrequencies(qsFreqArray);
 		compression.setScoreAlphabet(holder.values);
 		compression.setScoreFrequencies(holder.frequencies);
 
+		holder = getValueFrequencies(stopBaseFreqArray);
+		compression.setStopBaseAlphabet(holder.values);
+		compression.setStopBaseFrequencies(holder.frequencies);
+
+		holder = getValueFrequencies(stopQSFreqArray);
+		compression.setStopScoreAlphabet(holder.values);
+		compression.setStopScoreFrequencies(holder.frequencies);
+
 		if (readLengthFreq.getUniqueCount() == 1)
-			block.setReadLength(((Long) readLengthFreq.valuesIterator().next())
-					.intValue());
+			block.setReadLength(((Long) readLengthFreq.valuesIterator().next()).intValue());
 		else
 			block.setReadLength(0);
 
@@ -203,10 +236,8 @@ public class CramStats {
 		block.getCompression().setInSeqPosEncoding(getEncoding(inSeqPosFreq));
 		block.getCompression().setInReadPosEncoding(getEncoding(inReadPosFreq));
 		block.getCompression().setDelLengthEncoding(getEncoding(delLengthFreq));
-		block.getCompression().setReadLengthEncoding(
-				getEncoding(readLengthFreq));
-		block.getCompression().setRecordsToNextFragmentEncoding(
-				getEncoding(distanceToNextFragmentFreq));
+		block.getCompression().setReadLengthEncoding(getEncoding(readLengthFreq));
+		block.getCompression().setRecordsToNextFragmentEncoding(getEncoding(distanceToNextFragmentFreq));
 
 		holder = getValueFrequencies(readFeatureFreq);
 		compression.setReadFeatureAlphabet(holder.values);
@@ -225,9 +256,7 @@ public class CramStats {
 
 				int index = header.getReadAnnotations().indexOf(ra);
 				if (index < 0)
-					throw new CramCompressionException(
-							"Annotation not found in the dictionary: "
-									+ ra.getKey());
+					throw new CramCompressionException("Annotation not found in the dictionary: " + ra.getKey());
 
 				raIndexes[i] = index;
 				raFreqs[i] = count;
@@ -243,14 +272,18 @@ public class CramStats {
 		holder = getValueFrequencies(readGroupIndexFreq);
 		compression.setReadGroupIndexes(holder.intValues);
 		compression.setReadGroupFrequencies(holder.frequencies);
+		
+		holder = getValueFrequencies(heapByteFreqArray); 
+		compression.setHeapByteAlphabet(holder.values) ;
+		compression.setHeapByteFrequencies(holder.frequencies) ;
 
 		if (statsPS != null) {
 			statsPS.println("Read feature frequencies: ");
 			statsPS.println(readFeatureFreq.toString());
 			statsPS.println("Base frequencies: ");
-			statsPS.println(basesFreq.toString());
+			statsPS.println(Arrays.toString(baseFreqArray));
 			statsPS.println("Quality score frequencies: ");
-			statsPS.println(qualityScoreFreq.toString());
+			statsPS.println(Arrays.toString(qsFreqArray));
 			statsPS.println("In read position frequencies: ");
 			statsPS.println(inReadPosFreq.toString());
 			statsPS.println("Read length frequencies: ");
@@ -274,8 +307,7 @@ public class CramStats {
 		}
 	}
 
-	private static final Encoding getEncoding(Frequency f)
-			throws CramCompressionException {
+	private static final Encoding getEncoding(HashMapFrequency f) throws CramCompressionException {
 		NumberCodecOptimiser optimiser = new NumberCodecOptimiser();
 		Iterator<Comparable<?>> valuesIterator = f.valuesIterator();
 		int i = 0;
@@ -304,22 +336,18 @@ public class CramStats {
 		if (maxInSeqPos < 1)
 			binaryBitsRequiredPerPosition = 0;
 		else
-			binaryBitsRequiredPerPosition = (long) Math.ceil(Math
-					.log(maxInSeqPos + 1) / Math.log(2));
-		long totalBinaryBitsRequired = binaryBitsRequiredPerPosition
-				* valueCounter;
+			binaryBitsRequiredPerPosition = (long) Math.ceil(Math.log(maxInSeqPos + 1) / Math.log(2));
+		long totalBinaryBitsRequired = binaryBitsRequiredPerPosition * valueCounter;
 
 		if (optimiser.getMinLength() > totalBinaryBitsRequired) {
-			return new Encoding(EncodingAlgorithm.BETA, "0,"
-					+ binaryBitsRequiredPerPosition);
+			return new Encoding(EncodingAlgorithm.BETA, "0," + binaryBitsRequiredPerPosition);
 		} else {
 			NumberCodecStub inSeqPosStub = optimiser.getMinLengthStub();
-			return new Encoding(inSeqPosStub.getEncoding(),
-					inSeqPosStub.getStringRepresentation());
+			return new Encoding(inSeqPosStub.getEncoding(), inSeqPosStub.getStringRepresentation());
 		}
 	}
 
-	private static long getHuffmanBitLengthEstimate(Frequency f) {
+	private static long getHuffmanBitLengthEstimate(HashMapFrequency f) {
 		Iterator<Comparable<?>> valuesIterator = f.valuesIterator();
 		int i = 0;
 		Long[] values = new Long[f.getUniqueCount()];
@@ -358,17 +386,41 @@ public class CramStats {
 		}
 	}
 
-	private static final ValueFrequencyHolder getValueFrequencies(Frequency f) {
-		ValueFrequencyHolder holder = new ValueFrequencyHolder(
-				f.getUniqueCount());
+	private static final ValueFrequencyHolder getValueFrequencies(HashMapFrequency f) {
+		ValueFrequencyHolder holder = new ValueFrequencyHolder(f.getUniqueCount());
 		Iterator<Comparable<?>> valuesIterator = f.valuesIterator();
 		int i = 0;
+		int[] array = new int[f.getUniqueCount()];
 		while (valuesIterator.hasNext()) {
-			Comparable<?> next = valuesIterator.next();
-			holder.values[i] = ((Long) next).byteValue();
-			holder.intValues[i] = ((Long) next).intValue();
+			array[i++] = ((Long) (valuesIterator.next())).intValue();
+		}
+
+		Arrays.sort(array);
+		for (i = 0; i < array.length; i++) {
+			int next = array[i];
+			holder.values[i] = (byte) next;
+			holder.intValues[i] = next;
 			holder.frequencies[i] = (int) f.getCount(next);
-			i++;
+		}
+
+		return holder;
+	}
+
+	private static final ValueFrequencyHolder getValueFrequencies(int[] array) {
+		int nonZeroCount = 0;
+		for (int v : array)
+			if (v > 0)
+				nonZeroCount++;
+
+		ValueFrequencyHolder holder = new ValueFrequencyHolder(nonZeroCount);
+		int vIndex = 0;
+		for (int i = 0; i < array.length; i++) {
+			if (array[i] > 0) {
+				holder.values[vIndex] = (byte) i;
+				holder.intValues[vIndex] = i;
+				holder.frequencies[vIndex] = array[i];
+				vIndex++;
+			}
 		}
 
 		return holder;

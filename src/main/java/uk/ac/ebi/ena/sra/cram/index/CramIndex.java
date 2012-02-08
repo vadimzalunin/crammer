@@ -16,7 +16,10 @@ import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.apache.log4j.Logger;
+
 public class CramIndex {
+	private static Logger log = Logger.getLogger(CramIndex.class);
 
 	private Map<String, AlignmentIndex> alignmentIndexes;
 
@@ -30,14 +33,14 @@ public class CramIndex {
 		alignmentIndex.addRecordPointer(pointer);
 	}
 
-	public static CramIndex fromFile(File file) throws FileNotFoundException,
-			IOException {
-		InputStream is = new GZIPInputStream(new BufferedInputStream(
-				new FileInputStream(file)));
+	public static CramIndex fromFile(File file) throws FileNotFoundException, IOException {
+		log.debug("Building cram index from file: " + file.getAbsolutePath());
+		InputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(file)));
 		return fromTextInputStream(is);
 	}
 
 	private static CramIndex fromTextInputStream(InputStream is) {
+		long time1 = System.currentTimeMillis();
 		Scanner scanner = new Scanner(is);
 		CramIndex cramIndex = new CramIndex();
 		cramIndex.alignmentIndexes = new TreeMap<String, AlignmentIndex>();
@@ -64,13 +67,14 @@ public class CramIndex {
 			alignmentIndex.addRecordPointer(pointer);
 		}
 
+		long time2 = System.currentTimeMillis();
+		log.debug("Indexed read in " + (time2 - time1) / 1000 + " seconds.");
+
 		return cramIndex;
 	}
 
-	public static void write(CramIndex index, File file)
-			throws FileNotFoundException, IOException {
-		OutputStream os = new GZIPOutputStream(new BufferedOutputStream(
-				new FileOutputStream(file)));
+	public static void write(CramIndex index, File file) throws FileNotFoundException, IOException {
+		OutputStream os = new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
 
 		write(index, os);
 	}
@@ -80,10 +84,8 @@ public class CramIndex {
 		for (int seqIndex = 0; seqIndex < index.alignmentIndexes.size(); seqIndex++) {
 			AlignmentIndex alIndex = index.alignmentIndexes.get(seqIndex);
 			for (RecordPointer pointer : alIndex) {
-				ps.printf("%d\t%d\t%d\t%d\t%d\t%d\n", seqIndex,
-						pointer.getBlockStart(), pointer.getRecordNumber(),
-						pointer.getByteOffset(), pointer.getBitOffset(),
-						pointer.getAlignmentStart());
+				ps.printf("%d\t%d\t%d\t%d\t%d\t%d\n", seqIndex, pointer.getBlockStart(), pointer.getRecordNumber(),
+						pointer.getByteOffset(), pointer.getBitOffset(), pointer.getAlignmentStart());
 			}
 		}
 		ps.flush();

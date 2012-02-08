@@ -55,11 +55,7 @@ public class CramRandomAccessIterator implements CloseableIterator<CramRecord> {
 		ReferenceSequenceFile referenceSequenceFile = Utils
 				.createIndexedFastaSequenceFile(refFile);
 
-		ReferenceSequence nextSequence = referenceSequenceFile
-				.getSequence("20");
-		byte[] refBases = referenceSequenceFile.getSubsequenceAt(
-				nextSequence.getName(), 1, nextSequence.length()).getBases();
-		Utils.capitaliseAndCheckBases(refBases, false);
+		byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, "20");
 		ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
 				refBases);
 

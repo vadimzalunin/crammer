@@ -65,7 +65,7 @@ public class DefaultBitOutputStream extends OutputStream implements
 		}
 	}
 
-	public void write_int_LSB_0(int value, int nofBitsToWrite)
+	void write_int_LSB_0(int value, int nofBitsToWrite)
 			throws IOException {
 		if (nofBitsToWrite == 0)
 			return;

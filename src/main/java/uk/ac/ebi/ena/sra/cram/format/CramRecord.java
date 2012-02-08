@@ -32,6 +32,9 @@ public class CramRecord {
 	private byte mappingQuality;
 	
 	private String sequenceName ;
+	private String readName ;
+	public CramRecord next, previous ;
+	public boolean detached = false ;
 
 	public long getAlignmentStart() {
 		return alignmentStart;
@@ -121,6 +124,7 @@ public class CramRecord {
 		if (qualityScores != null)
 			sb.append("; ").append("qscores: ")
 					.append(new String(qualityScores));
+		// .append(SAMUtils.phredToFastq(qualityScores));
 
 		sb.append("]");
 		return sb.toString();
@@ -236,5 +240,13 @@ public class CramRecord {
 
 	public void setSequenceName(String sequenceName) {
 		this.sequenceName = sequenceName;
+	}
+
+	public String getReadName() {
+		return readName;
+	}
+
+	public void setReadName(String readName) {
+		this.readName = readName;
 	}
 }

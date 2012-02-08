@@ -1,0 +1,31 @@
+Dataset 7 has been made to test preservation of pairing information. In particular: 
+- within horizon
+- beyond horizon within the same chromosome
+- extra-chromosome pairing 
+
+
+The date comes from g1k exome BAM: 
+/nfs/1000g-archive/vol1/ftp/phase1/data/HG00096/exome_alignment/HG00096.mapped.illumina.mosaik.GBR.exome.20110411.bam
+ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase1/data/HG00096/exome_alignment/HG00096.mapped.illumina.mosaik.GBR.exome.20110411.bam
+
+> samtools view HG00096.mapped.illumina.mosaik.GBR.exome.20110411.bam 10 | head -10 | cut -f 1-11 > 10
+> samtools view HG00096.mapped.illumina.mosaik.GBR.exome.20110411.bam 11 | head -10 | cut -f 1-11 >> 10
+> samtools view -H HG00096.mapped.illumina.mosaik.GBR.exome.20110411.bam > header
+
+optionally tidy up the header by removing all @SQ lines except for 10 and 11
+
+> cat header 10 > input.sam
+
+the same file has been edited manually to introduce extra-chromosomal pairing; 
+some changes were required in order for the file to pass validation. 
+
+> samtools view -bS input.sam > input.bam 
+> rm header 10 input.sam
+
+The reference file creation procedure: 
+> samtools faidx /fire/staging/era/references/human_g1k_v37/human_g1k_v37.fasta 10:1-100000 11:1-200000 > ref.fa
+
+edit 'ref.fa' by setting the sequence names to '10' and '11' accordingly 
+because 'samtools faidx' command uses '10:1-100000' '11:1-200000' as sequence names. 
+
+> samtools faidx ref.fa

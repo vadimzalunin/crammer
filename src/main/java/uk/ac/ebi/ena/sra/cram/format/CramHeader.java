@@ -8,6 +8,10 @@ public class CramHeader implements Serializable {
 	private List<CramReferenceSequence> referenceSequences;
 	private List<ReadAnnotation> readAnnotations;
 	private List<CramReadGroup> readGroups;
+	
+	public CramHeader() {
+		version = "0.6" ;
+	}
 
 	public String getVersion() {
 		return version;

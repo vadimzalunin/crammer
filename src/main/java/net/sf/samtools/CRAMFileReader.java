@@ -7,6 +7,7 @@ import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
 import net.sf.samtools.util.CloseableIterator;
 import net.sf.samtools.util.SeekableStream;
+import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.Utils;
 import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
@@ -74,6 +75,8 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		} catch (CramCompressionException e) {
 			throw new RuntimeException(e);
 		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (CramException e) {
 			throw new RuntimeException(e);
 		}
 
@@ -159,6 +162,8 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 				throw new RuntimeException(e);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
+			} catch (CramException e) {
+				throw new RuntimeException(e);
 			}
 
 			return new PreemptiveSAMRecordIterator(
@@ -185,6 +190,8 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 			} catch (CramCompressionException e) {
 				throw new RuntimeException(e);
 			} catch (IOException e) {
+				throw new RuntimeException(e);
+			} catch (CramException e) {
 				throw new RuntimeException(e);
 			}
 
@@ -221,6 +228,8 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		} catch (CramCompressionException e) {
 			throw new RuntimeException(e);
 		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (CramException e) {
 			throw new RuntimeException(e);
 		}
 

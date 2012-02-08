@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import net.sf.picard.sam.SamPairUtil;
 import net.sf.samtools.util.CloseableIterator;
 import uk.ac.ebi.ena.sra.cram.Utils;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
@@ -53,15 +52,17 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 
 	@Override
 	public boolean hasNext() {
-		return !assembler.isEmpty() || cramRecordIterator.hasNext();
+		boolean hasNext = !assembler.isEmpty() || cramRecordIterator.hasNext();
+		return hasNext;
 	}
 
 	@Override
 	public SAMRecord next() {
 		if (cramRecordIterator.hasNext()) {
 			SAMRecord samRecord = pollSAMRecordFromAssembler();
-			if (samRecord != null)
+			if (samRecord != null) {
 				return samRecord;
+			}
 
 			while (cramRecordIterator.hasNext()) {
 				try {
@@ -71,13 +72,15 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 				}
 
 				samRecord = pollSAMRecordFromAssembler();
-				if (samRecord != null)
+				if (samRecord != null) {
 					return samRecord;
+				}
 
 			}
 		}
 
-		return takeSAMRecordFromAssembler();
+		SAMRecord next = takeSAMRecordFromAssembler();
+		return next;
 	}
 
 	private void fixMateInfo(SAMRecord samRecord) {
@@ -167,7 +170,8 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 			injectQualityScores(scores, samRecord);
 			prevAlStart = samRecord.getAlignmentStart();
 		} else {
-			samRecord.setAlignmentStart((int) prevAlStart);
+			samRecord.setAlignmentStart((int) cramRecord.getAlignmentStart());
+//			samRecord.setAlignmentStart((int) prevAlStart);
 			samRecord.setReadBases(cramRecord.getReadBases());
 			byte[] scores = cramRecord.getQualityScores();
 			injectQualityScores(scores, samRecord);

@@ -9,7 +9,7 @@ import net.sf.samtools.SAMFileReader.ValidationStringency;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 
-import org.apache.commons.math.stat.Frequency;
+import org.apache.commons.math.stat.HashMapFrequency;
 
 class TestPairedTemplateAssembler {
 
@@ -24,8 +24,8 @@ class TestPairedTemplateAssembler {
 
 		int maxRecords = 1000000000;
 		SAMRecordIterator iterator = reader.query(reader.getFileHeader().getSequence(0).getSequenceName(), -1, -1, true) ;
-		Frequency frequency = new Frequency();
-		Frequency insertSizeFrequency = new Frequency();
+		HashMapFrequency frequency = new HashMapFrequency();
+		HashMapFrequency insertSizeFrequency = new HashMapFrequency();
 		while (iterator.hasNext()) {
 			SAMRecord samRecord = iterator.next();
 			// if
@@ -71,7 +71,7 @@ class TestPairedTemplateAssembler {
 		System.out.println(toString(insertSizeFrequency, 100000, 1));
 	}
 
-	private static String toString(Frequency freqTable, int cutOff, int step) {
+	private static String toString(HashMapFrequency freqTable, int cutOff, int step) {
 		NumberFormat nf = NumberFormat.getPercentInstance();
 		StringBuilder outBuffer = new StringBuilder();
 		outBuffer.append("Value \t Freq. \t Pct. \t Cum Pct. \n");
