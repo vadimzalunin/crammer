@@ -1,7 +1,7 @@
 CRAMTools is a set of Java tools and APIs for efficient compression of sequence read data. Although this is intended as a stable version the code is released as early access. Parts of the CRAMTools are experimental and may not be supported in the future.
 http://www.ebi.ac.uk/ena/about/cram_toolkit
 
-Version 0.5
+Version 0.6
  
 Input files:
 Reference sequence in fasta format <fasta file>
@@ -17,6 +17,8 @@ To convert a BAM file to CRAM:
 java -jar cramtools.jar cram --input-bam-file <bam file> --reference-fasta-file <reference fasta file> [--output-cram-file <output cram file>]
 To convert a CRAM file to BAM:
 java -jar cramtools.jar bam --input-cram-file <input cram file> --reference-fasta-file <reference fasta file> --output-bam-file <output bam file>
+
+
 To build the program from source:
  
 To check out the source code from github you will need git client: http://git-scm.com/
@@ -28,12 +30,13 @@ java -jar cramtools.jar
 To run unit tests:
  ant -f build/build.xml test
  
+ 
 Picard integraion
 Some tools using Picard API should be able to read/write CRAM archives. For example: 
 java -cp cramtools.jar net.sf.picard.sam.ValidateSamFile INPUT=data.cram
 
-However, please note that the following will not work: 
-java -cp cramtools.jar net.sf.picard.sam.ValidateSamFile -jar ValidateSamFile.jar INPUT=data.cram
+However the following will not work: 
+java -cp cramtools.jar -jar ValidateSamFile.jar INPUT=data.cram
 
 Reference sequence discovery
 For tools that use Picard API the following rules describe how the reference sequence file is discovered: 
@@ -42,8 +45,11 @@ For tools that use Picard API the following rules describe how the reference seq
 3. Use java property 'reference=<path to ref file>', usage: java -Dreference=<path to ref file> -cp cramtools.jar ...
 
 There is a modification of ViewSam tool which allows to query alignment slices, for example: 
-java -Dreference=human_g1k_v37.fasta -cp cramtools.jar net.sf.picard.sam.ViewSam2 HG00096.mapped.illumina.mosaik.GBR.exome.20110411.bam 1:1-50000 2:1-15000
-Please note that this tool will probably disappear (or will be replaced) in the future releases.
+java -Dreference=human_g1k_v37.fasta -cp cramtools.jar net.sf.picard.sam.ViewSam2 INPUT=data.cram  chr1:1-50000
+java -cp cramtools.jar net.sf.picard.sam.ViewSam2 INPUT=data.bam chr10:10000-100000
 
-Please check for more on our web site: 
+Make sure that the corresponding index file exists: for 'data.cram' file the index file name is 'data.cram.crai'. Otherwise the tool will run slow.
+ViewSam2 tool may disappear (or will be replaced) in the future releases.
+
+Check for more on our web site: 
 http://www.ebi.ac.uk/ena/about/cram_toolkit
