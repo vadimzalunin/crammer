@@ -7,6 +7,7 @@ import java.util.List;
 public class CramRecord {
 
 	private Collection<ReadAnnotation> annotations;
+	public Collection<ReadTag> tags;
 
 	private long alignmentStart;
 	private boolean perfectMatch;
@@ -35,6 +36,7 @@ public class CramRecord {
 	private String readName ;
 	public CramRecord next, previous ;
 	public boolean detached = false ;
+	public int insertSize ;
 
 	public long getAlignmentStart() {
 		return alignmentStart;

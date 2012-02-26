@@ -31,10 +31,17 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 
 	ReadFeatures2Cigar readFeatures2Cigar = new ReadFeatures2Cigar();
 
+	Map<String, Integer> seqNameToIndexMap = new TreeMap<String, Integer>();
+
 	public CachingSAMRecordIterator(CloseableIterator<CramRecord> cramRecordIterator, CramHeader cramHeader) {
 		this.cramRecordIterator = cramRecordIterator;
 		cramReadGroups = cramHeader.getReadGroups();
 		samFileHeader = Utils.cramHeader2SamHeader(cramHeader);
+
+		for (SAMSequenceRecord seq : samFileHeader.getSequenceDictionary().getSequences()) {
+			seqNameToIndexMap.put(seq.getSequenceName(), seq.getSequenceIndex());
+		}
+
 	}
 
 	public CachingSAMRecordIterator(CloseableIterator<CramRecord> cramRecordIterator,
@@ -42,6 +49,11 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 		this.cramRecordIterator = cramRecordIterator;
 		this.cramReadGroups = cramReadGroups;
 		this.samFileHeader = samFileHeader;
+		Map<String, Integer> seqNameToIndexMap = new TreeMap<String, Integer>();
+		for (SAMSequenceRecord seq : samFileHeader.getSequenceDictionary().getSequences()) {
+			seqNameToIndexMap.put(seq.getSequenceName(), seq.getSequenceIndex());
+		}
+
 	}
 
 	private void newSequence(String seqName) {
@@ -89,16 +101,21 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 			return;
 		}
 
+		if (samRecord.getMateReferenceName() != null
+				&& !SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getMateReferenceName()))
+			return;
 		SAMRecord mate = assembler.getMateRecord();
 		if (mate != null)
 			Utils.setLooseMateInfo(samRecord, mate, samFileHeader);
 		else {
-			samRecord.setReadPairedFlag(false);
-			samRecord.setProperPairFlag(false);
-			samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
-			samRecord.setMateNegativeStrandFlag(false);
-			samRecord.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
-			samRecord.setMateUnmappedFlag(false);
+			if (!samRecord.getReadPairedFlag()) {
+				samRecord.setReadPairedFlag(false);
+				samRecord.setProperPairFlag(false);
+				samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+				samRecord.setMateNegativeStrandFlag(false);
+				samRecord.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+				samRecord.setMateUnmappedFlag(false);
+			}
 		}
 	}
 
@@ -122,12 +139,6 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 		if (currentSeqName == null || !currentSeqName.equals(cramRecord.getSequenceName()))
 			newSequence(cramRecord.getSequenceName());
 
-		if (!cramRecord.isLastFragment()) {
-			indexes.put(counter + cramRecord.getRecordsToNextFragment(), counter);
-		}
-
-		Long index = indexes.remove(counter);
-
 		SAMRecord samRecord = new SAMRecord(samFileHeader);
 
 		if (cramReadGroups != null) {
@@ -138,27 +149,72 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 					samRecord.setAttribute("RG", rgId);
 			}
 		}
-		if (index != null) {
-			samRecord.setReadName(String.valueOf(index.intValue())
-			// + ".2"
-					);
-			samRecord.setFirstOfPairFlag(cramRecord.isFirstInPair());
-			samRecord.setSecondOfPairFlag(!cramRecord.isFirstInPair());
+
+		boolean longJump = false;
+		if (cramRecord.next != null || cramRecord.previous != null) {
+			longJump = true;
+			CramRecord mate = cramRecord.next == null ? cramRecord.previous : cramRecord.next;
 			samRecord.setReadPairedFlag(true);
-		} else {
-			if (cramRecord.isLastFragment()) {
-				samRecord.setReadName(String.valueOf(counter));
-				samRecord.setReadPairedFlag(false);
-				samRecord.setFirstOfPairFlag(false);
-				samRecord.setSecondOfPairFlag(false);
+			samRecord.setMateAlignmentStart((int) mate.getAlignmentStart());
+			samRecord.setMateNegativeStrandFlag(mate.isNegativeStrand());
+			if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(mate.getSequenceName())) {
+				samRecord.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+				// samRecord.setMateReferenceName(mate.getSequenceName());
+				samRecord.setMateUnmappedFlag(!mate.isReadMapped());
+				if (cramRecord.isFirstInPair()) {
+					samRecord.setFirstOfPairFlag(true);
+					samRecord.setSecondOfPairFlag(false);
+				} else {
+					samRecord.setFirstOfPairFlag(false);
+					samRecord.setSecondOfPairFlag(true);
+				}
 			} else {
-				samRecord.setReadName(String.valueOf(counter)
-				// + ".1"
+				if (mate.getSequenceName() == null || !seqNameToIndexMap.containsKey(mate.getSequenceName())) {
+					samRecord.setReadPairedFlag(false);
+					samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+					samRecord.setMateNegativeStrandFlag(false);
+				} else {
+					int seqIndex = seqNameToIndexMap.get(mate.getSequenceName());
+					samRecord.setMateReferenceIndex(seqIndex);
+					samRecord.setMateUnmappedFlag(!mate.isReadMapped());
+					if (cramRecord.isFirstInPair()) {
+						samRecord.setFirstOfPairFlag(true);
+						samRecord.setSecondOfPairFlag(false);
+					} else {
+						samRecord.setFirstOfPairFlag(false);
+						samRecord.setSecondOfPairFlag(true);
+					}
+				}
+			}
+			samRecord.setReadName(cramRecord.getReadName());
+		} else {
+			if (!cramRecord.isLastFragment())
+				indexes.put(counter + cramRecord.getRecordsToNextFragment(), counter);
+
+			Long index = indexes.remove(counter);
+			if (index != null) {
+				samRecord.setReadName(String.valueOf(index.intValue())
+				// + ".2"
 						);
 				samRecord.setFirstOfPairFlag(cramRecord.isFirstInPair());
 				samRecord.setSecondOfPairFlag(!cramRecord.isFirstInPair());
 				samRecord.setReadPairedFlag(true);
-				// samRecord.setMateReferenceName(readBlock.getSequenceName());
+			} else {
+				if (cramRecord.isLastFragment()) {
+					samRecord.setReadName(String.valueOf(counter));
+					samRecord.setReadPairedFlag(false);
+					samRecord.setFirstOfPairFlag(false);
+					samRecord.setSecondOfPairFlag(false);
+				} else {
+					samRecord.setReadName(String.valueOf(counter)
+					// + ".1"
+							);
+					samRecord.setFirstOfPairFlag(cramRecord.isFirstInPair());
+					samRecord.setSecondOfPairFlag(!cramRecord.isFirstInPair());
+					samRecord.setReadPairedFlag(true);
+					// samRecord.setMateReferenceName(readBlock.getSequenceName());
+				}
+
 			}
 		}
 
@@ -171,7 +227,7 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 			prevAlStart = samRecord.getAlignmentStart();
 		} else {
 			samRecord.setAlignmentStart((int) cramRecord.getAlignmentStart());
-//			samRecord.setAlignmentStart((int) prevAlStart);
+			// samRecord.setAlignmentStart((int) prevAlStart);
 			samRecord.setReadBases(cramRecord.getReadBases());
 			byte[] scores = cramRecord.getQualityScores();
 			injectQualityScores(scores, samRecord);
@@ -184,7 +240,10 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 		samRecord.setProperPairFlag(cramRecord.isProperPair());
 		samRecord.setDuplicateReadFlag(cramRecord.isDuplicate());
 
-		assembler.addSAMRecord(samRecord);
+		if (longJump)
+			assembler.addSAMRecordNoAssembly(samRecord);
+		else
+			assembler.addSAMRecord(samRecord);
 
 		counter++;
 	}

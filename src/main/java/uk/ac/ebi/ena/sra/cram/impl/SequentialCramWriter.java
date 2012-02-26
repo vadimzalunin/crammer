@@ -29,13 +29,10 @@ public class SequentialCramWriter {
 	private OutputStream os;
 	private SequenceBaseProvider referenceBaseProvider;
 
-	private ExposedByteArrayOutputStream checkBAOS = new ExposedByteArrayOutputStream(
-			1024);
+	private ExposedByteArrayOutputStream checkBAOS = new ExposedByteArrayOutputStream(1024);
 	private BitOutputStream checkBOS = new DefaultBitOutputStream(checkBAOS);
-	private ByteArrayInputStream checkBAIS = new ByteArrayInputStream(
-			checkBAOS.getBuffer());
-	private DefaultBitInputStream checkBIS = new DefaultBitInputStream(
-			checkBAIS);
+	private ByteArrayInputStream checkBAIS = new ByteArrayInputStream(checkBAOS.getBuffer());
+	private DefaultBitInputStream checkBIS = new DefaultBitInputStream(checkBAIS);
 	private BitCodec<CramRecord> checkRecordReadCodec;
 	private BitCodec<CramRecord> checkRecordWriteCodec;
 	private RestoreBases restoreBases;
@@ -43,37 +40,31 @@ public class SequentialCramWriter {
 	private DefaultMutableTreeNode rootNode;
 	private final CramHeader header;
 
-	public SequentialCramWriter(OutputStream os,
-			SequenceBaseProvider referenceBaseProvider, CramHeader header) {
+	public SequentialCramWriter(OutputStream os, SequenceBaseProvider referenceBaseProvider, CramHeader header) {
 		this.os = os;
 		this.referenceBaseProvider = referenceBaseProvider;
 		this.header = header;
 		bos = new DefaultBitOutputStream(os);
-//		bos = new DebuggingBitOuputStream(System.out, '\n') ;
+		// bos = new DebuggingBitOuputStream(System.out, '\n') ;
 		blockWriter = new CramRecordBlockWriter(os);
 	}
 
-	public long write(CramRecordBlock block) throws IOException,
-			CramCompressionException {
+	public long write(CramRecordBlock block) throws IOException, CramCompressionException {
 		bos.flush();
 
-		restoreBases = new RestoreBases(referenceBaseProvider,
-				block.getSequenceName());
+		restoreBases = new RestoreBases(referenceBaseProvider, block.getSequenceName());
 
-		rootNode = recordCodecFactory.buildCodecTree(header, block,
-				referenceBaseProvider);
+		rootNode = recordCodecFactory.buildCodecTree(header, block, referenceBaseProvider);
 		checkRecordReadCodec = (BitCodec<CramRecord>) rootNode.getUserObject();
 
-		rootNode = recordCodecFactory.buildCodecTree(header, block,
-				referenceBaseProvider);
+		rootNode = recordCodecFactory.buildCodecTree(header, block, referenceBaseProvider);
 		checkRecordWriteCodec = (BitCodec<CramRecord>) rootNode.getUserObject();
 
-		rootNode = recordCodecFactory.buildCodecTree(header, block,
-				referenceBaseProvider);
+		rootNode = recordCodecFactory.buildCodecTree(header, block, referenceBaseProvider);
 		recordCodec = (BitCodec<CramRecord>) rootNode.getUserObject();
-		
-		
-//		recordCodec = recordCodecFactory.createRecordCodec(header, block, referenceBaseProvider) ;
+
+		// recordCodec = recordCodecFactory.createRecordCodec(header, block,
+		// referenceBaseProvider) ;
 
 		return blockWriter.write(block);
 	}
@@ -82,8 +73,7 @@ public class SequentialCramWriter {
 		return recordCodec.write(bos, record);
 	}
 
-	public long writeAndCheck(CramRecord record) throws IOException,
-			CramException {
+	public long writeAndCheck(CramRecord record) throws IOException, CramException {
 		checkBAOS.reset();
 		checkRecordWriteCodec.write(checkBOS, record);
 		checkBOS.flush();
@@ -114,21 +104,19 @@ public class SequentialCramWriter {
 	}
 
 	public void dump() {
-		Collection<MeasuringCodec> allCodecs = recordCodecFactory
-				.listAllCodecs(rootNode);
-		boolean first = true;
-		long firstCodecBits = 0;
+		Collection<MeasuringCodec> allCodecs = recordCodecFactory.listAllCodecs(rootNode);
+		MeasuringCodec rootCodec = (MeasuringCodec) rootNode.getUserObject();
+
+		long totalBits = 0;
+		for (MeasuringCodec codec : allCodecs)
+			if (codec != rootCodec)
+				totalBits += codec.getWrittenBits();
+
 		for (MeasuringCodec codec : allCodecs) {
-			if (first) {
-				first = false;
-				firstCodecBits = codec.getWrittenBits();
-				continue;
-			}
-			if (codec.getWrittenBits() > 0)
-				System.err.printf("%s:\tbits %d\t%.2f%%\n", codec.getName(),
-						codec.getWrittenBits(), 100d * codec.getWrittenBits()
-								/ firstCodecBits);
+			if (rootCodec != codec && codec.getWrittenBits() > 0)
+				System.err.printf("%s:\tbits %d\t%.2f%%\n", codec.getName(), codec.getWrittenBits(),
+						100d * codec.getWrittenBits() / totalBits);
 		}
-		recordCodecFactory.dump(rootNode);
+		recordCodecFactory.dump(rootNode, totalBits);
 	}
 }

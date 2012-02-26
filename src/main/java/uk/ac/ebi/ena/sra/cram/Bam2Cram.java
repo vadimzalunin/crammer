@@ -227,6 +227,7 @@ public class Bam2Cram {
 			cramRecordFactory.setCaptureSubtitutionScores(params.captureSubstitutionQualityScore);
 			cramRecordFactory.setCaptureUnmappedScores(params.captureUnmappedQualityScore);
 			cramRecordFactory.setUncategorisedQualityScoreCutoff(params.qualityCutoff);
+			cramRecordFactory.captureAllTags = params.captureAllTags ;
 			if (params.captureAllQualityScore) {
 				cramRecordFactory.losslessQS = true;
 			} else {
@@ -539,7 +540,7 @@ public class Bam2Cram {
 		// os.close();
 	}
 
-	@Parameters(commandDescription = "BAM to CRAM converter. Version 0.6")
+	@Parameters(commandDescription = "BAM to CRAM converter. Version 0.65")
 	static class Params {
 		@Parameter(names = { "--input-bam-file" }, converter = FileConverter.class, description = "Path to a BAM file to be converted to CRAM. Omit if standard input (pipe).")
 		File bamFile;
@@ -633,5 +634,8 @@ public class Bam2Cram {
 
 		@Parameter(names = { "--exclude-reads-with-flags" }, description = "Exclude reads with these bit flags, for example 512 designates the vendor filtered flag.")
 		int excludeReadsWithFlags = 0;
+		
+		@Parameter(names = { "--capture-all-tags" }, description = "Capture all tags found in the source BAM file.")
+		boolean captureAllTags = false;
 	}
 }

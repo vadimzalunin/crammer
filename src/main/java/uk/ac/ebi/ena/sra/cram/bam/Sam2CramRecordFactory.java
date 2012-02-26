@@ -1,6 +1,7 @@
 package uk.ac.ebi.ena.sra.cram.bam;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,6 +11,7 @@ import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMRecord.SAMTagAndValue;
 
 import org.apache.log4j.Logger;
 
@@ -20,6 +22,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
 import uk.ac.ebi.ena.sra.cram.format.InsertBase;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
+import uk.ac.ebi.ena.sra.cram.format.ReadTag;
 import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
 import uk.ac.ebi.ena.sra.cram.mask.RefMaskUtils;
 
@@ -58,7 +61,8 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 	private boolean captureSubtitutionScores = false;
 	private boolean captureFlankingDeletionScores = false;
 	private int uncategorisedQualityScoreCutoff = 0;
-	
+	public boolean captureAllTags = false;
+
 	public boolean losslessQS = false;
 
 	public Sam2CramRecordFactory(byte[] refBases) {
@@ -68,8 +72,8 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 	public Sam2CramRecordFactory(byte[] refBases, byte[] refSNPs, RefMaskUtils.RefMask refPile,
 			Map<String, Integer> readGroupMap) {
 		this.refPile = refPile;
-//		if (refBases == null)
-//			throw new NullPointerException("Reference bases array is null.");
+		// if (refBases == null)
+		// throw new NullPointerException("Reference bases array is null.");
 		this.refBases = refBases;
 		this.refSNPs = refSNPs;
 		this.readGroupMap = readGroupMap;
@@ -90,6 +94,8 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 		cramRecord.setProperPair(record.getReadPairedFlag() && record.getProperPairFlag());
 		cramRecord.setMappingQuality((byte) record.getMappingQuality());
 		cramRecord.setDuplicate(record.getDuplicateReadFlag());
+
+		cramRecord.insertSize = record.getInferredInsertSize();
 
 		if (readGroupMap != null) {
 			SAMReadGroupRecord readGroup = record.getReadGroup();
@@ -132,6 +138,25 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 		for (int i = 0; i < cramRecord.getQualityScores().length; i++)
 			cramRecord.getQualityScores()[i] += QS_asciiOffset;
 		landedTotalScores += cramRecord.getReadLength();
+
+		if (captureAllTags) {
+			List<SAMTagAndValue> attributes = record.getAttributes();
+			if (attributes != null && !attributes.isEmpty()) {
+				List<ReadTag> tags = new ArrayList<ReadTag>(attributes.size());
+				for (SAMTagAndValue tv : attributes) {
+					if ("MD".equals(tv.tag))
+						continue;
+					if ("NM".equals(tv.tag))
+						continue;
+					if ("RG".equals(tv.tag))
+						continue;
+
+					ReadTag ra = ReadTag.deriveTypeFromValue(tv.tag, tv.value);
+					tags.add(ra);
+				}
+				cramRecord.tags = tags;
+			}
+		}
 
 		return cramRecord;
 	}
@@ -225,7 +250,8 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 			ib.setPosition(zeroBasedPositionInRead + 1 + i);
 			ib.setBase(insertedBases[i]);
 			features.add(ib);
-			if (losslessQS) continue ;
+			if (losslessQS)
+				continue;
 			boolean qualityMasked = (scores[i] < uncategorisedQualityScoreCutoff);
 			if (captureInsertScores || qualityMasked) {
 				byte score = (byte) (QS_asciiOffset + scores[zeroBasedPositionInRead + i]);
@@ -257,8 +283,9 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 				sv.setBaseChange(new BaseChange(sv.getRefernceBase(), sv.getBase()));
 
 				features.add(sv);
-				
-				if (losslessQS) continue ;
+
+				if (losslessQS)
+					continue;
 
 				if (captureSubtitutionScores) {
 					byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);

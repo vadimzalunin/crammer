@@ -56,6 +56,7 @@ public class CramRecordBlock implements Serializable {
 		return readLength;
 	}
 
+	@Deprecated
 	public void setReadLength(int readLength) {
 		this.readLength = readLength;
 	}
@@ -110,22 +111,19 @@ public class CramRecordBlock implements Serializable {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(getClass().getSimpleName()).append(" [");
-		sb.append("sequenceName=").append(sequenceName).append(", ");
-		sb.append("sequenceLength=").append(sequenceLength).append(", ");
+		sb.append(getClass().getSimpleName()).append(" [\n");
+		sb.append("sequenceName=").append(sequenceName).append("\n");
+		sb.append("sequenceLength=").append(sequenceLength).append("\n");
 		sb.append("firstRecordPosition=").append(firstRecordPosition)
-				.append(", ");
-		sb.append("recordCount=").append(recordCount).append(", ");
-		sb.append("readLength=").append(readLength).append(", ");
-		sb.append("in-read pos reversed=(")
-				.append(positiveStrandBasePositionReversed).append(",")
-				.append(negativeStrandBasePositionReversed).append("), ");
+				.append("\n");
+		sb.append("recordCount=").append(recordCount).append("\n");
+		sb.append("readLength=").append(readLength).append("\n");
 		sb.append("unmappedReadQualityScoresIncluded=")
-				.append(unmappedReadQualityScoresIncluded).append(", ");
+				.append(unmappedReadQualityScoresIncluded).append("\n");
 		sb.append("substitutionQualityScoresIncluded=")
-				.append(substitutionQualityScoresIncluded).append(", ");
+				.append(substitutionQualityScoresIncluded).append("\n");
 		sb.append("maskedQualityScoresIncluded=")
-				.append(maskedQualityScoresIncluded).append(", ");
+				.append(maskedQualityScoresIncluded).append("\n");
 		sb.append("compression=").append(compression).append("]");
 		return sb.toString();
 	}

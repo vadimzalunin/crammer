@@ -4,7 +4,9 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.commons.collections.bag.HashBag;
 import org.apache.commons.math.stat.HashMapFrequency;
@@ -13,6 +15,7 @@ import uk.ac.ebi.ena.sra.compression.huffman.HuffmanCode;
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanTree;
 import uk.ac.ebi.ena.sra.cram.encoding.HuffmanCodec;
 import uk.ac.ebi.ena.sra.cram.format.BaseQualityScore;
+import uk.ac.ebi.ena.sra.cram.format.ByteFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
@@ -24,6 +27,7 @@ import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
 import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
 import uk.ac.ebi.ena.sra.cram.format.ReadBase;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
+import uk.ac.ebi.ena.sra.cram.format.ReadTag;
 import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
 import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
 import uk.ac.ebi.ena.sra.cram.format.compression.EncodingAlgorithm;
@@ -43,6 +47,10 @@ public class CramStats {
 	private HashMapFrequency distanceToNextFragmentFreq = new HashMapFrequency();
 	private HashMapFrequency readGroupIndexFreq = new HashMapFrequency();
 	private HashMapFrequency mappingQualityFreq = new HashMapFrequency();
+
+	private Map<String, ByteFrequencies> tagFreqs = new TreeMap<String, ByteFrequencies>();
+	private Map<String, ByteFrequencies> tagLengths = new TreeMap<String, ByteFrequencies>();
+	private HashMapFrequency tagKeyAndTypeFrequency = new HashMapFrequency() ;
 
 	private int[] baseFreqArray = new int[256];
 	private int[] qsFreqArray = new int[256];
@@ -82,10 +90,33 @@ public class CramStats {
 
 		if (record.getAnnotations() != null) {
 			for (ReadAnnotation a : record.getAnnotations())
-				readAnnoKeyBag.add(a);
+				readAnnoKeyBag.add(a.getKey());
 		}
 
 		readGroupIndexFreq.addValue(record.getReadGroupID());
+
+		if (record.tags != null) {
+			for (ReadTag tag : record.tags) {
+				String keyAndType = tag.getKeyAndType();
+				tagKeyAndTypeFrequency.addValue(keyAndType) ;
+				
+				ByteFrequencies bf = tagFreqs.get(keyAndType);
+				if (bf == null) {
+					bf = new ByteFrequencies();
+					tagFreqs.put(keyAndType, bf);
+				}
+				byte[] bytes = tag.getValueAsByteArray();
+				bf.add(bytes);
+
+				ByteFrequencies bl = tagLengths.get(keyAndType);
+				if (bl == null) {
+					bl = new ByteFrequencies();
+					tagLengths.put(keyAndType, bl);
+				}
+				// potential problem, length can be greater than 256:
+				bl.add((byte) bytes.length);
+			}
+		}
 
 		if (!record.isLastFragment())
 			distanceToNextFragmentFreq.addValue(record.getRecordsToNextFragment());
@@ -176,10 +207,14 @@ public class CramStats {
 
 		if (record.getReadName() != null)
 			addString(record.getReadName());
-		if (record.next != null)
+		if (record.next != null) {
 			addMate(record.next);
-		if (record.previous != null)
+			addString(String.valueOf(record.insertSize));
+		}
+		if (record.previous != null) {
 			addMate(record.previous);
+			addString(String.valueOf(record.insertSize));
+		}
 	}
 
 	private void addMate(CramRecord mate) {
@@ -203,6 +238,18 @@ public class CramStats {
 			block.setCompression(new CramCompression());
 			compression = block.getCompression();
 		}
+
+		int tagCount = tagKeyAndTypeFrequency.getUniqueCount() ; 
+		compression.tagKeyAlphabet = new String[tagCount];
+		compression.tagKeyFrequency = new int[tagCount];
+		Iterator<Comparable<?>> tagIterator = tagKeyAndTypeFrequency.valuesIterator() ;
+		for (int i=0; i<tagCount; i++) {
+			String keyAndType = (String) tagIterator.next() ;
+			compression.tagKeyAlphabet[i] = keyAndType ;
+			compression.tagKeyFrequency[i] = (int) tagKeyAndTypeFrequency.getCount(keyAndType) ;
+		}
+		compression.tagByteFrequencyMap = tagFreqs ;
+		compression.tagByteLengthMap = tagLengths ;
 
 		ValueFrequencyHolder holder = getValueFrequencies(baseFreqArray);
 		compression.setBaseAlphabet(holder.values);
@@ -272,10 +319,10 @@ public class CramStats {
 		holder = getValueFrequencies(readGroupIndexFreq);
 		compression.setReadGroupIndexes(holder.intValues);
 		compression.setReadGroupFrequencies(holder.frequencies);
-		
-		holder = getValueFrequencies(heapByteFreqArray); 
-		compression.setHeapByteAlphabet(holder.values) ;
-		compression.setHeapByteFrequencies(holder.frequencies) ;
+
+		holder = getValueFrequencies(heapByteFreqArray);
+		compression.setHeapByteAlphabet(holder.values);
+		compression.setHeapByteFrequencies(holder.frequencies);
 
 		if (statsPS != null) {
 			statsPS.println("Read feature frequencies: ");
@@ -347,7 +394,7 @@ public class CramStats {
 		}
 	}
 
-	private static long getHuffmanBitLengthEstimate(HashMapFrequency f) {
+	public static long getHuffmanBitLengthEstimate(HashMapFrequency f) {
 		Iterator<Comparable<?>> valuesIterator = f.valuesIterator();
 		int i = 0;
 		Long[] values = new Long[f.getUniqueCount()];

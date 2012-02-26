@@ -25,6 +25,7 @@
 package net.sf.picard.sam;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.picard.cmdline.CommandLineProgram;
@@ -78,14 +79,18 @@ public class ViewSam2 extends CommandLineProgram {
 	public List<String> queries;
 
 	public static void main(final String[] args) {
-		// hack to avoid 'java.io.IOException: Not enough storage is available to process this command':
+		// hack to avoid 'java.io.IOException: Not enough storage is available
+		// to process this command':
 		IoUtil.STANDARD_BUFFER_SIZE = 1024 * 32;
 		new ViewSam2().instanceMain(args);
 	}
 
 	@Override
 	protected int doWork() {
-		if (queries != null)
+		if (queries == null || queries.isEmpty()) {
+			queries = new ArrayList<String>(1);
+			queries.add(null);
+		} else
 			for (String q : queries)
 				System.out.println(q);
 
@@ -93,7 +98,8 @@ public class ViewSam2 extends CommandLineProgram {
 		File index = new File(INPUT + ".bai");
 		if (!index.exists())
 			index = new File(INPUT + ".crai");
-		if (!index.exists()) index = null ;
+		if (!index.exists())
+			index = null;
 
 		final SAMFileReader in = new SAMFileReader(INPUT, index);
 		final SAMFileHeader header = in.getFileHeader();

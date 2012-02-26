@@ -1,7 +1,9 @@
 package uk.ac.ebi.ena.sra.cram.encoding;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -9,6 +11,7 @@ import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
+import uk.ac.ebi.ena.sra.cram.format.ReadTag;
 import uk.ac.ebi.ena.sra.cram.io.BitInputStream;
 import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 import uk.ac.ebi.ena.sra.cram.io.NullBitOutputStream;
@@ -38,6 +41,9 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	public boolean storeMappedQualityScores = false;
 	public BitCodec<Byte> heapByteCodec;
 
+	public Map<String, BitCodec<byte[]>> tagCodecMap;
+	public BitCodec<String> tagKeyAndTypeCodec;
+
 	private static Logger log = Logger.getLogger(CramRecordCodec.class);
 
 	@Override
@@ -61,6 +67,8 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 				mate.setReadName(readZeroTerminatedString(heapByteCodec, bis));
 				mate.setSequenceName(readZeroTerminatedString(heapByteCodec, bis));
 				mate.setAlignmentStart(Long.valueOf(readZeroTerminatedString(heapByteCodec, bis)));
+				record.insertSize = Integer.valueOf(readZeroTerminatedString(heapByteCodec, bis));
+
 				mate.setFirstInPair(!record.isFirstInPair());
 				if (record.isFirstInPair())
 					record.next = mate;
@@ -115,6 +123,19 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 
 		record.setReadGroupID(readGroupCodec.read(bis));
 
+		while (bis.readBit()) {
+			if (record.tags == null)
+				record.tags = new ArrayList<ReadTag>();
+			String tagKeyAndType = tagKeyAndTypeCodec.read(bis);
+			BitCodec<byte[]> codec = tagCodecMap.get(tagKeyAndType);
+			byte[] valueBytes = codec.read(bis);
+			char type = tagKeyAndType.charAt(3);
+			Object value = ReadTag.restoreValueFromByteArray(type, valueBytes);
+
+			ReadTag tag = new ReadTag(tagKeyAndType.substring(0, 2), type, value);
+			record.tags.add(tag);
+		}
+
 		// if (bis.readBit()) {
 		// List<ReadAnnotation> anns = new ArrayList<ReadAnnotation>();
 		// do {
@@ -158,6 +179,7 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 				len += writeZeroTerminatedString(record.getReadName(), heapByteCodec, bos);
 				len += writeZeroTerminatedString(mate.getSequenceName(), heapByteCodec, bos);
 				len += writeZeroTerminatedString(String.valueOf(mate.getAlignmentStart()), heapByteCodec, bos);
+				len += writeZeroTerminatedString(String.valueOf(record.insertSize), heapByteCodec, bos);
 			}
 			len++;
 		}
@@ -209,6 +231,18 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		}
 
 		len += readGroupCodec.write(bos, record.getReadGroupID());
+
+		if (record.tags != null && !record.tags.isEmpty()) {
+			for (ReadTag tag : record.tags) {
+				bos.write(true);
+				len++ ;
+				tagKeyAndTypeCodec.write(bos, tag.getKeyAndType());
+				BitCodec<byte[]> codec = tagCodecMap.get(tag.getKeyAndType());
+				len += codec.write(bos, tag.getValueAsByteArray());
+			}
+		}
+		bos.write(false);
+		len++ ;
 
 		// Collection<ReadAnnotation> annotations = record.getAnnotations();
 		// if (annotations == null || annotations.isEmpty()) {

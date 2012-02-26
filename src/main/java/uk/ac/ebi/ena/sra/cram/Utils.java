@@ -22,11 +22,13 @@ import net.sf.picard.reference.ReferenceSequenceFileFactory;
 import net.sf.picard.sam.SamPairUtil;
 import net.sf.samtools.Cigar;
 import net.sf.samtools.CigarElement;
+import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
 import net.sf.samtools.SAMTag;
+import net.sf.samtools.util.CoordMath;
 import net.sf.samtools.util.SeekableStream;
 
 import org.apache.log4j.Logger;
@@ -366,9 +368,20 @@ public class Utils {
 			unmapped.setInferredInsertSize(0);
 		}
 
-		final int insertSize = SamPairUtil.computeInsertSize(rec1, rec2);
-		rec1.setInferredInsertSize(insertSize);
-		rec2.setInferredInsertSize(-insertSize);
+		boolean firstIsFirst = rec1.getAlignmentStart() < rec2.getAlignmentStart();
+		int insertSize = firstIsFirst ? SamPairUtil.computeInsertSize(rec1, rec2) : SamPairUtil.computeInsertSize(rec2,
+				rec1);
+
+		rec1.setInferredInsertSize(firstIsFirst ? insertSize : -insertSize);
+		rec2.setInferredInsertSize(firstIsFirst ? -insertSize : insertSize);
+
+	}
+
+	public static int computeInsertSize(SAMRecord firstEnd, SAMRecord secondEnd) {
+		if (firstEnd.getAlignmentStart() < secondEnd.getAlignmentStart())
+			return SamPairUtil.computeInsertSize(firstEnd, secondEnd);
+		else
+			return SamPairUtil.computeInsertSize(secondEnd, firstEnd);
 	}
 
 	public static IndexedFastaSequenceFile createIndexedFastaSequenceFile(File file) throws CramException,
@@ -411,6 +424,8 @@ public class Utils {
 			else
 				rs = getReferenceSequenceOrNull(rsFile, "chr" + name);
 		}
+		if (rs == null)
+			return null;
 
 		if (len < 1)
 			return rs.getBases();
@@ -425,14 +440,82 @@ public class Utils {
 		if (refBases == null)
 			throw new CramException("Reference sequence " + seqName + " not found in the fasta file "
 					+ referenceSequenceFile.toString());
-		
+
 		long time2 = System.currentTimeMillis();
 		log.debug(String.format("Reference sequence %s read in %.2f seconds.", seqName, (time2 - time1) / 1000f));
-		
+
 		Utils.capitaliseAndCheckBases(refBases, false);
-		
+
 		long time3 = System.currentTimeMillis();
 		log.debug(String.format("Reference sequence normalized in %.2f seconds.", (time3 - time2) / 1000f));
 		return refBases;
+	}
+
+	/**
+	 * A rip off samtools bam_md.c
+	 * 
+	 * @param record
+	 * @param ref
+	 * @param flag
+	 * @return
+	 */
+	static void calculateMdAndNmTags(SAMRecord record, byte[] ref) {
+		Cigar cigar = record.getCigar();
+		List<CigarElement> cigarElements = cigar.getCigarElements();
+		byte[] seq = record.getReadBases();
+		int start = record.getAlignmentStart() - 1;
+		int i, x, y, u = 0;
+		int nm = 0;
+		StringBuffer str = new StringBuffer();
+	
+		for (i = y = 0, x = start; i < cigarElements.size(); ++i) {
+			CigarElement ce = cigarElements.get(i);
+			int j, l = ce.getLength();
+			CigarOperator op = ce.getOperator();
+			if (op == CigarOperator.MATCH_OR_MISMATCH || op == CigarOperator.EQ || op == CigarOperator.X) {
+				for (j = 0; j < l; ++j) {
+					int z = y + j;
+					int c1 = seq[z], c2 = ref[x + j];
+					if (ref[x + j] == 0)
+						break; // out of boundary
+					if ((c1 == c2 && c1 != 15 && c2 != 15) || c1 == 0) {
+						// a match
+						++u;
+					} else {
+						str.append(u);
+						str.appendCodePoint(ref[x + j]);
+						u = 0;
+						++nm;
+					}
+				}
+				if (j < l)
+					break;
+				x += l;
+				y += l;
+			} else if (op == CigarOperator.DELETION) {
+				str.append(u);
+				str.append('^');
+				for (j = 0; j < l; ++j) {
+					if (ref[x + j] == 0)
+						break;
+					str.appendCodePoint(ref[x + j]);
+				}
+				u = 0;
+				if (j < l)
+					break;
+				x += l;
+				nm += l;
+			} else if (op == CigarOperator.INSERTION || op == CigarOperator.SOFT_CLIP) {
+				y += l;
+				if (op == CigarOperator.INSERTION)
+					nm += l;
+			} else if (op == CigarOperator.SKIPPED_REGION) {
+				x += l;
+			}
+		}
+		str.append(u);
+		
+		record.setAttribute(SAMTag.MD.name(), str.toString());
+		record.setAttribute(SAMTag.NM.name(), nm);
 	}
 }

@@ -4,6 +4,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import uk.ac.ebi.ena.sra.cram.format.ByteFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
@@ -41,22 +42,19 @@ class CramRecordBlockWriter {
 		return dos.size() * 8;
 	}
 
-	private static void writeArray(DataOutputStream dos, int[] array)
-			throws IOException {
+	private static void writeArray(DataOutputStream dos, int[] array) throws IOException {
 		dos.writeInt(array.length);
 		for (int i = 0; i < array.length; i++)
 			dos.writeInt(array[i]);
 	}
 
-	private static void writeArray(DataOutputStream dos, byte[] array)
-			throws IOException {
+	private static void writeArray(DataOutputStream dos, byte[] array) throws IOException {
 		dos.writeInt(array.length);
 		for (int i = 0; i < array.length; i++)
 			dos.writeByte(array[i]);
 	}
 
-	private static final void writeCramCompression(DataOutputStream os,
-			CramCompression compression) throws IOException {
+	private static final void writeCramCompression(DataOutputStream os, CramCompression compression) throws IOException {
 
 		writeEncoding(os, compression.getInSeqPosEncoding());
 		writeEncoding(os, compression.getInReadPosEncoding());
@@ -69,7 +67,7 @@ class CramRecordBlockWriter {
 
 		writeArray(os, compression.getScoreAlphabet());
 		writeArray(os, compression.getScoreFrequencies());
-		
+
 		writeArray(os, compression.getStopBaseAlphabet());
 		writeArray(os, compression.getStopBaseFrequencies());
 
@@ -84,19 +82,38 @@ class CramRecordBlockWriter {
 
 		writeArray(os, compression.getReadAnnotationIndexes());
 		writeArray(os, compression.getReadAnnotationFrequencies());
-		
+
 		writeArray(os, compression.getReadGroupIndexes());
 		writeArray(os, compression.getReadGroupFrequencies());
-		
+
 		writeArray(os, compression.getMappingQualityAlphabet());
 		writeArray(os, compression.getMappingQualityFrequencies());
-		
+
 		writeArray(os, compression.getHeapByteAlphabet());
 		writeArray(os, compression.getHeapByteFrequencies());
+
+		os.writeInt(compression.tagKeyAlphabet.length);
+		for (int i=0; i<compression.tagKeyAlphabet.length; i++) {
+			String tagKey = compression.tagKeyAlphabet[i] ;
+			// always 4 bytes, for example 'MD:Z'!
+			os.write(tagKey.getBytes());
+			os.writeInt(compression.tagKeyFrequency[i]) ;
+
+			ByteFrequencies byteFrequencies = compression.tagByteFrequencyMap.get(tagKey);
+			byte[] alphabet = byteFrequencies.getValues();
+			writeArray(os, alphabet);
+			int[] freqs = byteFrequencies.getFrequencies();
+			writeArray(os, freqs);
+			
+			ByteFrequencies byteLengths = compression.tagByteLengthMap.get(tagKey);
+			alphabet = byteLengths.getValues();
+			writeArray(os, alphabet);
+			freqs = byteLengths.getFrequencies();
+			writeArray(os, freqs);
+		}
 	}
 
-	private static final void writeEncoding(DataOutputStream os,
-			Encoding encoding) throws IOException {
+	private static final void writeEncoding(DataOutputStream os, Encoding encoding) throws IOException {
 		os.writeByte(encoding.getAlgorithm().ordinal());
 		os.writeUTF(encoding.getParameters());
 	}

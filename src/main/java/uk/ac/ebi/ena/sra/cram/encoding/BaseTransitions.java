@@ -93,7 +93,7 @@ class BaseTransitions {
 		default:
 			throw new IllegalArgumentException(
 					String.format(
-							"Unknown reference base when restoring base from transition: ",
+							"Unknown reference base when restoring base from transition: %c, %d",
 							(char) reference, transition));
 		}
 	}

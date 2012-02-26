@@ -59,7 +59,7 @@ public class CramTools {
 
 	}
 
-	@Parameters(commandDescription = "CRAM tools. Version 0.6")
+	@Parameters(commandDescription = "CRAM tools. Version 0.65")
 	private static class Params  {
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
 		private boolean help = false;

@@ -5,6 +5,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 
+import uk.ac.ebi.ena.sra.cram.format.ByteFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
@@ -117,7 +118,24 @@ class CramRecordBlockReader {
 		
 		compression.setHeapByteAlphabet(readByteArray());
 		compression.setHeapByteFrequencies(readIntArray());
-
+		
+		compression.tagKeyAlphabet = new String [dis.readInt()] ;
+		compression.tagKeyFrequency = new int[compression.tagKeyAlphabet.length] ;
+		compression.tagByteFrequencyMap.clear() ;
+		for (int i=0; i<compression.tagKeyAlphabet.length; i++) {
+			byte[] tagKeyBytes = new byte[4] ;
+			dis.readFully(tagKeyBytes) ;
+			String tagKey = new String (tagKeyBytes) ;
+			compression.tagKeyAlphabet[i] = tagKey ;
+			compression.tagKeyFrequency[i] = dis.readInt() ;
+			
+			ByteFrequencies bf = new ByteFrequencies(readByteArray(), readIntArray()) ;
+			compression.tagByteFrequencyMap.put(tagKey, bf) ;
+			
+			ByteFrequencies bl = new ByteFrequencies(readByteArray(), readIntArray()) ;
+			compression.tagByteLengthMap.put(tagKey, bl) ;
+		}
+		
 		return compression;
 	}
 

@@ -13,15 +13,15 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
 
-import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.BAMFileWriter;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
-import net.sf.samtools.util.SequenceUtil;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
+import net.sf.samtools.SAMTag;
+import net.sf.samtools.util.SequenceUtil;
 
 import org.apache.log4j.Logger;
 
@@ -29,6 +29,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
+import uk.ac.ebi.ena.sra.cram.format.ReadTag;
 import uk.ac.ebi.ena.sra.cram.format.text.CramRecordFormat;
 import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.impl.CramHeaderIO;
@@ -140,6 +141,7 @@ public class Cram2Bam {
 
 		long counter = 1;
 		ByteArraySequenceBaseProvider provider = null;
+		byte[] refBases = null;
 
 		NEXT_BLOCK: while (true) {
 
@@ -178,13 +180,12 @@ public class Cram2Bam {
 				// counter = 1;
 			}
 
-
 			if ("*".equals(seqName)) {
-				byte[] refBases = new byte[] {};
+				refBases = new byte[] {};
 				provider = new ByteArraySequenceBaseProvider(refBases);
 			} else {
 				if (provider == null || !seqName.equals(prevSeqName)) {
-					byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, seqName);
+					refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, seqName);
 					provider = new ByteArraySequenceBaseProvider(refBases);
 				}
 			}
@@ -222,6 +223,12 @@ public class Cram2Bam {
 				cramRecord = record;
 
 				SAMRecord samRecord = new SAMRecord(header);
+				if (record.tags != null && !record.tags.isEmpty()) {
+					for (ReadTag rt : record.tags) {
+						samRecord.setAttribute(rt.getKey(), rt.getValue());
+					}
+				}
+
 				if (cramHeader.getReadGroups() != null) {
 					if (!cramHeader.getReadGroups().isEmpty()) {
 						CramReadGroup cramReadGroup = cramHeader.getReadGroups().get(cramRecord.getReadGroupID());
@@ -238,17 +245,10 @@ public class Cram2Bam {
 					samRecord.setReadPairedFlag(true);
 					samRecord.setMateAlignmentStart((int) mate.getAlignmentStart());
 					samRecord.setMateNegativeStrandFlag(mate.isNegativeStrand());
-					// System.out.println(mate);
-					// System.out.println(mate.getSequenceName());
-					// System.out.println(seqNameToIndexMap);
-					// System.out.println(seqNameToIndexMap.get(mate.getSequenceName()));
-					if (mate.getSequenceName() == null || !seqNameToIndexMap.containsKey(mate.getSequenceName())) {
-						samRecord.setReadPairedFlag(false);
-						samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
-						samRecord.setMateNegativeStrandFlag(false);
-					} else {
-						int seqIndex = seqNameToIndexMap.get(mate.getSequenceName());
-						samRecord.setMateReferenceIndex(seqIndex);
+					samRecord.setInferredInsertSize(record.insertSize);
+
+					if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(mate.getSequenceName())) {
+						samRecord.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
 						// samRecord.setMateReferenceName(mate.getSequenceName());
 						samRecord.setMateUnmappedFlag(!mate.isReadMapped());
 						if (cramRecord.isFirstInPair()) {
@@ -257,6 +257,23 @@ public class Cram2Bam {
 						} else {
 							samRecord.setFirstOfPairFlag(false);
 							samRecord.setSecondOfPairFlag(true);
+						}
+					} else {
+						if (mate.getSequenceName() == null || !seqNameToIndexMap.containsKey(mate.getSequenceName())) {
+							samRecord.setReadPairedFlag(false);
+							samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+							samRecord.setMateNegativeStrandFlag(false);
+						} else {
+							int seqIndex = seqNameToIndexMap.get(mate.getSequenceName());
+							samRecord.setMateReferenceIndex(seqIndex);
+							samRecord.setMateUnmappedFlag(!mate.isReadMapped());
+							if (cramRecord.isFirstInPair()) {
+								samRecord.setFirstOfPairFlag(true);
+								samRecord.setSecondOfPairFlag(false);
+							} else {
+								samRecord.setFirstOfPairFlag(false);
+								samRecord.setSecondOfPairFlag(true);
+							}
 						}
 					}
 					samRecord.setReadName(cramRecord.getReadName());
@@ -316,6 +333,9 @@ public class Cram2Bam {
 				samRecord.setProperPairFlag(cramRecord.isProperPair());
 				samRecord.setDuplicateReadFlag(cramRecord.isDuplicate());
 
+				if (!samRecord.getReadUnmappedFlag()) 
+					Utils.calculateMdAndNmTags(samRecord, refBases);
+
 				if (printCramRecords)
 					System.out.println(cramRecordFormat.writeRecord(cramRecord));
 
@@ -363,12 +383,14 @@ public class Cram2Bam {
 		if (mate != null)
 			Utils.setLooseMateInfo(samRecord, mate, header);
 		else {
-			samRecord.setReadPairedFlag(false);
-			samRecord.setProperPairFlag(false);
-			samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
-			samRecord.setMateNegativeStrandFlag(false);
-			samRecord.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
-			samRecord.setMateUnmappedFlag(false);
+			if (!samRecord.getReadPairedFlag()) {
+				samRecord.setReadPairedFlag(false);
+				samRecord.setProperPairFlag(false);
+				samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+				samRecord.setMateNegativeStrandFlag(false);
+				samRecord.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+				samRecord.setMateUnmappedFlag(false);
+			}
 		}
 	}
 
@@ -395,6 +417,7 @@ public class Cram2Bam {
 			if (samRecord.getReadUnmappedFlag())
 				samRecord.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
 			//
+
 			writer.addAlignment(samRecord);
 			// System.out.println(samRecord.format());
 		} catch (IllegalArgumentException e) {
@@ -404,7 +427,7 @@ public class Cram2Bam {
 		}
 	}
 
-	@Parameters(commandDescription = "CRAM to BAM conversion. Version 0.6")
+	@Parameters(commandDescription = "CRAM to BAM conversion. Version 0.65")
 	static class Params {
 		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to uncompress. Omit if standard input (pipe).")
 		File cramFile;

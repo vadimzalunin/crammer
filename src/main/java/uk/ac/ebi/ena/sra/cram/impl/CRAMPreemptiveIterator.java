@@ -4,8 +4,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.util.CloseableIterator;
 
@@ -37,7 +35,8 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 	private DefaultBitInputStream bis;
 	private RestoreBases restoreBases;
 	private ReferenceSequenceFile referenceSequenceFile;
-	private String refSequenceName ;
+	private String refSequenceName;
+	private RestoreQualityScores restoreScores;
 
 	private CramRecord mNextRecord;
 
@@ -79,13 +78,14 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 			eof = true;
 		else {
 			if (refSequenceName == null || !block.getSequenceName().equals(refSequenceName)) {
-				refSequenceName = block.getSequenceName() ;
+				refSequenceName = block.getSequenceName();
 				byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, refSequenceName);
 				referenceBaseProvider = new ByteArraySequenceBaseProvider(refBases);
 			}
 
 			recordCodec = recordCodecFactory.createRecordCodec(header, block, referenceBaseProvider);
 			restoreBases = new RestoreBases(referenceBaseProvider, block.getSequenceName());
+			restoreScores = new RestoreQualityScores();
 			bis = new DefaultBitInputStream(dis);
 		}
 	}
@@ -152,6 +152,7 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 
 		if (record.isReadMapped())
 			restoreBases.restoreReadBases(record);
+		restoreScores.restoreQualityScores(record);
 
 		return record;
 	}

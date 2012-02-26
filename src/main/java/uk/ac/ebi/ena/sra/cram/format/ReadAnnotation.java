@@ -5,9 +5,7 @@ public class ReadAnnotation implements Comparable<ReadAnnotation> {
 	private String key;
 
 	public ReadAnnotation(String key) {
-		if (key == null)
-			throw new NullPointerException("Annotation key cannot be null.");
-		this.key = key;
+		this.key = key ;
 	}
 
 	public String getKey() {
@@ -24,11 +22,13 @@ public class ReadAnnotation implements Comparable<ReadAnnotation> {
 		if (!(obj instanceof ReadAnnotation))
 			return false;
 
-		return key.equals(((ReadAnnotation) obj).key);
+		ReadAnnotation foe = (ReadAnnotation) obj;
+		return key.equals(foe.key) ;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return key.hashCode();
 	}
+
 }

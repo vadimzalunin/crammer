@@ -2,6 +2,8 @@ package uk.ac.ebi.ena.sra.cram.format;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
 
 import uk.ac.ebi.ena.sra.cram.format.compression.EncodingAlgorithm;
 
@@ -41,6 +43,11 @@ public class CramCompression implements Serializable {
 
 	private byte[] heapByteAlphabet;
 	private int[] heapByteFrequencies;
+
+	public Map<String, ByteFrequencies> tagByteFrequencyMap = new TreeMap<String, ByteFrequencies>();
+	public Map<String, ByteFrequencies> tagByteLengthMap = new TreeMap<String, ByteFrequencies>();
+	public String[] tagKeyAlphabet;
+	public int[] tagKeyFrequency;
 
 	public CramCompression() {
 	}
@@ -144,36 +151,55 @@ public class CramCompression implements Serializable {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("inSeqPosEncoding=").append(getInSeqPosEncoding()).append(", ");
-		sb.append("inReadPosEncoding=").append(getInReadPosEncoding()).append(", ");
-		sb.append("readLengthEncoding=").append(getReadLengthEncoding()).append(", ");
-		sb.append("delLengthEncoding=").append(getDelLengthEncoding()).append(", ");
-		sb.append("recordsToNextFragmentEncoding=").append(getRecordsToNextFragmentEncoding()).append(", ");
+		sb.append("inSeqPosEncoding=").append(getInSeqPosEncoding()).append("\n");
+		sb.append("inReadPosEncoding=").append(getInReadPosEncoding()).append("\n");
+		sb.append("readLengthEncoding=").append(getReadLengthEncoding()).append("\n");
+		sb.append("delLengthEncoding=").append(getDelLengthEncoding()).append("\n");
+		sb.append("recordsToNextFragmentEncoding=").append(getRecordsToNextFragmentEncoding()).append("\n");
 
-		sb.append("baseAlphabet=").append(Arrays.toString(getBaseAlphabet())).append(", ");
-		sb.append("baseFrequencies=").append(Arrays.toString(getBaseFrequencies())).append(", ");
+		sb.append("baseAlphabet=").append(Arrays.toString(getBaseAlphabet())).append("\n");
+		sb.append("baseFrequencies=").append(Arrays.toString(getBaseFrequencies())).append("\n");
 
-		sb.append("scoreAlphabet=").append(Arrays.toString(getScoreAlphabet())).append(", ");
-		sb.append("scoreFrequencies=").append(Arrays.toString(getScoreFrequencies())).append(", ");
+		sb.append("scoreAlphabet=").append(Arrays.toString(getScoreAlphabet())).append("\n");
+		sb.append("scoreFrequencies=").append(Arrays.toString(getScoreFrequencies())).append("\n");
 
-		sb.append("readLengthAlphabet=").append(Arrays.toString(getReadLengthAlphabet())).append(", ");
-		sb.append("readLengthFrequencies=").append(Arrays.toString(getReadLengthFrequencies())).append(", ");
+		sb.append("readLengthAlphabet=").append(Arrays.toString(getReadLengthAlphabet())).append("\n");
+		sb.append("readLengthFrequencies=").append(Arrays.toString(getReadLengthFrequencies())).append("\n");
 
-		sb.append("readFeatureAlphabet=").append(Arrays.toString(getReadFeatureAlphabet())).append(", ");
-		sb.append("readFeatureFrequencies=").append(Arrays.toString(getReadFeatureFrequencies())).append(", ");
+		sb.append("readFeatureAlphabet=").append(Arrays.toString(getReadFeatureAlphabet())).append("\n");
+		sb.append("readFeatureFrequencies=").append(Arrays.toString(getReadFeatureFrequencies())).append("\n");
 
-		sb.append("readAnnotationIndexes=").append(Arrays.toString(getReadAnnotationIndexes())).append(", ");
-		sb.append("readAnnotationFrequencies=").append(Arrays.toString(getReadAnnotationFrequencies())).append(", ");
+		sb.append("readAnnotationIndexes=").append(Arrays.toString(getReadAnnotationIndexes())).append("\n");
+		sb.append("readAnnotationFrequencies=").append(Arrays.toString(getReadAnnotationFrequencies())).append("\n");
 
-		sb.append("mappingQualityAlphabet=").append(Arrays.toString(getMappingQualityAlphabet())).append(", ");
-		sb.append("mappingQualityFrequencies=").append(Arrays.toString(getMappingQualityFrequencies())).append(", ");
+		sb.append("mappingQualityAlphabet=").append(Arrays.toString(getMappingQualityAlphabet())).append("\n");
+		sb.append("mappingQualityFrequencies=").append(Arrays.toString(getMappingQualityFrequencies())).append("\n");
 
-		sb.append("heapByteAlphabet=").append(Arrays.toString(getHeapByteAlphabet())).append(", ");
-		sb.append("heapByteFrequencies=").append(Arrays.toString(getHeapByteFrequencies())).append(", ");
+		sb.append("heapByteAlphabet=").append(Arrays.toString(getHeapByteAlphabet())).append("\n");
+		sb.append("heapByteFrequencies=").append(Arrays.toString(getHeapByteFrequencies())).append("\n");
 
-		sb.append("readGroupIndexes=").append(Arrays.toString(getReadGroupIndexes())).append(", ");
-		sb.append("readGroupFrequencies=").append(Arrays.toString(getReadGroupFrequencies()));
+		sb.append("readGroupIndexes=").append(Arrays.toString(getReadGroupIndexes())).append("\n");
+		sb.append("readGroupFrequencies=").append(Arrays.toString(getReadGroupFrequencies())).append("\n");
 
+		if (tagKeyAlphabet != null && tagKeyAlphabet.length > 0) {
+			sb.append("tagKeyAlphabet=").append(Arrays.toString(tagKeyAlphabet)).append("\n");
+			sb.append("tagKeyFrequency=").append(Arrays.toString(tagKeyFrequency)).append("\n");
+
+			for (int i = 0; i < tagKeyAlphabet.length; i++) {
+				String tagKeyAndType = tagKeyAlphabet[i];
+
+				sb.append(tagKeyAndType).append("\n");
+
+				ByteFrequencies bf = tagByteFrequencyMap.get(tagKeyAndType);
+				sb.append("Bytes:").append(Arrays.toString(bf.getValues())).append("\n");
+				sb.append("Byte freqs:").append(Arrays.toString(bf.getFrequencies())).append("\n");
+
+				ByteFrequencies lf = tagByteLengthMap.get(tagKeyAndType);
+				sb.append("Length:").append(Arrays.toString(lf.getValues())).append("\n");
+				sb.append("Length freqs:").append(Arrays.toString(lf.getFrequencies())).append("\n");
+			}
+
+		}
 		return sb.toString();
 	}
 

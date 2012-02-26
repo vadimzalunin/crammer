@@ -18,7 +18,7 @@ import uk.ac.ebi.ena.sra.cram.format.SubstitutionVariation;
 public class ReadFeatures2Cigar {
 
 	@Deprecated
-	public Cigar getCigar(Collection<ReadFeature> features, int readLength) {
+	private Cigar getCigar(Collection<ReadFeature> features, int readLength) {
 		if (features == null || features.isEmpty()) {
 			CigarElement ce = new CigarElement(readLength, CigarOperator.M);
 			return new Cigar(Arrays.asList(ce));
@@ -33,8 +33,7 @@ public class ReadFeatures2Cigar {
 				InsertionVariation iv = (InsertionVariation) f;
 
 				if (iv.getPosition() - prevPos > 0) {
-					ce = new CigarElement(iv.getPosition() - prevPos,
-							CigarOperator.M);
+					ce = new CigarElement(iv.getPosition() - prevPos, CigarOperator.M);
 					list.add(ce);
 				}
 
@@ -46,8 +45,7 @@ public class ReadFeatures2Cigar {
 				InsertBase ib = (InsertBase) f;
 
 				if (ib.getPosition() - prevPos > 0) {
-					ce = new CigarElement(ib.getPosition() - prevPos,
-							CigarOperator.M);
+					ce = new CigarElement(ib.getPosition() - prevPos, CigarOperator.M);
 					list.add(ce);
 				}
 
@@ -59,8 +57,7 @@ public class ReadFeatures2Cigar {
 				DeletionVariation dv = (DeletionVariation) f;
 
 				if (dv.getPosition() - prevPos > 0) {
-					ce = new CigarElement(dv.getPosition() - prevPos,
-							CigarOperator.M);
+					ce = new CigarElement(dv.getPosition() - prevPos, CigarOperator.M);
 					list.add(ce);
 				}
 
@@ -83,25 +80,22 @@ public class ReadFeatures2Cigar {
 			list.add(ce);
 		}
 
-		rewriteFlankingInsertsAsSoftClips (list) ;
+		rewriteFlankingInsertsAsSoftClips(list);
 		return new Cigar(list);
 	}
-	
-	private static final void rewriteFlankingInsertsAsSoftClips(
-			List<CigarElement> elements) {
+
+	private static final void rewriteFlankingInsertsAsSoftClips(List<CigarElement> elements) {
 		if (elements.isEmpty())
 			return;
 
 		CigarElement first = elements.get(0);
 		if (first.getOperator() == CigarOperator.INSERTION) {
-			elements.set(0, new CigarElement(first.getLength(),
-					CigarOperator.SOFT_CLIP));
+			elements.set(0, new CigarElement(first.getLength(), CigarOperator.SOFT_CLIP));
 		}
 
 		CigarElement last = elements.get(elements.size() - 1);
 		if (last.getOperator() == CigarOperator.INSERTION) {
-			elements.set(elements.size() - 1, new CigarElement(last.getLength(),
-					CigarOperator.SOFT_CLIP));
+			elements.set(elements.size() - 1, new CigarElement(last.getLength(), CigarOperator.SOFT_CLIP));
 		}
 	}
 
@@ -179,23 +173,22 @@ public class ReadFeatures2Cigar {
 				lastOperator = co;
 				lastOpLen = rfLen;
 				lastOpPos = f.getPosition();
-				if (co == CigarOperator.DELETION)
-					lastOpPos -= rfLen;
 			} else
 				lastOpLen += rfLen;
+			
+			if (co == CigarOperator.DELETION)
+				lastOpPos -= rfLen;
 		}
 
 		if (lastOperator != null) {
 			if (lastOperator != CigarOperator.M) {
 				list.add(new CigarElement(lastOpLen, lastOperator));
 				if (readLength >= lastOpPos + lastOpLen) {
-					ce = new CigarElement(readLength - (lastOpLen + lastOpPos)+1,
-							CigarOperator.M);
+					ce = new CigarElement(readLength - (lastOpLen + lastOpPos) + 1, CigarOperator.M);
 					list.add(ce);
 				}
 			} else if (readLength > lastOpPos - 1) {
-				ce = new CigarElement(readLength - lastOpPos + 1,
-						CigarOperator.M);
+				ce = new CigarElement(readLength - lastOpPos + 1, CigarOperator.M);
 				list.add(ce);
 			}
 		}
@@ -205,7 +198,7 @@ public class ReadFeatures2Cigar {
 			return new Cigar(Arrays.asList(ce));
 		}
 
-		rewriteFlankingInsertsAsSoftClips (list) ;
+		rewriteFlankingInsertsAsSoftClips(list);
 		return new Cigar(list);
 	}
 
