@@ -411,6 +411,9 @@ public class Utils {
 			else
 				rs = getReferenceSequenceOrNull(rsFile, "chr" + name);
 		}
+        if (rs == null) {
+            return null;
+        }
 
 		if (len < 1)
 			return rs.getBases();
