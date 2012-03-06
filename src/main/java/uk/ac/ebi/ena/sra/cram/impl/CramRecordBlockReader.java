@@ -10,6 +10,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
+import uk.ac.ebi.ena.sra.cram.format.IntFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.compression.EncodingAlgorithm;
 
 class CramRecordBlockReader {
@@ -20,15 +21,12 @@ class CramRecordBlockReader {
 		this.dis = os;
 	}
 
-	private void ensureExpectedBytes(byte[] expectedBytes)
-			throws CramFormatException, IOException {
+	private void ensureExpectedBytes(byte[] expectedBytes) throws CramFormatException, IOException {
 		byte[] actuallBeginBytes = new byte[expectedBytes.length];
 		dis.readFully(actuallBeginBytes);
 		if (!Arrays.equals(expectedBytes, actuallBeginBytes))
-			throw new CramFormatException("Expecting bytes "
-					+ Arrays.toString(expectedBytes) + " ("
-					+ new String(expectedBytes) + ")" + " but got "
-					+ Arrays.toString(actuallBeginBytes) + " ("
+			throw new CramFormatException("Expecting bytes " + Arrays.toString(expectedBytes) + " ("
+					+ new String(expectedBytes) + ")" + " but got " + Arrays.toString(actuallBeginBytes) + " ("
 					+ new String(actuallBeginBytes) + ")");
 	}
 
@@ -94,7 +92,7 @@ class CramRecordBlockReader {
 
 		compression.setScoreAlphabet(readByteArray());
 		compression.setScoreFrequencies(readIntArray());
-		
+
 		compression.setStopBaseAlphabet(readByteArray());
 		compression.setStopBaseFrequencies(readIntArray());
 
@@ -115,27 +113,29 @@ class CramRecordBlockReader {
 
 		compression.setMappingQualityAlphabet(readByteArray());
 		compression.setMappingQualityFrequencies(readIntArray());
-		
+
 		compression.setHeapByteAlphabet(readByteArray());
 		compression.setHeapByteFrequencies(readIntArray());
-		
-		compression.tagKeyAlphabet = new String [dis.readInt()] ;
-		compression.tagKeyFrequency = new int[compression.tagKeyAlphabet.length] ;
-		compression.tagByteFrequencyMap.clear() ;
-		for (int i=0; i<compression.tagKeyAlphabet.length; i++) {
-			byte[] tagKeyBytes = new byte[4] ;
-			dis.readFully(tagKeyBytes) ;
-			String tagKey = new String (tagKeyBytes) ;
-			compression.tagKeyAlphabet[i] = tagKey ;
-			compression.tagKeyFrequency[i] = dis.readInt() ;
-			
-			ByteFrequencies bf = new ByteFrequencies(readByteArray(), readIntArray()) ;
-			compression.tagByteFrequencyMap.put(tagKey, bf) ;
-			
-			ByteFrequencies bl = new ByteFrequencies(readByteArray(), readIntArray()) ;
-			compression.tagByteLengthMap.put(tagKey, bl) ;
+
+		compression.tagKeyAlphabet = new String[dis.readInt()];
+		compression.tagKeyFrequency = new int[compression.tagKeyAlphabet.length];
+		compression.tagByteFrequencyMap.clear();
+		for (int i = 0; i < compression.tagKeyAlphabet.length; i++) {
+			byte[] tagKeyBytes = new byte[4];
+			dis.readFully(tagKeyBytes);
+			String tagKey = new String(tagKeyBytes);
+			compression.tagKeyAlphabet[i] = tagKey;
+			compression.tagKeyFrequency[i] = dis.readInt();
+
+			ByteFrequencies bf = new ByteFrequencies(readByteArray(), readIntArray());
+			compression.tagByteFrequencyMap.put(tagKey, bf);
+
+			IntFrequencies bl = new IntFrequencies(readIntArray(), readIntArray());
+			compression.tagByteLengthMap.put(tagKey, bl);
 		}
-		
+
+		compression.flagStats = new ByteFrequencies(readByteArray(), readIntArray());
+
 		return compression;
 	}
 

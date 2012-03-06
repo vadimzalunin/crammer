@@ -12,10 +12,10 @@ import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 public class FixedLengthByteArrayHuffmanCodec implements BitCodec<byte[]> {
 	private HuffmanCodec<Byte> byteCodec;
 	private ByteBuffer buf;
-	private int len;
+	private int length;
 
 	public FixedLengthByteArrayHuffmanCodec(byte[] alphabet, int[] freqs, int len) {
-		this.len = len;
+		this.length = len;
 		buf = ByteBuffer.allocate(len);
 		HuffmanTree<Byte> tree = HuffmanCode.buildTree(freqs, Utils.autobox(alphabet));
 		byteCodec = new HuffmanCodec<Byte>(tree);
@@ -24,7 +24,7 @@ public class FixedLengthByteArrayHuffmanCodec implements BitCodec<byte[]> {
 	@Override
 	public byte[] read(BitInputStream bis) throws IOException {
 		buf.clear();
-		for (int i = 0; i < len; i++)
+		for (int i = 0; i < length; i++)
 			buf.put(byteCodec.read(bis));
 
 		byte[] sequence = new byte[buf.position()];
@@ -35,8 +35,8 @@ public class FixedLengthByteArrayHuffmanCodec implements BitCodec<byte[]> {
 
 	@Override
 	public long write(BitOutputStream bos, byte[] bytes) throws IOException {
-		if (bytes.length != len)
-			throw new RuntimeException("Number of bytes in the value is different from " + len);
+		if (bytes.length != length)
+			throw new RuntimeException("Number of bytes in the value is different from " + length);
 
 		long len = 0;
 		for (byte b : bytes)
@@ -47,14 +47,14 @@ public class FixedLengthByteArrayHuffmanCodec implements BitCodec<byte[]> {
 
 	@Override
 	public long numberOfBits(byte[] bytes) {
-		if (bytes.length != len)
-			throw new RuntimeException("Number of bytes in the value is different from " + len);
+		if (bytes.length != length)
+			throw new RuntimeException("Number of bytes in the value is different from " + length);
 
-		long len = 0;
+		long bitCount = 0;
 		for (byte b : bytes)
-			len += byteCodec.numberOfBits(b);
+			bitCount += byteCodec.numberOfBits(b);
 
-		return len;
+		return bitCount;
 	}
 
 }

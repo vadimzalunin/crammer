@@ -104,12 +104,13 @@ public class Cram2Bam {
 		}
 
 		convert(referenceSequenceFile, cramIS, params.outputFile, params.maxRecords, params.printCramRecords,
-				params.sequences);
+				params.sequences, params);
 
 	}
 
 	private static void convert(ReferenceSequenceFile referenceSequenceFile, InputStream cramInputStream,
-			File outputBamFile, long maxRecords, boolean printCramRecords, List<String> sequences) throws Exception {
+			File outputBamFile, long maxRecords, boolean printCramRecords, List<String> sequences, Params params)
+			throws Exception {
 
 		Utils.isCRAM(cramInputStream);
 
@@ -119,9 +120,8 @@ public class Cram2Bam {
 
 		BAMFileWriter writer = new BAMFileWriter(outputBamFile);
 		writer.setSortOrder(SortOrder.coordinate, true);
-		SAMFileHeader header;
-
-		header = Utils.cramHeader2SamHeader(cramHeader);
+		SAMFileHeader header = Utils.cramHeader2SamHeader(cramHeader);
+		
 		writer.setHeader(header);
 		Map<String, Integer> seqNameToIndexMap = new TreeMap<String, Integer>();
 		for (SAMSequenceRecord seq : header.getSequenceDictionary().getSequences()) {
@@ -332,12 +332,15 @@ public class Cram2Bam {
 				samRecord.setReferenceName(readBlock.getSequenceName());
 				samRecord.setProperPairFlag(cramRecord.isProperPair());
 				samRecord.setDuplicateReadFlag(cramRecord.isDuplicate());
+				samRecord.setReadFailsVendorQualityCheckFlag(cramRecord.vendorFiltered);
 
-				if (!samRecord.getReadUnmappedFlag()) 
-					Utils.calculateMdAndNmTags(samRecord, refBases);
+				if ((params.calculateMdTag || params.calculateNmTag) && !samRecord.getReadUnmappedFlag())
+					Utils.calculateMdAndNmTags(samRecord, refBases, params.calculateMdTag, params.calculateNmTag);
 
-				if (printCramRecords)
+				if (printCramRecords) {
+					cramRecord.setQualityScores(samRecord.getBaseQualityString().getBytes()) ;
 					System.out.println(cramRecordFormat.writeRecord(cramRecord));
+				}
 
 				if (longJump)
 					assembler.addSAMRecordNoAssembly(samRecord);
@@ -452,6 +455,12 @@ public class Cram2Bam {
 
 		@Parameter(names = { "--default-quality-score" }, description = "Use this quality score (decimal representation of ASCII symbol) as a default value when the original quality score was lost due to compression. Minimum is 33.")
 		int defaultQS = '?';
+
+		@Parameter(names = { "--calculate-md-tag" }, description = "Calculate MD tag.")
+		boolean calculateMdTag = false;
+
+		@Parameter(names = { "--calculate-nm-tag" }, description = "Calculate NM tag.")
+		boolean calculateNmTag = false;
 
 		@Parameter()
 		List<String> sequences;

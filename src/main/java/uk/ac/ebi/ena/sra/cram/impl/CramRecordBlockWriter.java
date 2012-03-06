@@ -8,6 +8,7 @@ import uk.ac.ebi.ena.sra.cram.format.ByteFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
+import uk.ac.ebi.ena.sra.cram.format.IntFrequencies;
 
 class CramRecordBlockWriter {
 	private OutputStream delegate;
@@ -93,24 +94,27 @@ class CramRecordBlockWriter {
 		writeArray(os, compression.getHeapByteFrequencies());
 
 		os.writeInt(compression.tagKeyAlphabet.length);
-		for (int i=0; i<compression.tagKeyAlphabet.length; i++) {
-			String tagKey = compression.tagKeyAlphabet[i] ;
+		for (int i = 0; i < compression.tagKeyAlphabet.length; i++) {
+			String tagKey = compression.tagKeyAlphabet[i];
 			// always 4 bytes, for example 'MD:Z'!
 			os.write(tagKey.getBytes());
-			os.writeInt(compression.tagKeyFrequency[i]) ;
+			os.writeInt(compression.tagKeyFrequency[i]);
 
 			ByteFrequencies byteFrequencies = compression.tagByteFrequencyMap.get(tagKey);
 			byte[] alphabet = byteFrequencies.getValues();
 			writeArray(os, alphabet);
 			int[] freqs = byteFrequencies.getFrequencies();
 			writeArray(os, freqs);
-			
-			ByteFrequencies byteLengths = compression.tagByteLengthMap.get(tagKey);
-			alphabet = byteLengths.getValues();
-			writeArray(os, alphabet);
-			freqs = byteLengths.getFrequencies();
-			writeArray(os, freqs);
+
+			IntFrequencies byteLengths = compression.tagByteLengthMap.get(tagKey);
+			writeArray(os, byteLengths.getValues());
+			writeArray(os, byteLengths.getFrequencies());
 		}
+
+		byte[] alphabet = compression.flagStats.getValues();
+		writeArray(os, alphabet);
+		int[] freqs = compression.flagStats.getFrequencies();
+		writeArray(os, freqs);
 	}
 
 	private static final void writeEncoding(DataOutputStream os, Encoding encoding) throws IOException {

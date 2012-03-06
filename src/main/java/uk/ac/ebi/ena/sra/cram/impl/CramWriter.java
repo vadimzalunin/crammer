@@ -10,19 +10,20 @@ import java.util.zip.GZIPOutputStream;
 
 import net.sf.samtools.SAMRecord;
 
+import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
+import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
 import uk.ac.ebi.ena.sra.cram.io.ExposedByteArrayOutputStream;
-import uk.ac.ebi.ena.sra.cram.spot.PairedTemplateAssembler;
 import uk.ac.ebi.ena.sra.cram.stats.CramStats;
 
 public class CramWriter {
@@ -51,12 +52,13 @@ public class CramWriter {
 	private long blockCreationTime = -1;
 	private long beyondHorizon = 0;
 	private long extraChromosomePairs = 0;
+	private final List<CramHeaderRecord> headerRecords;
 
 	public CramWriter(OutputStream os, SequenceBaseProvider provider, List<CramReferenceSequence> sequences,
 			boolean roundTripCheck, int maxRecordsPerBlock, boolean captureUnammpedQualityScortes,
 			boolean captureSubstituionQualityScore, boolean captureMaskedQualityScores,
 			List<ReadAnnotation> readAnnotations, PrintStream statsPS, List<CramReadGroup> cramReadGroups,
-			boolean captureAllQS) {
+			boolean captureAllQS, List<CramHeaderRecord> headerRecords) {
 		this.os = os;
 		this.provider = provider;
 		this.sequences = sequences;
@@ -69,6 +71,7 @@ public class CramWriter {
 		this.statsPS = statsPS;
 		this.cramReadGroups = cramReadGroups;
 		this.captureAllQS = captureAllQS;
+		this.headerRecords = headerRecords;
 	}
 
 	public void dump() {
@@ -104,7 +107,7 @@ public class CramWriter {
 		writerOS = new ExposedByteArrayOutputStream(1024 * 1024 * 10);
 
 		header = new CramHeader();
-		header.setVersion("0.6");
+		header.setRecords(headerRecords) ;
 		header.setReferenceSequences(sequences);
 		header.setReadAnnotations(readAnnotations);
 		header.setReadGroups(cramReadGroups);

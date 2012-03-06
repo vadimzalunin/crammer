@@ -7,8 +7,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import org.apache.commons.collections.map.MultiValueMap;
 
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
+import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
@@ -49,6 +53,31 @@ public class CramHeaderIO {
 					headerDOS.writeUTF("");
 				else
 					headerDOS.writeUTF(rg.getSample());
+			}
+		}
+
+		List<CramHeaderRecord> records = header.getRecords();
+		if (records == null || records.isEmpty()) {
+			headerDOS.writeInt(0);
+		} else {
+			headerDOS.writeInt(records.size());
+			for (CramHeaderRecord record : records) {
+				byte[] tagBytes = record.getTag().getBytes();
+				if (tagBytes.length != 2)
+					throw new RuntimeException("Header tag must be 2 bytes long: " + record.getTag());
+				headerDOS.write(tagBytes);
+
+				Set<String> keySet = record.getKeySet();
+				headerDOS.writeInt(keySet.size());
+				for (String key : keySet) {
+					byte[] keyBytes = key.getBytes();
+					if (keyBytes.length != 2)
+						throw new RuntimeException("Header tag key must be 2 bytes long: " + key);
+					headerDOS.write(keyBytes);
+
+					String value = record.getValue(key);
+					headerDOS.writeUTF(value);
+				}
 			}
 		}
 
@@ -97,6 +126,22 @@ public class CramHeaderIO {
 			rgList.add(new CramReadGroup(id, sample));
 		}
 		header.setReadGroups(rgList);
+
+		int recordCount = dis.readInt();
+		List<CramHeaderRecord> records = header.getRecords();
+		for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
+			byte[] tagBytes = new byte[2];
+			dis.readFully(tagBytes);
+			CramHeaderRecord record = new CramHeaderRecord(new String(tagBytes));
+			records.add(record);
+
+			int recordSize = dis.readInt();
+			for (int keyIndex = 0; keyIndex < recordSize; keyIndex++) {
+				byte[] keyBytes = new byte[2];
+				dis.readFully(keyBytes);
+				record.setValue(new String(keyBytes), dis.readUTF());
+			}
+		}
 
 		return header;
 	}

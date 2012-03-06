@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
@@ -24,17 +26,18 @@ import net.sf.samtools.Cigar;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMFileHeader;
+import net.sf.samtools.SAMProgramRecord;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
 import net.sf.samtools.SAMTag;
-import net.sf.samtools.util.CoordMath;
 import net.sf.samtools.util.SeekableStream;
 
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.CramIndexer.CountingInputStream;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
+import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
@@ -284,7 +287,73 @@ public class Utils {
 				samFileHeader.addReadGroup(samReadGroupRecord);
 			}
 
+		List<CramHeaderRecord> records = new ArrayList<CramHeaderRecord>();
+		for (CramHeaderRecord record : cramHeader.getRecords())
+			records.add(record);
+
+		writeComments(samFileHeader, records);
+		writeProgramRecords(samFileHeader, records);
+
 		return samFileHeader;
+	}
+
+	private static void readProgramRecords(SAMFileHeader header, Collection<CramHeaderRecord> records) {
+		String tag = "PG";
+		for (SAMProgramRecord programRecord : header.getProgramRecords()) {
+			CramHeaderRecord headerRecord = new CramHeaderRecord(tag);
+			headerRecord.setValueIfNotNull(SAMProgramRecord.PROGRAM_GROUP_ID_TAG, programRecord.getId());
+			headerRecord.setValueIfNotNull(SAMProgramRecord.COMMAND_LINE_TAG, programRecord.getCommandLine());
+			headerRecord.setValueIfNotNull(SAMProgramRecord.PREVIOUS_PROGRAM_GROUP_ID_TAG,
+					programRecord.getPreviousProgramGroupId());
+			headerRecord.setValueIfNotNull(SAMProgramRecord.PROGRAM_NAME_TAG, programRecord.getProgramName());
+			headerRecord.setValueIfNotNull(SAMProgramRecord.PROGRAM_VERSION_TAG, programRecord.getProgramVersion());
+
+			for (Entry<String, String> entry : programRecord.getAttributes())
+				headerRecord.setValue(entry.getKey(), entry.getValue());
+
+			records.add(headerRecord);
+		}
+	}
+
+	private static void readComments(SAMFileHeader header, Collection<CramHeaderRecord> records) {
+		String commentTag = "CO";
+		for (String comment : header.getComments()) {
+			System.out.println("Comment: " + comment);
+			CramHeaderRecord record = new CramHeaderRecord(commentTag);
+			record.setValue(commentTag, comment);
+			records.add(record);
+		}
+	}
+
+	private static void writeProgramRecords(SAMFileHeader header, Collection<CramHeaderRecord> records) {
+		String tag = "PG";
+		for (CramHeaderRecord record : records) {
+			if (!tag.equals(record.getTag()))
+				continue;
+			String id = record.getValue(SAMProgramRecord.PROGRAM_GROUP_ID_TAG);
+			SAMProgramRecord samProgramRecord = new SAMProgramRecord(id);
+			samProgramRecord.setCommandLine(record.getValue(SAMProgramRecord.COMMAND_LINE_TAG));
+			samProgramRecord.setPreviousProgramGroupId(record.getValue(SAMProgramRecord.PREVIOUS_PROGRAM_GROUP_ID_TAG));
+			samProgramRecord.setProgramName(record.getValue(SAMProgramRecord.PROGRAM_NAME_TAG));
+			samProgramRecord.setProgramVersion(record.getValue(SAMProgramRecord.PROGRAM_VERSION_TAG));
+			header.addProgramRecord(samProgramRecord);
+		}
+	}
+
+	private static void writeComments(SAMFileHeader header, Collection<CramHeaderRecord> records) {
+		String commentTag = "CO";
+		for (CramHeaderRecord record : records)
+			if (commentTag.equals(record.getTag()))
+				for (String key : record.getKeySet())
+					header.addComment(record.getValue(key));
+	}
+
+	public static List<CramHeaderRecord> getCramHeaderRecords(SAMFileHeader samHeader) {
+		List<CramHeaderRecord> headerRecords = new ArrayList<CramHeaderRecord>();
+		readComments(samHeader, headerRecords);
+		readProgramRecords(samHeader, headerRecords);
+
+		return headerRecords;
 	}
 
 	/**
@@ -459,7 +528,7 @@ public class Utils {
 	 * @param flag
 	 * @return
 	 */
-	static void calculateMdAndNmTags(SAMRecord record, byte[] ref) {
+	static void calculateMdAndNmTags(SAMRecord record, byte[] ref, boolean calcMD, boolean calcNM) {
 		Cigar cigar = record.getCigar();
 		List<CigarElement> cigarElements = cigar.getCigarElements();
 		byte[] seq = record.getReadBases();
@@ -467,7 +536,7 @@ public class Utils {
 		int i, x, y, u = 0;
 		int nm = 0;
 		StringBuffer str = new StringBuffer();
-	
+
 		for (i = y = 0, x = start; i < cigarElements.size(); ++i) {
 			CigarElement ce = cigarElements.get(i);
 			int j, l = ce.getLength();
@@ -514,8 +583,10 @@ public class Utils {
 			}
 		}
 		str.append(u);
-		
-		record.setAttribute(SAMTag.MD.name(), str.toString());
-		record.setAttribute(SAMTag.NM.name(), nm);
+
+		if (calcMD)
+			record.setAttribute(SAMTag.MD.name(), str.toString());
+		if (calcNM)
+			record.setAttribute(SAMTag.NM.name(), nm);
 	}
 }

@@ -1,7 +1,6 @@
 package uk.ac.ebi.ena.sra.cram.encoding;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanCode;
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanTree;
@@ -11,45 +10,39 @@ import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 
 public class VariableLengthByteArrayHuffmanCodec implements BitCodec<byte[]> {
 	private HuffmanCodec<Byte> byteCodec;
-	private HuffmanCodec<Byte> lenCodec;
-	private ByteBuffer buf;
+	private HuffmanCodec<Integer> lenCodec;
 
-	public VariableLengthByteArrayHuffmanCodec(byte[] alphabet, int[] freqs, byte[] lenAlphabet, int[] lenFreqs) {
+	public VariableLengthByteArrayHuffmanCodec(byte[] alphabet, int[] freqs, int[] lenAlphabet, int[] lenFreqs) {
 
 		int maxLen = 0;
-		for (byte len : lenAlphabet)
-			if (maxLen < (0xFF & len))
-				maxLen = (0xFF & len);
-		
-		buf = ByteBuffer.allocate(maxLen);
+		for (int len : lenAlphabet)
+			if (maxLen < len)
+				maxLen = len;
+
 		HuffmanTree<Byte> tree = HuffmanCode.buildTree(freqs, Utils.autobox(alphabet));
 		byteCodec = new HuffmanCodec<Byte>(tree);
-		
-		HuffmanTree<Byte> lenTree = HuffmanCode.buildTree(lenFreqs, Utils.autobox(lenAlphabet));
-		lenCodec = new HuffmanCodec<Byte>(lenTree);
+
+		HuffmanTree<Integer> lenTree = HuffmanCode.buildTree(lenFreqs, Utils.autobox(lenAlphabet));
+		lenCodec = new HuffmanCodec<Integer>(lenTree);
 	}
 
 	@Override
 	public byte[] read(BitInputStream bis) throws IOException {
-		buf.clear();
-		
-		Byte len = lenCodec.read (bis) ;
-		
-		for (int i = 0; i < (0xFF & len); i++)
-			buf.put(byteCodec.read(bis));
+		Integer len = lenCodec.read(bis) ;
+		byte[] sequence = new byte[len];
 
-		byte[] sequence = new byte[buf.position()];
-		buf.flip();
-		buf.get(sequence);
+		for (int i = 0; i < sequence.length; i++)
+			sequence[i] = byteCodec.read(bis);
+
 		return sequence;
 	}
 
 	@Override
 	public long write(BitOutputStream bos, byte[] bytes) throws IOException {
 		long len = 0;
-		
-		len += lenCodec.write(bos, (byte)bytes.length) ;
-		
+
+		len += lenCodec.write(bos, bytes.length);
+
 		for (byte b : bytes)
 			len += byteCodec.write(bos, b);
 
@@ -59,9 +52,9 @@ public class VariableLengthByteArrayHuffmanCodec implements BitCodec<byte[]> {
 	@Override
 	public long numberOfBits(byte[] bytes) {
 		long len = 0;
-		
-		len += lenCodec.numberOfBits((byte)bytes.length) ;
-		
+
+		len += lenCodec.numberOfBits(bytes.length);
+
 		for (byte b : bytes)
 			len += byteCodec.numberOfBits(b);
 

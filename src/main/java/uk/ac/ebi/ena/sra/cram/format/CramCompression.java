@@ -45,9 +45,11 @@ public class CramCompression implements Serializable {
 	private int[] heapByteFrequencies;
 
 	public Map<String, ByteFrequencies> tagByteFrequencyMap = new TreeMap<String, ByteFrequencies>();
-	public Map<String, ByteFrequencies> tagByteLengthMap = new TreeMap<String, ByteFrequencies>();
+	public Map<String, IntFrequencies> tagByteLengthMap = new TreeMap<String, IntFrequencies>();
 	public String[] tagKeyAlphabet;
 	public int[] tagKeyFrequency;
+	
+	public ByteFrequencies flagStats ;
 
 	public CramCompression() {
 	}
@@ -194,12 +196,16 @@ public class CramCompression implements Serializable {
 				sb.append("Bytes:").append(Arrays.toString(bf.getValues())).append("\n");
 				sb.append("Byte freqs:").append(Arrays.toString(bf.getFrequencies())).append("\n");
 
-				ByteFrequencies lf = tagByteLengthMap.get(tagKeyAndType);
+				IntFrequencies lf = tagByteLengthMap.get(tagKeyAndType);
 				sb.append("Length:").append(Arrays.toString(lf.getValues())).append("\n");
 				sb.append("Length freqs:").append(Arrays.toString(lf.getFrequencies())).append("\n");
 			}
 
 		}
+		
+		sb.append("Flags:").append(Arrays.toString(flagStats.getValues())).append("\n");
+		sb.append("Flags freqs:").append(Arrays.toString(flagStats.getFrequencies())).append("\n");
+		
 		return sb.toString();
 	}
 

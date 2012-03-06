@@ -44,20 +44,19 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	public Map<String, BitCodec<byte[]>> tagCodecMap;
 	public BitCodec<String> tagKeyAndTypeCodec;
 
+	public BitCodec<Byte> flagsCodec;
+
 	private static Logger log = Logger.getLogger(CramRecordCodec.class);
 
 	@Override
 	public CramRecord read(BitInputStream bis) throws IOException {
 		CramRecord record = new CramRecord();
 
-		record.setFirstInPair(bis.readBit());
-		record.setProperPair(bis.readBit());
-		record.setDuplicate(bis.readBit());
+		byte b = flagsCodec.read(bis);
+		record.setFlags(b);
 
-		record.setNegativeStrand(bis.readBit());
-		record.setLastFragment(bis.readBit());
 		if (!record.isLastFragment()) {
-			if (bis.readBit()) {
+			if (!record.detached) {
 				record.setRecordsToNextFragment(recordsToNextFragmentCodec.read(bis));
 			} else {
 				CramRecord mate = new CramRecord();
@@ -86,15 +85,12 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			readLen = (int) defaultReadLength;
 		record.setReadLength(readLen);
 
-		boolean readMapped = bis.readBit();
-		record.setReadMapped(readMapped);
-		if (readMapped) {
+		if (record.isReadMapped()) {
 			long position = prevPosInSeq + inSeqPosCodec.read(bis);
 			prevPosInSeq = position;
 			record.setAlignmentStart(position);
 
 			boolean imperfectMatch = bis.readBit();
-			record.setPerfectMatch(!imperfectMatch);
 			if (imperfectMatch) {
 				List<ReadFeature> features = variationsCodec.read(bis);
 				record.setReadFeatures(features);
@@ -152,25 +148,12 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	public long write(BitOutputStream bos, CramRecord record) throws IOException {
 		long len = 0L;
 
-		bos.write(record.isFirstInPair());
-		len++;
-		bos.write(record.isProperPair());
-		len++;
-		bos.write(record.isDuplicate());
-		len++;
-
-		bos.write(record.isNegativeStrand());
-		len++;
-
-		bos.write(record.isLastFragment());
-		len++;
-
+		len += flagsCodec.write(bos, record.getFlags());
+		
 		if (!record.isLastFragment()) {
 			if (record.getRecordsToNextFragment() > 0) {
-				bos.write(true);
 				len += recordsToNextFragmentCodec.write(bos, record.getRecordsToNextFragment());
 			} else {
-				bos.write(false);
 
 				CramRecord mate = record.next == null ? record.previous : record.next;
 				bos.write(mate.isReadMapped());
@@ -181,7 +164,6 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 				len += writeZeroTerminatedString(String.valueOf(mate.getAlignmentStart()), heapByteCodec, bos);
 				len += writeZeroTerminatedString(String.valueOf(record.insertSize), heapByteCodec, bos);
 			}
-			len++;
 		}
 
 		if (record.getReadLength() != defaultReadLength) {
@@ -192,9 +174,6 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		len++;
 
 		if (record.isReadMapped()) {
-			bos.write(true);
-			len++;
-
 			if (record.getAlignmentStart() - prevPosInSeq < 0) {
 				log.error("Negative relative position in sequence: prev=" + prevPosInSeq);
 				log.error(record.toString());
@@ -216,9 +195,6 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 
 			mappingQualityCodec.write(bos, record.getMappingQuality());
 		} else {
-			bos.write(false);
-			len++;
-
 			if (record.getAlignmentStart() - prevPosInSeq < 0) {
 				log.error("Negative relative position in sequence: prev=" + prevPosInSeq);
 				log.error(record.toString());
@@ -235,14 +211,14 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		if (record.tags != null && !record.tags.isEmpty()) {
 			for (ReadTag tag : record.tags) {
 				bos.write(true);
-				len++ ;
+				len++;
 				tagKeyAndTypeCodec.write(bos, tag.getKeyAndType());
 				BitCodec<byte[]> codec = tagCodecMap.get(tag.getKeyAndType());
 				len += codec.write(bos, tag.getValueAsByteArray());
 			}
 		}
 		bos.write(false);
-		len++ ;
+		len++;
 
 		// Collection<ReadAnnotation> annotations = record.getAnnotations();
 		// if (annotations == null || annotations.isEmpty()) {

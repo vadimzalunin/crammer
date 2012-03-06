@@ -11,11 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.commons.collections.map.MultiValueMap;
+
 import net.sf.picard.reference.ReferenceSequenceFile;
 import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.Utils;
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory.TREAT_TYPE;
+import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
@@ -62,8 +65,9 @@ public class CRAMFileWriter implements SAMFileWriter {
 			cramReadGroups.add(new CramReadGroup(rgr.getId(), rgr.getSample()));
 		}
 
+		List<CramHeaderRecord> headerRecords = Utils.getCramHeaderRecords (samHeader) ;
 		cramWriter = new CramWriter(os, null, sequences, false, 100000, true, true, false, null, null, cramReadGroups,
-				false);
+				false, headerRecords);
 		cramWriter.init();
 
 		cramRecordFactory = new Sam2CramRecordFactory();

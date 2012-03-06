@@ -10,7 +10,7 @@ public class CramRecord {
 	public Collection<ReadTag> tags;
 
 	private long alignmentStart;
-	private boolean perfectMatch;
+	public boolean vendorFiltered = false;
 	private boolean negativeStrand;
 	private boolean readMapped;
 
@@ -31,12 +31,55 @@ public class CramRecord {
 	private boolean duplicate = false;
 
 	private byte mappingQuality;
-	
-	private String sequenceName ;
-	private String readName ;
-	public CramRecord next, previous ;
-	public boolean detached = false ;
-	public int insertSize ;
+
+	private String sequenceName;
+	private String readName;
+	public CramRecord next, previous;
+	public boolean detached = false;
+	public int insertSize;
+	public long counter =1 ;
+
+	private Byte flags = null;
+
+	public byte getFlags() {
+		if (flags == null) {
+			byte b = 0;
+			b |= detached ? 1 : 0;
+			b <<= 1;
+			b |= duplicate ? 1 : 0;
+			b <<= 1;
+			b |= vendorFiltered ? 1 : 0;
+			b <<= 1;
+			b |= properPair ? 1 : 0;
+			b <<= 1;
+			b |= firstInPair ? 1 : 0;
+			b <<= 1;
+			b |= lastFragment ? 1 : 0;
+			b <<= 1;
+			b |= negativeStrand ? 1 : 0;
+			b <<= 1;
+			b |= readMapped ? 1 : 0;
+			flags = new Byte(b);
+		}
+		return flags;
+	}
+
+	public void setFlags(byte value) {
+		int b = 0xFF & value;
+		readMapped = ((b & 1) == 0) ? false : true;
+		negativeStrand = ((b & 2) == 0) ? false : true;
+		lastFragment = ((b & 4) == 0) ? false : true;
+		firstInPair = ((b & 8) == 0) ? false : true;
+
+		properPair = ((b & 16) == 0) ? false : true;
+		vendorFiltered = ((b & 32) == 0) ? false : true;
+		duplicate = ((b & 64) == 0) ? false : true;
+		detached = ((b & 128) == 0) ? false : true;
+	}
+
+	public void resetFlags() {
+		flags = null;
+	}
 
 	public long getAlignmentStart() {
 		return alignmentStart;
@@ -44,14 +87,6 @@ public class CramRecord {
 
 	public void setAlignmentStart(long alignmentStart) {
 		this.alignmentStart = alignmentStart;
-	}
-
-	public boolean isPerfectMatch() {
-		return perfectMatch;
-	}
-
-	public void setPerfectMatch(boolean perfectMatch) {
-		this.perfectMatch = perfectMatch;
 	}
 
 	public boolean isNegativeStrand() {
@@ -73,7 +108,7 @@ public class CramRecord {
 			return false;
 		if (negativeStrand != r.negativeStrand)
 			return false;
-		if (perfectMatch != r.perfectMatch)
+		if (vendorFiltered != r.vendorFiltered)
 			return false;
 		if (readMapped != r.readMapped)
 			return false;
@@ -113,7 +148,7 @@ public class CramRecord {
 		sb.append("readMapped=").append(readMapped);
 		sb.append("; alignmentStart=").append(alignmentStart);
 		sb.append("; negativeStrand=").append(negativeStrand);
-		sb.append("; perfectMatch=").append(perfectMatch);
+		sb.append("; vendorFiltered=").append(vendorFiltered);
 		sb.append("; firstInPair=").append(firstInPair);
 		sb.append("; mappingQuality=").append(mappingQuality);
 
@@ -124,8 +159,7 @@ public class CramRecord {
 		if (readBases != null)
 			sb.append("; ").append("bases: ").append(new String(readBases));
 		if (qualityScores != null)
-			sb.append("; ").append("qscores: ")
-					.append(new String(qualityScores));
+			sb.append("; ").append("qscores: ").append(new String(qualityScores));
 		// .append(SAMUtils.phredToFastq(qualityScores));
 
 		sb.append("]");

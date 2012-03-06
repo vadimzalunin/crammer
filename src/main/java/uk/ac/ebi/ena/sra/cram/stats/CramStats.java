@@ -24,6 +24,7 @@ import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
 import uk.ac.ebi.ena.sra.cram.format.InsertBase;
 import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
+import uk.ac.ebi.ena.sra.cram.format.IntFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
 import uk.ac.ebi.ena.sra.cram.format.ReadBase;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
@@ -49,8 +50,10 @@ public class CramStats {
 	private HashMapFrequency mappingQualityFreq = new HashMapFrequency();
 
 	private Map<String, ByteFrequencies> tagFreqs = new TreeMap<String, ByteFrequencies>();
-	private Map<String, ByteFrequencies> tagLengths = new TreeMap<String, ByteFrequencies>();
+	private Map<String, IntFrequencies> tagLengths = new TreeMap<String, IntFrequencies>();
 	private HashMapFrequency tagKeyAndTypeFrequency = new HashMapFrequency() ;
+	
+	private ByteFrequencies flagStats = new ByteFrequencies() ;
 
 	private int[] baseFreqArray = new int[256];
 	private int[] qsFreqArray = new int[256];
@@ -87,6 +90,8 @@ public class CramStats {
 		recordCount++;
 		baseCount += record.getReadLength();
 		readLengthFreq.addValue(record.getReadLength());
+		
+		flagStats.add(record.getFlags()) ;
 
 		if (record.getAnnotations() != null) {
 			for (ReadAnnotation a : record.getAnnotations())
@@ -108,13 +113,13 @@ public class CramStats {
 				byte[] bytes = tag.getValueAsByteArray();
 				bf.add(bytes);
 
-				ByteFrequencies bl = tagLengths.get(keyAndType);
+				IntFrequencies bl = tagLengths.get(keyAndType);
 				if (bl == null) {
-					bl = new ByteFrequencies();
+					bl = new IntFrequencies();
 					tagLengths.put(keyAndType, bl);
 				}
 				// potential problem, length can be greater than 256:
-				bl.add((byte) bytes.length);
+				bl.add(bytes.length);
 			}
 		}
 
@@ -238,6 +243,8 @@ public class CramStats {
 			block.setCompression(new CramCompression());
 			compression = block.getCompression();
 		}
+		
+		compression.flagStats = flagStats ;
 
 		int tagCount = tagKeyAndTypeFrequency.getUniqueCount() ; 
 		compression.tagKeyAlphabet = new String[tagCount];

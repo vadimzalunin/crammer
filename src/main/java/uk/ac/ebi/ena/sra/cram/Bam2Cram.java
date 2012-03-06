@@ -9,9 +9,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.zip.GZIPOutputStream;
 
@@ -22,15 +24,18 @@ import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
+import net.sf.samtools.SAMProgramRecord;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceRecord;
 
+import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory.TREAT_TYPE;
+import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
@@ -117,6 +122,8 @@ public class Bam2Cram {
 			cramReadGroups.add(new CramReadGroup(rgr.getReadGroupId(), rgr.getSample()));
 		}
 
+		// copy the whole header:
+
 		assembler = new PairedTemplateAssembler(params.spotAssemblyAlignmentHorizon, params.spotAssemblyRecordsHorizon);
 
 		if (params.readQualityMaskFile != null) {
@@ -141,10 +148,11 @@ public class Bam2Cram {
 
 		tramPS = params.tramOutFile == null ? null : new PrintStream(params.tramOutFile);
 
+		List<CramHeaderRecord> headerRecords = Utils.getCramHeaderRecords (samReader.getFileHeader()) ;
 		cramWriter = new CramWriter(os, provider, sequences, params.roundTripCheck, params.maxBlockSize,
 				params.captureUnmappedQualityScore, params.captureSubstitutionQualityScore,
 				params.captureMaskedQualityScore, readAnnoReader == null ? null : readAnnoReader.listUniqAnnotations(),
-				statsPS, cramReadGroups, params.captureAllQualityScore);
+				statsPS, cramReadGroups, params.captureAllQualityScore, headerRecords);
 		cramWriter.setAutodump(log.isDebugEnabled());
 		cramWriter.init();
 	}
@@ -206,6 +214,9 @@ public class Bam2Cram {
 		else
 			iterator = samReader.query(name, 0, 0, false);
 
+		while (params.skipFirstRecords-- > 0 && iterator.hasNext())
+			iterator.next();
+
 		long recordsInSequence = 0L;
 		try {
 			if (!iterator.hasNext())
@@ -227,7 +238,10 @@ public class Bam2Cram {
 			cramRecordFactory.setCaptureSubtitutionScores(params.captureSubstitutionQualityScore);
 			cramRecordFactory.setCaptureUnmappedScores(params.captureUnmappedQualityScore);
 			cramRecordFactory.setUncategorisedQualityScoreCutoff(params.qualityCutoff);
-			cramRecordFactory.captureAllTags = params.captureAllTags ;
+			cramRecordFactory.captureAllTags = params.captureAllTags;
+			if (params.ignoreTags != null && params.ignoreTags.length() > 0)
+				cramRecordFactory.ignoreTags.addAll(Arrays.asList(params.ignoreTags.split(":")));
+
 			if (params.captureAllQualityScore) {
 				cramRecordFactory.losslessQS = true;
 			} else {
@@ -420,6 +434,7 @@ public class Bam2Cram {
 				if (distanceToNextFragment == PairedTemplateAssembler.POINTEE_DISTANCE_NOT_SET)
 					cramRecord.setLastFragment(true);
 				else {
+					cramRecord.detached = true;
 					cramRecord.setLastFragment(false);
 					if (distanceToNextFragment == PairedTemplateAssembler.DISTANCE_NOT_SET) {
 						if (record.getReferenceName().equals(record.getMateReferenceName())) {
@@ -634,8 +649,14 @@ public class Bam2Cram {
 
 		@Parameter(names = { "--exclude-reads-with-flags" }, description = "Exclude reads with these bit flags, for example 512 designates the vendor filtered flag.")
 		int excludeReadsWithFlags = 0;
-		
+
 		@Parameter(names = { "--capture-all-tags" }, description = "Capture all tags found in the source BAM file.")
 		boolean captureAllTags = false;
+
+		@Parameter(names = { "--ignore-tags" }, description = "Do not preserve the tags listed, for example: XA:XO:X0")
+		String ignoreTags;
+
+		@Parameter(names = { "--skip-first-records" }, description = "Start compressing records after this many. ", hidden = true)
+		int skipFirstRecords = 0;
 	}
 }

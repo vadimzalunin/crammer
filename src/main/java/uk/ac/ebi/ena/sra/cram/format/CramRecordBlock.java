@@ -19,7 +19,7 @@ public class CramRecordBlock implements Serializable {
 	private boolean maskedQualityScoresIncluded = true;
 	
 	public boolean losslessQualityScores = false;
-
+	
 	public String getSequenceName() {
 		return sequenceName;
 	}

@@ -146,9 +146,7 @@ public class CramRecordFormat {
 			List<ReadFeature> features = rfFormat.asReadFeatureList(new String(
 					chunk));
 			record.setReadFeatures(features);
-			record.setPerfectMatch(false);
-		} else
-			record.setPerfectMatch(record.isReadMapped());
+		} 
 
 		chunk = chunks[i++];
 		if (isNotEmpty(chunk))

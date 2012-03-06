@@ -6,12 +6,15 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecord.SAMTagAndValue;
+import net.sf.samtools.SAMTag;
 
 import org.apache.log4j.Logger;
 
@@ -62,6 +65,12 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 	private boolean captureFlankingDeletionScores = false;
 	private int uncategorisedQualityScoreCutoff = 0;
 	public boolean captureAllTags = false;
+	public Set<String> ignoreTags = new TreeSet<String>() ;
+	{
+		ignoreTags.add(SAMTag.NM.name()) ;
+		ignoreTags.add(SAMTag.MD.name()) ;
+		ignoreTags.add(SAMTag.RG.name()) ;
+	}
 
 	public boolean losslessQS = false;
 
@@ -96,7 +105,6 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 		cramRecord.setDuplicate(record.getDuplicateReadFlag());
 
 		cramRecord.insertSize = record.getInferredInsertSize();
-
 		if (readGroupMap != null) {
 			SAMReadGroupRecord readGroup = record.getReadGroup();
 			if (readGroup != null) {
@@ -120,9 +128,7 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 		if (cramRecord.isReadMapped()) {
 			List<ReadFeature> features = checkedCreateVariations(cramRecord, record);
 			cramRecord.setReadFeatures(features);
-			cramRecord.setPerfectMatch(!record.getReadUnmappedFlag() && features.isEmpty());
 		} else {
-			cramRecord.setPerfectMatch(false);
 			// if (captureUnmappedBases)
 			// cramRecord.setReadBases(record.getReadBases());
 			// if (captureUnmappedScores) {
@@ -144,12 +150,7 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 			if (attributes != null && !attributes.isEmpty()) {
 				List<ReadTag> tags = new ArrayList<ReadTag>(attributes.size());
 				for (SAMTagAndValue tv : attributes) {
-					if ("MD".equals(tv.tag))
-						continue;
-					if ("NM".equals(tv.tag))
-						continue;
-					if ("RG".equals(tv.tag))
-						continue;
+					if (ignoreTags.contains(tv.tag)) continue ;
 
 					ReadTag ra = ReadTag.deriveTypeFromValue(tv.tag, tv.value);
 					tags.add(ra);
@@ -157,6 +158,8 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 				cramRecord.tags = tags;
 			}
 		}
+		
+		cramRecord.vendorFiltered = record.getReadFailsVendorQualityCheckFlag() ;
 
 		return cramRecord;
 	}

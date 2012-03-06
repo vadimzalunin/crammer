@@ -1,16 +1,21 @@
 package uk.ac.ebi.ena.sra.cram.format;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.collections.map.MultiValueMap;
 
 public class CramHeader implements Serializable {
 	private String version;
 	private List<CramReferenceSequence> referenceSequences;
 	private List<ReadAnnotation> readAnnotations;
 	private List<CramReadGroup> readGroups;
-	
+
+	private List<CramHeaderRecord> records = new ArrayList<CramHeaderRecord>();
+
 	public CramHeader() {
-		version = "0.6" ;
+		version = "0.66";
 	}
 
 	public String getVersion() {
@@ -25,8 +30,7 @@ public class CramHeader implements Serializable {
 		return referenceSequences;
 	}
 
-	public void setReferenceSequences(
-			List<CramReferenceSequence> referenceSequences) {
+	public void setReferenceSequences(List<CramReferenceSequence> referenceSequences) {
 		this.referenceSequences = referenceSequences;
 	}
 
@@ -48,8 +52,7 @@ public class CramHeader implements Serializable {
 		return readAnnotations;
 	}
 
-	public void setReadAnnotations(
-			List<ReadAnnotation> readAnnotationDictionary) {
+	public void setReadAnnotations(List<ReadAnnotation> readAnnotationDictionary) {
 		this.readAnnotations = readAnnotationDictionary;
 	}
 
@@ -60,4 +63,13 @@ public class CramHeader implements Serializable {
 	public void setReadGroups(List<CramReadGroup> readGroups) {
 		this.readGroups = readGroups;
 	}
+
+	public List<CramHeaderRecord> getRecords() {
+		return records;
+	}
+
+	public void setRecords(List<CramHeaderRecord> records) {
+		this.records = records;
+	}
+	
 }

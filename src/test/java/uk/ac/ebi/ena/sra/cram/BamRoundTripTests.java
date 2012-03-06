@@ -43,7 +43,7 @@ public class BamRoundTripTests {
 
 	@Parameters
 	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] { { "set2" }//, { "set3" },{ "set5" }, 
+		Object[][] data = new Object[][] { { "set2" }, { "set3" },{ "set5" }, 
 
 		};
 		return Arrays.asList(data);
@@ -55,7 +55,7 @@ public class BamRoundTripTests {
 		cramFileGeneration1.deleteOnExit();
 
 		String cmd1 = String
-				.format("-l DEBUG cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores --max-records 10000",
+				.format("-l ERROR cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores",
 						inputBamPath, refPath,
 						cramFileGeneration1.getAbsolutePath());
 		// System.out.println(cmd1);
@@ -67,7 +67,7 @@ public class BamRoundTripTests {
 //		System.out.println(bamFile.getAbsolutePath());
 
 		String cmd2 = String
-				.format("-l DEBUG bam --input-cram-file %s --reference-fasta-file %s --output-bam-file %s",
+				.format("-l ERROR bam --input-cram-file %s --reference-fasta-file %s --output-bam-file %s",
 						cramFileGeneration1.getAbsolutePath(), refPath, bamFile);
 		// System.out.println(cmd2);
 
