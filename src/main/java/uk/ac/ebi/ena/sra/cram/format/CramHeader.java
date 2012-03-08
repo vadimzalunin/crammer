@@ -15,7 +15,7 @@ public class CramHeader implements Serializable {
 	private List<CramHeaderRecord> records = new ArrayList<CramHeaderRecord>();
 
 	public CramHeader() {
-		version = "0.66";
+		version = "0.7";
 	}
 
 	public String getVersion() {

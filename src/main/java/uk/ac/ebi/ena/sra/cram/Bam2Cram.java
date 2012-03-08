@@ -555,7 +555,7 @@ public class Bam2Cram {
 		// os.close();
 	}
 
-	@Parameters(commandDescription = "BAM to CRAM converter. Version 0.65")
+	@Parameters(commandDescription = "BAM to CRAM converter. Version 0.7")
 	static class Params {
 		@Parameter(names = { "--input-bam-file" }, converter = FileConverter.class, description = "Path to a BAM file to be converted to CRAM. Omit if standard input (pipe).")
 		File bamFile;

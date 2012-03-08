@@ -430,7 +430,7 @@ public class Cram2Bam {
 		}
 	}
 
-	@Parameters(commandDescription = "CRAM to BAM conversion. Version 0.65")
+	@Parameters(commandDescription = "CRAM to BAM conversion. Version 0.7")
 	static class Params {
 		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to uncompress. Omit if standard input (pipe).")
 		File cramFile;
