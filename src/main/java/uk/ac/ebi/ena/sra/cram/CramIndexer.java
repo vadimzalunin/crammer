@@ -293,7 +293,7 @@ public class CramIndexer {
 		log.info("Decoded in: " + (time2 - time1) + " millis");
 	}
 
-	@Parameters(commandDescription = "Build CRAM index. Version 0.6")
+	@Parameters(commandDescription = "Build CRAM index. Version 0.7")
 	static class Params {
 		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to be indexed.")
 		File cramFile;

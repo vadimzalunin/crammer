@@ -81,7 +81,7 @@
 	</target>
 
 	<target name="compile" depends="setup">
-		<javac debug="true" fork="true" destdir="${classes}" srcdir="${src}/main/java:${src}/test/java:${src}/experiment/java">
+		<javac debug="true" fork="true" destdir="${classes}" srcdir="${src}/main/java:${src}/test/java">
 			<include name="**/*.java" />
 			<exclude name="**/TestArithmeticCode.java" />
 			<exclude name="**/CRAMFileReader.java" />
