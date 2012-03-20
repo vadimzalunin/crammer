@@ -46,7 +46,7 @@ import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 
 public class Utils {
 	private static Logger log = Logger.getLogger(Utils.class);
-
+	
 	public final static byte[] toBytes(int value) {
 		final byte[] bytes = new byte[4];
 		bytes[0] = (byte) (value >>> 24);
