@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -589,4 +590,34 @@ public class Utils {
 		if (calcNM)
 			record.setAttribute(SAMTag.NM.name(), nm);
 	}
+
+	public static int[][] sortByFirst(int[] array1, int[] array2) {
+		int[][] sorted = new int[array1.length][2];
+		for (int i=0; i<array1.length; i++) {
+			sorted[i][0] = array1[i] ;
+			sorted[i][1] = array2[i] ;
+		}
+
+		Arrays.sort(sorted, intArray_2_Comparator) ;
+		
+		int[][] result = new int[2][array1.length];
+		for (int i=0; i<array1.length; i++) {
+			result[0][i] = sorted[i][0] ;
+			result[1][i] = sorted[i][1] ;
+		}
+		
+		return result;
+	}
+
+	private static Comparator<int[]> intArray_2_Comparator = new Comparator<int[]>() {
+
+		@Override
+		public int compare(int[] o1, int[] o2) {
+			int result = o1[0] - o2[0];
+			if (result != 0)
+				return -result;
+
+			return -(o1[1] - o2[1]);
+		}
+	};
 }
