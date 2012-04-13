@@ -1,5 +1,6 @@
 package uk.ac.ebi.ena.sra.cram;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -265,7 +266,7 @@ public class Utils {
 			System.err.println("Offensive data block start: " + Arrays.toString(buf));
 			throw e;
 		}
-		GZIPInputStream gizIS = new GZIPInputStream(new ByteArrayInputStream(compressedBlockData));
+		InputStream gizIS = new BufferedInputStream(new GZIPInputStream(new ByteArrayInputStream(compressedBlockData)));
 		CountingInputStream uncompressedCIS = new CountingInputStream(gizIS);
 		DataInputStream uncompressedDIS = new DataInputStream(uncompressedCIS);
 		return uncompressedDIS;

@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.zip.GZIPOutputStream;
 
@@ -24,13 +23,11 @@ import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
-import net.sf.samtools.SAMProgramRecord;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceRecord;
 
-import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
@@ -96,10 +93,15 @@ public class Bam2Cram {
 		if (params.bamFile == null) {
 			if (params.bamFile == null)
 				throw new RuntimeException("Input BAM file name is required.");
-		} else
+		} else {
+			ValidationStringency defaultValidationStringency = SAMFileReader.getDefaultValidationStringency();
+			SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
 			samReader = new SAMFileReader(params.bamFile);
+			samReader.setValidationStringency(ValidationStringency.SILENT);
+			SAMFileReader.setDefaultValidationStringency(defaultValidationStringency);
+		}
 
-		samReader.setValidationStringency(ValidationStringency.SILENT);
+
 		sequences = new ArrayList<CramReferenceSequence>();
 		referenceSequenceFile = Utils.createIndexedFastaSequenceFile(params.referenceFasta);
 
@@ -148,7 +150,7 @@ public class Bam2Cram {
 
 		tramPS = params.tramOutFile == null ? null : new PrintStream(params.tramOutFile);
 
-		List<CramHeaderRecord> headerRecords = Utils.getCramHeaderRecords (samReader.getFileHeader()) ;
+		List<CramHeaderRecord> headerRecords = Utils.getCramHeaderRecords(samReader.getFileHeader());
 		cramWriter = new CramWriter(os, provider, sequences, params.roundTripCheck, params.maxBlockSize,
 				params.captureUnmappedQualityScore, params.captureSubstitutionQualityScore,
 				params.captureMaskedQualityScore, readAnnoReader == null ? null : readAnnoReader.listUniqAnnotations(),
