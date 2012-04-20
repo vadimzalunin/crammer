@@ -58,7 +58,7 @@ public class ReadFeatureCodecTest {
 		bos.write(false, 10) ;
 
 		bos.flush();
-		System.out.println(Utils.toBitString(baos.toByteArray()));
+//		System.out.println(Utils.toBitString(baos.toByteArray()));
 
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		BitInputStream bis = new DefaultBitInputStream(bais);

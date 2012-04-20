@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -20,11 +21,10 @@ import net.sf.samtools.SAMFileHeader.SortOrder;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
-import net.sf.samtools.SAMTag;
-import net.sf.samtools.util.SequenceUtil;
 
 import org.apache.log4j.Logger;
 
+import uk.ac.ebi.ena.sra.cram.encoding.HuffmanByteCodec2;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
@@ -52,7 +52,7 @@ public class Cram2Bam {
 		FileInputStream fis = new FileInputStream(file);
 
 		// gzip magic:
-		if (fis.read() == 31 && fis.read() == 139)
+		if (fis.read() == 31 && fis.read() == 139) 
 			return new GZIPInputStream(new BufferedInputStream(new FileInputStream(file)));
 
 		return new BufferedInputStream(new FileInputStream(file));
@@ -63,6 +63,7 @@ public class Cram2Bam {
 		sb.append("\n");
 		jc.usage(sb);
 
+		System.out.println("Version " + Cram2Bam.class.getPackage().getImplementationVersion());
 		System.out.println(sb.toString());
 	}
 
@@ -95,7 +96,6 @@ public class Cram2Bam {
 
 		// crook nail:
 		defaultQS = (byte) params.defaultQS;
-		log.info("Using default quality score: " + (char) defaultQS);
 
 		if (params.outputFile == null) {
 			if (params.cramFile == null)
@@ -105,6 +105,7 @@ public class Cram2Bam {
 
 		convert(referenceSequenceFile, cramIS, params.outputFile, params.maxRecords, params.printCramRecords,
 				params.sequences, params);
+		HuffmanByteCodec2.dump() ;
 
 	}
 
@@ -117,11 +118,13 @@ public class Cram2Bam {
 		DataInputStream cramDIS = new DataInputStream(cramInputStream);
 
 		CramHeader cramHeader = CramHeaderIO.read(Utils.getNextChunk(cramDIS));
+		log.info("CRAM format version: " + cramHeader.getVersion()) ;
+		log.info("Using default quality score: " + (char) defaultQS);
 
 		BAMFileWriter writer = new BAMFileWriter(outputBamFile);
 		writer.setSortOrder(SortOrder.coordinate, true);
 		SAMFileHeader header = Utils.cramHeader2SamHeader(cramHeader);
-		
+
 		writer.setHeader(header);
 		Map<String, Integer> seqNameToIndexMap = new TreeMap<String, Integer>();
 		for (SAMSequenceRecord seq : header.getSequenceDictionary().getSequences()) {
@@ -137,7 +140,7 @@ public class Cram2Bam {
 
 		PairedTemplateAssembler assembler = new PairedTemplateAssembler(Integer.MAX_VALUE, Integer.MAX_VALUE);
 		String prevSeqName = null;
-		Map<Long, Long> indexes = new TreeMap<Long, Long>();
+		Map<Long, Long> indexes = new HashMap<Long, Long>();
 
 		long counter = 1;
 		ByteArraySequenceBaseProvider provider = null;
@@ -338,7 +341,7 @@ public class Cram2Bam {
 					Utils.calculateMdAndNmTags(samRecord, refBases, params.calculateMdTag, params.calculateNmTag);
 
 				if (printCramRecords) {
-					cramRecord.setQualityScores(samRecord.getBaseQualityString().getBytes()) ;
+					cramRecord.setQualityScores(samRecord.getBaseQualityString().getBytes());
 					System.out.println(cramRecordFormat.writeRecord(cramRecord));
 				}
 
@@ -430,7 +433,7 @@ public class Cram2Bam {
 		}
 	}
 
-	@Parameters(commandDescription = "CRAM to BAM conversion. Version 0.7")
+	@Parameters(commandDescription = "CRAM to BAM conversion. ")
 	static class Params {
 		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to uncompress. Omit if standard input (pipe).")
 		File cramFile;

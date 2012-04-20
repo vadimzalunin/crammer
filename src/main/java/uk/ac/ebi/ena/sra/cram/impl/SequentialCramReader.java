@@ -11,6 +11,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
 import uk.ac.ebi.ena.sra.cram.io.DefaultBitInputStream;
+import uk.ac.ebi.ena.sra.cram.io.LongBufferBitInputStream;
 
 public class SequentialCramReader {
 
@@ -18,7 +19,7 @@ public class SequentialCramReader {
 	private CramRecordBlock block;
 
 	private BitCodec<CramRecord> recordCodec;
-	private DefaultBitInputStream bis;
+	private LongBufferBitInputStream bis;
 
 	private long awaitingRecords = -1L;
 
@@ -66,7 +67,7 @@ public class SequentialCramReader {
 			return null;
 		}
 		awaitingRecords = block.getRecordCount();
-		bis = new DefaultBitInputStream(dis);
+		bis = new LongBufferBitInputStream(dis);
 
 		if (referenceBaseProvider != null) {
 			recordCodec = recordCodecFactory.createRecordCodec(header, block,

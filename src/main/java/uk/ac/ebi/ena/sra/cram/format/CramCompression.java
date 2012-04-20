@@ -22,6 +22,8 @@ public class CramCompression implements Serializable {
 
 	private byte[] scoreAlphabet;
 	private int[] scoreFrequencies;
+	
+	public DiByteFrequencies score2;
 
 	private byte[] stopScoreAlphabet;
 	private int[] stopScoreFrequencies;

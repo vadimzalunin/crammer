@@ -1,5 +1,6 @@
 package uk.ac.ebi.ena.sra.cram.format;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +15,23 @@ public class CramHeader implements Serializable {
 
 	private List<CramHeaderRecord> records = new ArrayList<CramHeaderRecord>();
 
+	public static final String VERSION;
+	static {
+		if (CramHeader.class.getPackage().getImplementationVersion() != null)
+			VERSION = CramHeader.class.getPackage().getImplementationVersion();
+		else {
+			// screw this, hard coding for now:
+			VERSION = "0.8";
+		}
+	}
+
 	public CramHeader() {
-		version = "0.7";
+		if (version == null)
+			version = VERSION;
+	}
+
+	public String getMajorVersion() {
+		return version.substring(0, 3);
 	}
 
 	public String getVersion() {
@@ -71,5 +87,5 @@ public class CramHeader implements Serializable {
 	public void setRecords(List<CramHeaderRecord> records) {
 		this.records = records;
 	}
-	
+
 }

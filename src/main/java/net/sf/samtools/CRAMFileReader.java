@@ -28,8 +28,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	private CramIndex cramIndex;
 	private SAMFileHeader samFileHeader;
 
-	public CRAMFileReader(SeekableInputStreamFactory sisFactory,
-			InputStreamFactory isFactory,
+	public CRAMFileReader(SeekableInputStreamFactory sisFactory, InputStreamFactory isFactory,
 			ReferenceSequenceFile referenceSequenceFile, CramIndex cramIndex) {
 		this.sisFactory = sisFactory;
 		this.isFactory = isFactory;
@@ -51,8 +50,13 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	void readSAMFileHeader() throws IOException, ExhaustedFactoryException {
-		CramIterator it = new CramIterator(isFactory.createInputStream(),
-				referenceSequenceFile);
+		CramIterator it = null;
+		try {
+			it = new CramIterator(isFactory.createInputStream(), referenceSequenceFile);
+		} catch (CramFormatException e) {
+			System.err.println("Cram format exception: " + e.getMessage());
+			throw new RuntimeException(e);
+		}
 		CramHeader cramHeader = it.getCramHeader();
 		samFileHeader = Utils.cramHeader2SamHeader(cramHeader);
 	}
@@ -68,8 +72,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		}
 		CRAMPreemptiveIterator iterator = null;
 		try {
-			iterator = new CRAMPreemptiveIterator(is, referenceSequenceFile,
-					null);
+			iterator = new CRAMPreemptiveIterator(is, referenceSequenceFile, null);
 		} catch (CramFormatException e) {
 			throw new RuntimeException(e);
 		} catch (CramCompressionException e) {
@@ -102,22 +105,26 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 
 	@Override
 	void enableFileSource(SAMFileReader reader, boolean enabled) {
-//		throw new RuntimeException("Method not defined for CRAM file reader.");
+		// throw new
+		// RuntimeException("Method not defined for CRAM file reader.");
 	}
 
 	@Override
 	void enableIndexCaching(boolean enabled) {
-//		throw new RuntimeException("Method not defined for CRAM file reader.");
+		// throw new
+		// RuntimeException("Method not defined for CRAM file reader.");
 	}
 
 	@Override
 	void enableIndexMemoryMapping(boolean enabled) {
-//		throw new RuntimeException("Method not defined for CRAM file reader.");
+		// throw new
+		// RuntimeException("Method not defined for CRAM file reader.");
 	}
 
 	@Override
 	void enableCrcChecking(boolean enabled) {
-//		throw new RuntimeException("Method not defined for CRAM file reader.");
+		// throw new
+		// RuntimeException("Method not defined for CRAM file reader.");
 	}
 
 	@Override
@@ -141,8 +148,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	@Override
-	CloseableIterator<SAMRecord> query(String sequence, int start, int end,
-			boolean contained) {
+	CloseableIterator<SAMRecord> query(String sequence, int start, int end, boolean contained) {
 		if (cramIndex == null || sisFactory == null) {
 			InputStream is = null;
 			try {
@@ -154,8 +160,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 			}
 			CRAMPreemptiveIterator iterator = null;
 			try {
-				iterator = new CRAMPreemptiveIterator(is,
-						referenceSequenceFile, null);
+				iterator = new CRAMPreemptiveIterator(is, referenceSequenceFile, null);
 			} catch (CramFormatException e) {
 				throw new RuntimeException(e);
 			} catch (CramCompressionException e) {
@@ -166,9 +171,8 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 				throw new RuntimeException(e);
 			}
 
-			return new PreemptiveSAMRecordIterator(
-					new CachingSAMRecordIterator(iterator,
-							iterator.getCramHeader()), start, end, contained);
+			return new PreemptiveSAMRecordIterator(new CachingSAMRecordIterator(iterator, iterator.getCramHeader()),
+					start, end, contained);
 		}
 		if (sisFactory != null) {
 			SeekableStream is = null;
@@ -181,10 +185,8 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 			}
 			CramPreemptiveRandomAccessIterator iterator = null;
 			try {
-				RecordPointer pointer = cramIndex.findRecordPointerAt(sequence,
-						start);
-				iterator = new CramPreemptiveRandomAccessIterator(is,
-						referenceSequenceFile, pointer);
+				RecordPointer pointer = cramIndex.findRecordPointerAt(sequence, start);
+				iterator = new CramPreemptiveRandomAccessIterator(is, referenceSequenceFile, pointer);
 			} catch (CramFormatException e) {
 				throw new RuntimeException(e);
 			} catch (CramCompressionException e) {
@@ -195,13 +197,12 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 				throw new RuntimeException(e);
 			}
 
-			return new PreemptiveSAMRecordIterator(new CachingSAMRecordIterator(iterator,
-					iterator.getCramHeader()), start, end, contained);
+			return new PreemptiveSAMRecordIterator(new CachingSAMRecordIterator(iterator, iterator.getCramHeader()),
+					start, end, contained);
 		}
 
 		// need skipable input stream:
-		throw new RuntimeException(
-				"CRAM index found but the stream is not random access.");
+		throw new RuntimeException("CRAM index found but the stream is not random access.");
 	}
 
 	@Override
@@ -221,8 +222,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		}
 		CRAMPreemptiveIterator iterator = null;
 		try {
-			iterator = new CRAMPreemptiveIterator(is, referenceSequenceFile,
-					null);
+			iterator = new CRAMPreemptiveIterator(is, referenceSequenceFile, null);
 		} catch (CramFormatException e) {
 			throw new RuntimeException(e);
 		} catch (CramCompressionException e) {
@@ -233,8 +233,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 			throw new RuntimeException(e);
 		}
 
-		return new PreemptiveUnmappedSAMRecordIterator(
-				new CachingSAMRecordIterator(iterator, iterator.getCramHeader()));
+		return new PreemptiveUnmappedSAMRecordIterator(new CachingSAMRecordIterator(iterator, iterator.getCramHeader()));
 	}
 
 }

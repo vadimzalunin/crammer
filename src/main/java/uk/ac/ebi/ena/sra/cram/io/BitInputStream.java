@@ -11,4 +11,6 @@ public interface BitInputStream {
 	public long readLongBits(int len) throws IOException;
 	
 	public boolean endOfStream () throws IOException ;
+	
+	public boolean putBack(long b, int numBits) ;
 }

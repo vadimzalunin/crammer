@@ -1,5 +1,6 @@
 package uk.ac.ebi.ena.sra.cram;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -39,14 +40,12 @@ import org.apache.log4j.Logger;
 import uk.ac.ebi.ena.sra.cram.CramIndexer.CountingInputStream;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
-import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
-import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 
 public class Utils {
 	private static Logger log = Logger.getLogger(Utils.class);
-	
+
 	public final static byte[] toBytes(int value) {
 		final byte[] bytes = new byte[4];
 		bytes[0] = (byte) (value >>> 24);
@@ -251,9 +250,6 @@ public class Utils {
 		int compressedBlockSize;
 		try {
 			compressedBlockSize = readInt(dis);
-			// compressedBlockSize = dis.readInt();
-			// System.out.println("Compressed block sise: " +
-			// compressedBlockSize);
 		} catch (EOFException e) {
 			return null;
 		}
@@ -266,7 +262,7 @@ public class Utils {
 			System.err.println("Offensive data block start: " + Arrays.toString(buf));
 			throw e;
 		}
-		GZIPInputStream gizIS = new GZIPInputStream(new ByteArrayInputStream(compressedBlockData));
+		InputStream gizIS = new BufferedInputStream(new GZIPInputStream(new ByteArrayInputStream(compressedBlockData)));
 		CountingInputStream uncompressedCIS = new CountingInputStream(gizIS);
 		DataInputStream uncompressedDIS = new DataInputStream(uncompressedCIS);
 		return uncompressedDIS;
@@ -274,19 +270,6 @@ public class Utils {
 
 	public static SAMFileHeader cramHeader2SamHeader(CramHeader cramHeader) {
 		SAMFileHeader samFileHeader = new SAMFileHeader();
-		for (CramReferenceSequence crs : cramHeader.getReferenceSequences()) {
-			SAMSequenceRecord samSequence = new SAMSequenceRecord(crs.getName(), crs.getLength());
-			samFileHeader.addSequence(samSequence);
-		}
-
-		if (cramHeader.getReadGroups() != null)
-			for (CramReadGroup crg : cramHeader.getReadGroups()) {
-				if (crg.getId() == null)
-					continue;
-				SAMReadGroupRecord samReadGroupRecord = new SAMReadGroupRecord(crg.getId());
-				samReadGroupRecord.setSample(crg.getSample());
-				samFileHeader.addReadGroup(samReadGroupRecord);
-			}
 
 		List<CramHeaderRecord> records = new ArrayList<CramHeaderRecord>();
 		for (CramHeaderRecord record : cramHeader.getRecords())
@@ -294,6 +277,8 @@ public class Utils {
 
 		writeComments(samFileHeader, records);
 		writeProgramRecords(samFileHeader, records);
+		writeSequences(samFileHeader, records);
+		writeReadGroups(samFileHeader, records);
 
 		return samFileHeader;
 	}
@@ -303,11 +288,6 @@ public class Utils {
 		for (SAMProgramRecord programRecord : header.getProgramRecords()) {
 			CramHeaderRecord headerRecord = new CramHeaderRecord(tag);
 			headerRecord.setValueIfNotNull(SAMProgramRecord.PROGRAM_GROUP_ID_TAG, programRecord.getId());
-			headerRecord.setValueIfNotNull(SAMProgramRecord.COMMAND_LINE_TAG, programRecord.getCommandLine());
-			headerRecord.setValueIfNotNull(SAMProgramRecord.PREVIOUS_PROGRAM_GROUP_ID_TAG,
-					programRecord.getPreviousProgramGroupId());
-			headerRecord.setValueIfNotNull(SAMProgramRecord.PROGRAM_NAME_TAG, programRecord.getProgramName());
-			headerRecord.setValueIfNotNull(SAMProgramRecord.PROGRAM_VERSION_TAG, programRecord.getProgramVersion());
 
 			for (Entry<String, String> entry : programRecord.getAttributes())
 				headerRecord.setValue(entry.getKey(), entry.getValue());
@@ -319,9 +299,35 @@ public class Utils {
 	private static void readComments(SAMFileHeader header, Collection<CramHeaderRecord> records) {
 		String commentTag = "CO";
 		for (String comment : header.getComments()) {
-			System.out.println("Comment: " + comment);
 			CramHeaderRecord record = new CramHeaderRecord(commentTag);
 			record.setValue(commentTag, comment);
+			records.add(record);
+		}
+	}
+
+	private static void readSequences(SAMFileHeader header, Collection<CramHeaderRecord> records) {
+		String sqTag = "SQ";
+		for (SAMSequenceRecord seq : header.getSequenceDictionary().getSequences()) {
+			CramHeaderRecord record = new CramHeaderRecord(sqTag);
+			record.setValueIfNotNull(SAMSequenceRecord.SEQUENCE_LENGTH_TAG, String.valueOf(seq.getSequenceLength()));
+			record.setValueIfNotNull(SAMSequenceRecord.SEQUENCE_NAME_TAG, seq.getSequenceName());
+
+			for (Entry<String, String> entry : seq.getAttributes())
+				record.setValue(entry.getKey(), entry.getValue());
+
+			records.add(record);
+		}
+	}
+
+	private static void readReadGroups(SAMFileHeader header, Collection<CramHeaderRecord> records) {
+		String sqTag = "RG";
+		for (SAMReadGroupRecord rg : header.getReadGroups()) {
+			CramHeaderRecord record = new CramHeaderRecord(sqTag);
+			record.setValueIfNotNull(SAMReadGroupRecord.READ_GROUP_ID_TAG, rg.getReadGroupId());
+
+			for (Entry<String, String> entry : rg.getAttributes())
+				record.setValue(entry.getKey(), entry.getValue());
+
 			records.add(record);
 		}
 	}
@@ -333,10 +339,9 @@ public class Utils {
 				continue;
 			String id = record.getValue(SAMProgramRecord.PROGRAM_GROUP_ID_TAG);
 			SAMProgramRecord samProgramRecord = new SAMProgramRecord(id);
-			samProgramRecord.setCommandLine(record.getValue(SAMProgramRecord.COMMAND_LINE_TAG));
-			samProgramRecord.setPreviousProgramGroupId(record.getValue(SAMProgramRecord.PREVIOUS_PROGRAM_GROUP_ID_TAG));
-			samProgramRecord.setProgramName(record.getValue(SAMProgramRecord.PROGRAM_NAME_TAG));
-			samProgramRecord.setProgramVersion(record.getValue(SAMProgramRecord.PROGRAM_VERSION_TAG));
+			for (String key : record.getKeySet())
+				samProgramRecord.setAttribute(key, record.getValue(key));
+
 			header.addProgramRecord(samProgramRecord);
 		}
 	}
@@ -349,10 +354,42 @@ public class Utils {
 					header.addComment(record.getValue(key));
 	}
 
+	private static void writeSequences(SAMFileHeader header, Collection<CramHeaderRecord> records) {
+		String tag = "SQ";
+		for (CramHeaderRecord record : records) {
+			if (!tag.equals(record.getTag()))
+				continue;
+			String id = record.getValue(SAMSequenceRecord.SEQUENCE_NAME_TAG);
+			int len = Integer.valueOf(record.getValue(SAMSequenceRecord.SEQUENCE_LENGTH_TAG)).intValue();
+
+			SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(id, len);
+			for (String key : record.getKeySet())
+				sequenceRecord.setAttribute(key, record.getValue(key));
+
+			header.addSequence(sequenceRecord);
+		}
+	}
+
+	private static void writeReadGroups(SAMFileHeader header, Collection<CramHeaderRecord> records) {
+		String tag = "RG";
+		for (CramHeaderRecord record : records) {
+			if (!tag.equals(record.getTag()))
+				continue;
+			String id = record.getValue(SAMReadGroupRecord.READ_GROUP_ID_TAG);
+			SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(id);
+			for (String key : record.getKeySet())
+				readGroupRecord.setAttribute(key, record.getValue(key));
+
+			header.addReadGroup(readGroupRecord);
+		}
+	}
+
 	public static List<CramHeaderRecord> getCramHeaderRecords(SAMFileHeader samHeader) {
 		List<CramHeaderRecord> headerRecords = new ArrayList<CramHeaderRecord>();
 		readComments(samHeader, headerRecords);
 		readProgramRecords(samHeader, headerRecords);
+		readSequences(samHeader, headerRecords);
+		readReadGroups(samHeader, headerRecords);
 
 		return headerRecords;
 	}
@@ -373,13 +410,25 @@ public class Utils {
 		return true;
 	}
 
-	public static String peekStream(SeekableStream ss, long pos, int len) throws IOException {
-		ss.mark(len);
-		ss.seek(pos);
-		byte[] buf = new byte[len];
-		ss.read(buf);
-		ss.reset();
-		return Arrays.toString(buf);
+	private static int getMajorVersion(String version) {
+		if (version.contains("-"))
+			version = version.split("-")[0];
+		int majorVersion = (int) ((Float.valueOf(version)) * 10);
+		return majorVersion;
+	}
+
+	public static boolean isCompatible(String version) {
+		String currentVersion = CramHeader.VERSION;
+		int currentMajorVersion = getMajorVersion(currentVersion);
+		int majorVersion = getMajorVersion(version);
+
+		if (currentMajorVersion == majorVersion)
+			return true;
+
+		if (majorVersion == 7 && currentMajorVersion == 8)
+			return true;
+		
+		return false;
 	}
 
 	/**
@@ -593,19 +642,19 @@ public class Utils {
 
 	public static int[][] sortByFirst(int[] array1, int[] array2) {
 		int[][] sorted = new int[array1.length][2];
-		for (int i=0; i<array1.length; i++) {
-			sorted[i][0] = array1[i] ;
-			sorted[i][1] = array2[i] ;
+		for (int i = 0; i < array1.length; i++) {
+			sorted[i][0] = array1[i];
+			sorted[i][1] = array2[i];
 		}
 
-		Arrays.sort(sorted, intArray_2_Comparator) ;
-		
+		Arrays.sort(sorted, intArray_2_Comparator);
+
 		int[][] result = new int[2][array1.length];
-		for (int i=0; i<array1.length; i++) {
-			result[0][i] = sorted[i][0] ;
-			result[1][i] = sorted[i][1] ;
+		for (int i = 0; i < array1.length; i++) {
+			result[0][i] = sorted[i][0];
+			result[1][i] = sorted[i][1];
 		}
-		
+
 		return result;
 	}
 

@@ -9,6 +9,7 @@ import uk.ac.ebi.ena.sra.cram.format.ByteFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
+import uk.ac.ebi.ena.sra.cram.format.DiByteFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
 import uk.ac.ebi.ena.sra.cram.format.IntFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.compression.EncodingAlgorithm;
@@ -135,6 +136,8 @@ class CramRecordBlockReader {
 		}
 
 		compression.flagStats = new ByteFrequencies(readByteArray(), readIntArray());
+		
+//		compression.score2 = readDiByteFrequencies(dis) ;
 
 		return compression;
 	}
@@ -145,5 +148,17 @@ class CramRecordBlockReader {
 		encoding.setAlgorithm(EncodingAlgorithm.values()[ordinal]);
 		encoding.setParameters(dis.readUTF());
 		return encoding;
+	}
+	
+	private static DiByteFrequencies readDiByteFrequencies (DataInputStream dis) throws IOException {
+		int len = dis.readInt() ;
+		DiByteFrequencies f = new DiByteFrequencies() ;
+		for (int i=0; i<len; i++) {
+			byte value1 = dis.readByte() ;
+			byte value2 = dis.readByte() ;
+			f.add(value1, value2, dis.readInt()) ;
+		}
+		
+		return f ;
 	}
 }

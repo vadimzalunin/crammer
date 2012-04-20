@@ -36,13 +36,13 @@ public class CramIterator implements CloseableIterator<CramRecord> {
 	private ReferenceSequence referenceSequence;
 
 	public CramIterator(InputStream is,
-			ReferenceSequenceFile referenceSequenceFile) throws IOException {
+			ReferenceSequenceFile referenceSequenceFile) throws IOException, CramFormatException {
 		this(is, referenceSequenceFile, null);
 	}
 
 	public CramIterator(InputStream is,
 			ReferenceSequenceFile referenceSequenceFile, CramHeader header)
-			throws IOException {
+			throws IOException, CramFormatException {
 		if (!Utils.isCRAM(is)) throw new RuntimeException("Not a valid CRAM format.") ;
 		
 		if (is instanceof DataInputStream)
@@ -98,7 +98,7 @@ public class CramIterator implements CloseableIterator<CramRecord> {
 		}
 	}
 
-	private void readHeader() throws IOException {
+	private void readHeader() throws IOException, CramFormatException {
 		header = CramHeaderIO.read(Utils.getNextChunk(is));
 	}
 

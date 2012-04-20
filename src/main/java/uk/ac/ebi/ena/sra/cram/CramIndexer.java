@@ -59,6 +59,7 @@ public class CramIndexer {
 			sb.append("\n");
 			jc.usage(sb);
 
+			System.out.println("Version " + CramIndexer.class.getPackage().getImplementationVersion());
 			System.out.println(sb.toString());
 			return;
 		}
@@ -170,6 +171,7 @@ public class CramIndexer {
 		CountingInputStream cis = new CountingInputStream(cramInputStream);
 		DataInputStream cramDIS = new DataInputStream(cis);
 		CramHeader cramHeader = CramHeaderIO.read(Utils.getNextChunk(cramDIS));
+		log.info("CRAM format version: " + cramHeader.getVersion()) ;
 		long firstBlockStart = cis.getPosition();
 		int blockNumber = 0;
 		List<String> sequences = new ArrayList<String>();
@@ -293,7 +295,7 @@ public class CramIndexer {
 		log.info("Decoded in: " + (time2 - time1) + " millis");
 	}
 
-	@Parameters(commandDescription = "Build CRAM index. Version 0.7")
+	@Parameters(commandDescription = "Build CRAM index. ")
 	static class Params {
 		@Parameter(names = { "--input-cram-file" }, converter = FileConverter.class, description = "The path to the CRAM file to be indexed.")
 		File cramFile;

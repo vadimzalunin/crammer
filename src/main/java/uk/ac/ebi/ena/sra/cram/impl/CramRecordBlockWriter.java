@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import uk.ac.ebi.ena.sra.cram.format.ByteFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.CramCompression;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
+import uk.ac.ebi.ena.sra.cram.format.DiByteFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
 import uk.ac.ebi.ena.sra.cram.format.IntFrequencies;
 
@@ -115,10 +116,23 @@ class CramRecordBlockWriter {
 		writeArray(os, alphabet);
 		int[] freqs = compression.flagStats.getFrequencies();
 		writeArray(os, freqs);
+		
+//		write (os, compression.score2) ;
 	}
 
 	private static final void writeEncoding(DataOutputStream os, Encoding encoding) throws IOException {
 		os.writeByte(encoding.getAlgorithm().ordinal());
 		os.writeUTF(encoding.getParameters());
+	}
+	
+	private static final void write(DataOutputStream os, DiByteFrequencies f) throws IOException {
+		byte[][] values = f.getValues() ;
+		int[] freqs = f.getFrequencies() ;
+		
+		os.writeInt(values.length) ;
+		for (int i=0; i<values.length; i++) {
+			os.write(values[i]) ;
+			os.writeInt(freqs[i]) ;
+		}
 	}
 }

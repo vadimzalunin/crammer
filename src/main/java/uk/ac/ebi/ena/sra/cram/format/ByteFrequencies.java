@@ -75,6 +75,7 @@ public class ByteFrequencies {
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 		sb.append(Arrays.toString(getValues()));
+		sb.append("\n") ;
 		sb.append(Arrays.toString(getFrequencies()));
 		return sb.toString();
 	}

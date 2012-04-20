@@ -1,0 +1,2 @@
+Quality scores for the first 1000 records from HG00096.mapped.illumina.mosaik.GBR.exome.20110411.chr20.bam:
+samtools view HG00096.mapped.illumina.mosaik.GBR.exome.20110411.chr20.bam | cut -f 11 | head -1000 > qs

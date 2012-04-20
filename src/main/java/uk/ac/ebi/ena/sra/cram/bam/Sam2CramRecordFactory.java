@@ -203,6 +203,8 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 			case N:
 				features.add(new DeletionVariation(zeroBasedPositionInRead + 1, cigarElementLength));
 				break;
+			case H:
+				break ;
 			case S:
 				switch (treatSoftClipsAs) {
 				// case ALIGNMENT:

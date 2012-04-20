@@ -10,7 +10,6 @@ import java.util.zip.GZIPOutputStream;
 
 import net.sf.samtools.SAMRecord;
 
-import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.CramException;
@@ -23,6 +22,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.ReadAnnotation;
+import uk.ac.ebi.ena.sra.cram.impl.RecordCodecFactory.CodecStats;
 import uk.ac.ebi.ena.sra.cram.io.ExposedByteArrayOutputStream;
 import uk.ac.ebi.ena.sra.cram.stats.CramStats;
 
@@ -53,6 +53,8 @@ public class CramWriter {
 	private long beyondHorizon = 0;
 	private long extraChromosomePairs = 0;
 	private final List<CramHeaderRecord> headerRecords;
+
+	private CodecStats codecStats;
 
 	public CramWriter(OutputStream os, SequenceBaseProvider provider, List<CramReferenceSequence> sequences,
 			boolean roundTripCheck, int maxRecordsPerBlock, boolean captureUnammpedQualityScortes,
@@ -107,7 +109,7 @@ public class CramWriter {
 		writerOS = new ExposedByteArrayOutputStream(1024 * 1024 * 10);
 
 		header = new CramHeader();
-		header.setRecords(headerRecords) ;
+		header.setRecords(headerRecords);
 		header.setReferenceSequences(sequences);
 		header.setReadAnnotations(readAnnotations);
 		header.setReadGroups(cramReadGroups);
@@ -177,9 +179,10 @@ public class CramWriter {
 			block.setRecordCount(block.getRecords().size());
 			log.debug(block.toString());
 			len = write(block);
-			log.info(String.format("Block purged: %s\t%d\t%d\t%.2f\t%.4f\t%.3fs\t%d\t%d", block.getSequenceName(), block.getRecordCount(), len,
-					(float) len / block.getRecordCount(), (float) len / stats.getBaseCount(),
-					(System.currentTimeMillis() - blockCreationTime) / 1000f, beyondHorizon, extraChromosomePairs));
+			log.info(String.format("Block purged: %s\t%d\t%d\t%.2f\t%.4f\t%.3fs\t%d\t%d", block.getSequenceName(),
+					block.getRecordCount(), len, (float) len / block.getRecordCount(),
+					(float) len / stats.getBaseCount(), (System.currentTimeMillis() - blockCreationTime) / 1000f,
+					beyondHorizon, extraChromosomePairs));
 		}
 
 		beyondHorizon = 0;
@@ -219,6 +222,11 @@ public class CramWriter {
 		if (autodump)
 			dump();
 
+		if (codecStats == null)
+			codecStats = writer.getCodecStats();
+		else
+			codecStats.add(writer.getCodecStats());
+
 		return len;
 	}
 
@@ -226,8 +234,8 @@ public class CramWriter {
 		bitsWritten += purgeBlock(block);
 	}
 
-	public long getBitsWritten() {
-		return bitsWritten;
+	public CodecStats getCodecStats() {
+		return codecStats ;
 	}
 
 	public boolean isAutodump() {

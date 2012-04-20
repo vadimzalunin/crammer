@@ -144,7 +144,7 @@ public class CramPreemptiveRandomAccessIterator implements CloseableIterator<Cra
 		return header;
 	}
 
-	private void readHeader() throws IOException {
+	private void readHeader() throws IOException, CramFormatException {
 		header = CramHeaderIO.read(Utils.getNextChunk(dis));
 	}
 

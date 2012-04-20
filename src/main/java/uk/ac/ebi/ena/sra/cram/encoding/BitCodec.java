@@ -13,11 +13,4 @@ public interface BitCodec<T> {
 
 	public long numberOfBits(T object);
 
-//	/**
-//	 * Resets any state information, for example information about previously
-//	 * seen values.
-//	 * 
-//	 */
-//	public void reset();
-
 }

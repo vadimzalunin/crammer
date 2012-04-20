@@ -61,7 +61,7 @@ public class CRAMPreemptiveIterator implements CloseableIterator<CramRecord> {
 		return header;
 	}
 
-	private void readHeader() throws IOException {
+	private void readHeader() throws IOException, CramFormatException {
 		header = CramHeaderIO.read(Utils.getNextChunk(is));
 	}
 

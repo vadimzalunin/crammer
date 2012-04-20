@@ -5,6 +5,7 @@ import java.io.IOException;
 import uk.ac.ebi.ena.sra.cram.io.BitInputStream;
 import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 
+@Deprecated
 public class MeasuringCodec<T> implements BitCodec<T> {
 	private BitCodec<T> delegate;
 	private long readObjects = 0L;

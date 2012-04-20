@@ -26,7 +26,7 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	// public BitCodec<byte[]> qualitiesCodec;
 
 	public BitCodec<Byte> baseCodec;
-	public BitCodec<Byte> qualityCodec;
+	public ByteArrayBitCodec qualityCodec;
 
 	public String sequenceName;
 	public long prevPosInSeq = 1L;
@@ -97,8 +97,9 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			}
 
 			if (storeMappedQualityScores) {
-				byte[] scores = new byte[readLen];
-				readNonEmptyByteArray(bis, scores, qualityCodec);
+				byte[] scores = qualityCodec.read(bis, readLen);
+				// byte[] scores = new byte[readLen];
+				// readNonEmptyByteArray(bis, scores, qualityCodec);
 				record.setQualityScores(scores);
 			}
 
@@ -112,8 +113,9 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			readNonEmptyByteArray(bis, bases, baseCodec);
 			record.setReadBases(bases);
 
-			byte[] scores = new byte[readLen];
-			readNonEmptyByteArray(bis, scores, qualityCodec);
+			byte[] scores = qualityCodec.read(bis, readLen);
+			// byte[] scores = new byte[readLen];
+			// readNonEmptyByteArray(bis, scores, qualityCodec);
 			record.setQualityScores(scores);
 		}
 
@@ -149,7 +151,7 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		long len = 0L;
 
 		len += flagsCodec.write(bos, record.getFlags());
-		
+
 		if (!record.isLastFragment()) {
 			if (record.getRecordsToNextFragment() > 0) {
 				len += recordsToNextFragmentCodec.write(bos, record.getRecordsToNextFragment());
@@ -191,7 +193,9 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			len++;
 
 			if (storeMappedQualityScores)
-				len += writeNonEmptyByteArray(bos, record.getQualityScores(), qualityCodec);
+				// len += writeNonEmptyByteArray(bos, record.getQualityScores(),
+				// qualityCodec);
+				len += qualityCodec.write(bos, record.getQualityScores());
 
 			mappingQualityCodec.write(bos, record.getMappingQuality());
 		} else {
@@ -203,7 +207,8 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			prevPosInSeq = record.getAlignmentStart();
 
 			len += writeNonEmptyByteArray(bos, record.getReadBases(), baseCodec);
-			len += writeNonEmptyByteArray(bos, record.getQualityScores(), qualityCodec);
+//			len += writeNonEmptyByteArray(bos, record.getQualityScores(), qualityCodec);
+			len += qualityCodec.write(bos, record.getQualityScores());
 		}
 
 		len += readGroupCodec.write(bos, record.getReadGroupID());
@@ -214,7 +219,8 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 				len++;
 				tagKeyAndTypeCodec.write(bos, tag.getKeyAndType());
 				BitCodec<byte[]> codec = tagCodecMap.get(tag.getKeyAndType());
-				len += codec.write(bos, tag.getValueAsByteArray());
+				long bits = codec.write(bos, tag.getValueAsByteArray());
+				len += bits;
 			}
 		}
 		bos.write(false);

@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.collections.map.MultiValueMap;
-
+import uk.ac.ebi.ena.sra.cram.Utils;
+import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
@@ -84,7 +84,7 @@ public class CramHeaderIO {
 		headerDOS.flush();
 	}
 
-	public static CramHeader read(InputStream is) throws IOException {
+	public static CramHeader read(InputStream is) throws IOException, CramFormatException {
 		CramHeader header = new CramHeader();
 		DataInputStream dis = null;
 		if (is instanceof DataInputStream)
@@ -95,7 +95,12 @@ public class CramHeaderIO {
 		String magick = dis.readUTF();
 		if (!MAGIC.equals(magick))
 			throw new RuntimeException("Not recognized as CRAM format.");
-		header.setVersion(dis.readUTF());
+
+		String version = dis.readUTF();
+		if (!Utils.isCompatible(version)) 
+			throw new CramFormatException("incompatble CRAM data version " + version);
+		
+		header.setVersion(version);
 		int seqCount = dis.readInt();
 		ArrayList<CramReferenceSequence> list = new ArrayList<CramReferenceSequence>();
 		for (int i = 0; i < seqCount; i++) {

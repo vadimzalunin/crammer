@@ -71,7 +71,7 @@ public class TestCramIterators {
 	}
 
 	@Test
-	public void test1() throws FileNotFoundException, IOException {
+	public void test1() throws FileNotFoundException, IOException, CramFormatException {
 		CloseableIterator<CramRecord> iterator = new CramIterator(
 				new FileInputStream(cramFile),
 				ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile));

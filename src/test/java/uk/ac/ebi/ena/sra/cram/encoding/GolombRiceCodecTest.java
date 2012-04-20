@@ -227,10 +227,6 @@ public class GolombRiceCodecTest {
 			ArrayCompressionReport report = new ArrayCompressionReport(
 					"compressability");
 			report.run(buf);
-			// System.out
-			// .printf("Exponential distribution (average=%d), golomb param=%d, bits per number: %2.2f, %s\n",
-			// golombParameter, golombParameter, 8f * baos.size()
-			// / maxNumbers, report.toString());
 
 			float ratioToBzip = (float) buf.length / report.getBzip2Size();
 			assertThat(ratioToBzip < 1.11, is(true));

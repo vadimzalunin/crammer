@@ -43,6 +43,7 @@ public class CramTools {
 			sb.append("\n");
 			jc.usage(sb);
 
+			System.out.println("Version " + CramTools.class.getPackage().getImplementationVersion());
 			System.out.println(sb.toString());
 			return;
 		}
@@ -59,11 +60,11 @@ public class CramTools {
 
 	}
 
-	@Parameters(commandDescription = "CRAM tools. Version 0.7")
+	@Parameters(commandDescription = "CRAM tools. ")
 	private static class Params  {
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
 		private boolean help = false;
-
+		
 		@Parameter(names = { "-l", "--log-level" }, description = "Change log level", converter = LevelConverter.class)
 		private Level logLevel = null;
 	}

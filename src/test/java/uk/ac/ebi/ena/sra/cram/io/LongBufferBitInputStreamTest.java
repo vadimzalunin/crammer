@@ -11,14 +11,14 @@ import org.junit.Test;
 
 import uk.ac.ebi.ena.sra.cram.Utils;
 
-public class BitInputStreamTest {
+public class LongBufferBitInputStreamTest {
 
 	@Test
 	public void test_ReadBits_8_bits() throws IOException {
 		byte value = 4;
 		byte[] buf = new byte[] { value };
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-		BitInputStream bis = new DefaultBitInputStream(bais);
+		BitInputStream bis = new LongBufferBitInputStream(bais);
 		int readBits = bis.readBits(8);
 
 		assertThat((byte) readBits, is(value));
@@ -29,7 +29,7 @@ public class BitInputStreamTest {
 		byte value = 4;
 		byte[] buf = new byte[] { value };
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-		BitInputStream bis = new DefaultBitInputStream(bais);
+		BitInputStream bis = new LongBufferBitInputStream(bais);
 		int readBits = bis.readBits(3);
 
 		assertThat(readBits, is(0));
@@ -40,7 +40,7 @@ public class BitInputStreamTest {
 		byte value = (byte) (1 << 7);
 		byte[] buf = new byte[] { value };
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-		BitInputStream bis = new DefaultBitInputStream(bais);
+		BitInputStream bis = new LongBufferBitInputStream(bais);
 		int readBits = bis.readBits(3);
 
 		assertThat(readBits, is(4));
@@ -53,7 +53,7 @@ public class BitInputStreamTest {
 		int value = 1 << 1;
 		byte[] buf = Utils.toBytes(value);
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-		BitInputStream bis = new DefaultBitInputStream(bais);
+		BitInputStream bis = new LongBufferBitInputStream(bais);
 
 		// 00000000000000000000000000000001:
 		int readBits = bis.readBits(31);
@@ -67,7 +67,7 @@ public class BitInputStreamTest {
 		int value = 1 << setBit;
 		byte[] buf = Utils.toBytes(value);
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-		BitInputStream bis = new DefaultBitInputStream(bais);
+		BitInputStream bis = new LongBufferBitInputStream(bais);
 		for (int bit = 31; bit > -1; bit--) {
 			int readBits = bis.readBits(1);
 
@@ -88,13 +88,13 @@ public class BitInputStreamTest {
 		for (int i = 0; i < 4; i++)
 			value = (value << 8) + fillByte;
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-		BitInputStream bis = new DefaultBitInputStream(bais);
+		BitInputStream bis = new LongBufferBitInputStream(bais);
 		for (int i = 0; i < maxValues; i++)
 			bis.readBits(32);
 
 	}
 
-	@Test(timeout = 550)
+	@Test(timeout = 1500)
 	public void becnhmar_ReadLongBits_64() throws IOException {
 		int maxValues = 1000000;
 		byte[] buf = new byte[maxValues * 8];
@@ -104,7 +104,7 @@ public class BitInputStreamTest {
 		for (int i = 0; i < 8; i++)
 			value = (value << 8) + fillByte;
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-		BitInputStream bis = new DefaultBitInputStream(bais);
+		LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 		for (int i = 0; i < maxValues; i++)
 			bis.readLongBits(64);
 	}
@@ -119,7 +119,7 @@ public class BitInputStreamTest {
 		for (int i = 0; i < 4; i++)
 			value = (value << 8) + fillByte;
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+		LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 		for (int i = 0; i < maxValues; i++)
 			bis.readLongBits(32);
 	}
@@ -129,7 +129,7 @@ public class BitInputStreamTest {
 		byte value = (byte) (1 << 7);
 		byte[] buf = new byte[] { value };
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+		LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 		long readBits = bis.readLongBits(3);
 
 		assertThat(readBits, is(4L));
@@ -141,7 +141,7 @@ public class BitInputStreamTest {
 			int len = (int) (1 + Math.log(i) / Math.log(2));
 			byte[] buf = Utils.toBytes(i << 32 - len);
 			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 			int readBits = bis.readBits(len);
 
 			assertThat(readBits, is(i));
@@ -151,7 +151,7 @@ public class BitInputStreamTest {
 			int len = (int) (1 + Math.log(i) / Math.log(2));
 			byte[] buf = Utils.toBytes(i << 64 - len);
 			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 			int readBits = bis.readBits(len);
 
 			assertThat(readBits, is(i));
@@ -164,7 +164,7 @@ public class BitInputStreamTest {
 			int len = (int) (1 + Math.log(i) / Math.log(2));
 			byte[] buf = Utils.toBytes(i << 64 - len);
 			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 			long readBits = bis.readLongBits(len);
 
 			assertThat(readBits, is(i));
@@ -174,7 +174,7 @@ public class BitInputStreamTest {
 			int len = (int) (1 + Math.log(i) / Math.log(2));
 			byte[] buf = Utils.toBytes(i << 64 - len);
 			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 			long readBits = bis.readLongBits(len);
 
 			assertThat(readBits, is(i));
@@ -184,7 +184,7 @@ public class BitInputStreamTest {
 			int len = (int) (1 + Math.log(i) / Math.log(2));
 			byte[] buf = Utils.toBytes(i << 64 - len);
 			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+			LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 			long readBits = bis.readLongBits(len);
 
 			assertThat(readBits, is(i));

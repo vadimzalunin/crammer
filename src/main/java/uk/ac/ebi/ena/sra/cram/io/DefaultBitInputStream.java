@@ -17,7 +17,8 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
 	private int byteBuffer = 0;
 	private boolean endOfStream = false;
 	private boolean throwEOF = false;
-
+	private static final long[] masks = new long[] {0, (1L << 1) - 1, (1L << 2) - 1, (1L << 3) - 1, (1L << 4) - 1, (1L << 5) - 1, (1L << 6) - 1, (1L << 7) - 1, (1L << 8) - 1} ;
+	
 	public DefaultBitInputStream(InputStream in) {
 		this(in, true);
 	}
@@ -64,19 +65,51 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
 	private static final int rightBits(int n, int x) {
 		return x & ((1 << n) - 1);
 	}
-
-	public final long readLongBits(int len) throws IOException {
-		if (len > 64)
-			throw new RuntimeException("More then 64 bits are requested in one read from bit stream.");
-
-		long result = 0;
-		final long last = len - 1;
-		for (long bi = 0; bi <= last; bi++) {
-			final boolean frag = readBit();
-			if (frag)
-				result |= 1L << (last - bi);
+	
+	private static final long rightLongBits(int n, long x) {
+		return x & ((1 << n) - 1);
+	}
+	
+	private final void readNextByte () throws IOException {
+		byteBuffer = in.read();
+		if (byteBuffer == -1) {
+			endOfStream = true;
+			throw new EOFException("End of stream.");
 		}
-		return result;
+		nofBufferedBits = 8 ;
+	}
+
+	public final long readLongBits(int n) throws IOException {
+//		if (n > 64)
+//			throw new RuntimeException("More then 64 bits are requested in one read from bit stream.");
+
+		if (n == 0)
+			return 0;
+		
+		long x = 0;
+		long byteBuffer = this.byteBuffer ;
+		if (nofBufferedBits == 0) {
+			byteBuffer = in.read();
+			if (byteBuffer == -1) {
+				endOfStream = true;
+				throw new EOFException("End of stream.");
+			}
+			nofBufferedBits = 8 ;
+		}
+		byteBuffer &= masks[nofBufferedBits] ;
+		while (n > nofBufferedBits) {
+			n -= nofBufferedBits;
+			x |= byteBuffer << n;
+			byteBuffer = in.read();
+			if (byteBuffer == -1) {
+				endOfStream = true;
+				throw new EOFException("End of stream.");
+			}
+			nofBufferedBits = 8 ;
+		}
+		nofBufferedBits -= n;
+		this.byteBuffer = (int) (byteBuffer & masks[nofBufferedBits]);
+		return x | (byteBuffer >>> nofBufferedBits);
 	}
 
 	public void reset() {
@@ -91,5 +124,10 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
 
 	public int getNofBufferedBits() {
 		return nofBufferedBits;
+	}
+
+	@Override
+	public boolean putBack(long b, int numBits) {
+		return false;
 	}
 }

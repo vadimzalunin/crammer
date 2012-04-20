@@ -21,6 +21,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.DeletionVariation;
+import uk.ac.ebi.ena.sra.cram.format.DiByteFrequencies;
 import uk.ac.ebi.ena.sra.cram.format.Encoding;
 import uk.ac.ebi.ena.sra.cram.format.InsertBase;
 import uk.ac.ebi.ena.sra.cram.format.InsertionVariation;
@@ -51,12 +52,15 @@ public class CramStats {
 
 	private Map<String, ByteFrequencies> tagFreqs = new TreeMap<String, ByteFrequencies>();
 	private Map<String, IntFrequencies> tagLengths = new TreeMap<String, IntFrequencies>();
-	private HashMapFrequency tagKeyAndTypeFrequency = new HashMapFrequency() ;
-	
-	private ByteFrequencies flagStats = new ByteFrequencies() ;
+	private HashMapFrequency tagKeyAndTypeFrequency = new HashMapFrequency();
+
+	private ByteFrequencies flagStats = new ByteFrequencies();
 
 	private int[] baseFreqArray = new int[256];
 	private int[] qsFreqArray = new int[256];
+
+	private DiByteFrequencies qs2Frequency = new DiByteFrequencies() ;
+	private byte prevQS = -1;
 
 	private long nofSubstituions = 0L;
 	private long nofInsertions = 0L;
@@ -90,8 +94,8 @@ public class CramStats {
 		recordCount++;
 		baseCount += record.getReadLength();
 		readLengthFreq.addValue(record.getReadLength());
-		
-		flagStats.add(record.getFlags()) ;
+
+		flagStats.add(record.getFlags());
 
 		if (record.getAnnotations() != null) {
 			for (ReadAnnotation a : record.getAnnotations())
@@ -103,8 +107,8 @@ public class CramStats {
 		if (record.tags != null) {
 			for (ReadTag tag : record.tags) {
 				String keyAndType = tag.getKeyAndType();
-				tagKeyAndTypeFrequency.addValue(keyAndType) ;
-				
+				tagKeyAndTypeFrequency.addValue(keyAndType);
+
 				ByteFrequencies bf = tagFreqs.get(keyAndType);
 				if (bf == null) {
 					bf = new ByteFrequencies();
@@ -147,6 +151,9 @@ public class CramStats {
 				}
 				if (scores != null && scores.length != 0) {
 					qsFreqArray[scores[i]]++;
+//					if (i > 0)
+//						qs2Frequency.add(prevQS, scores[i]);
+//					prevQS = scores[i] ;
 				}
 			}
 
@@ -243,20 +250,20 @@ public class CramStats {
 			block.setCompression(new CramCompression());
 			compression = block.getCompression();
 		}
-		
-		compression.flagStats = flagStats ;
 
-		int tagCount = tagKeyAndTypeFrequency.getUniqueCount() ; 
+		compression.flagStats = flagStats;
+
+		int tagCount = tagKeyAndTypeFrequency.getUniqueCount();
 		compression.tagKeyAlphabet = new String[tagCount];
 		compression.tagKeyFrequency = new int[tagCount];
-		Iterator<Comparable<?>> tagIterator = tagKeyAndTypeFrequency.valuesIterator() ;
-		for (int i=0; i<tagCount; i++) {
-			String keyAndType = (String) tagIterator.next() ;
-			compression.tagKeyAlphabet[i] = keyAndType ;
-			compression.tagKeyFrequency[i] = (int) tagKeyAndTypeFrequency.getCount(keyAndType) ;
+		Iterator<Comparable<?>> tagIterator = tagKeyAndTypeFrequency.valuesIterator();
+		for (int i = 0; i < tagCount; i++) {
+			String keyAndType = (String) tagIterator.next();
+			compression.tagKeyAlphabet[i] = keyAndType;
+			compression.tagKeyFrequency[i] = (int) tagKeyAndTypeFrequency.getCount(keyAndType);
 		}
-		compression.tagByteFrequencyMap = tagFreqs ;
-		compression.tagByteLengthMap = tagLengths ;
+		compression.tagByteFrequencyMap = tagFreqs;
+		compression.tagByteLengthMap = tagLengths;
 
 		ValueFrequencyHolder holder = getValueFrequencies(baseFreqArray);
 		compression.setBaseAlphabet(holder.values);
@@ -265,6 +272,8 @@ public class CramStats {
 		holder = getValueFrequencies(qsFreqArray);
 		compression.setScoreAlphabet(holder.values);
 		compression.setScoreFrequencies(holder.frequencies);
+		
+		compression.score2 = qs2Frequency ;
 
 		holder = getValueFrequencies(stopBaseFreqArray);
 		compression.setStopBaseAlphabet(holder.values);

@@ -11,6 +11,7 @@ import uk.ac.ebi.ena.sra.cram.Utils;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
+import uk.ac.ebi.ena.sra.cram.format.ReadTag;
 import uk.ac.ebi.ena.sra.cram.impl.ReadFeatures2Cigar;
 import uk.ac.ebi.ena.sra.cram.spot.PairedTemplateAssembler;
 
@@ -140,6 +141,12 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 			newSequence(cramRecord.getSequenceName());
 
 		SAMRecord samRecord = new SAMRecord(samFileHeader);
+		
+		if (cramRecord.tags != null && !cramRecord.tags.isEmpty()) {
+			for (ReadTag rt : cramRecord.tags) {
+				samRecord.setAttribute(rt.getKey(), rt.getValue());
+			}
+		}
 
 		if (cramReadGroups != null) {
 			if (!cramReadGroups.isEmpty()) {

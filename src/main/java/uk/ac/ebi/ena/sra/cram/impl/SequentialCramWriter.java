@@ -3,27 +3,25 @@ package uk.ac.ebi.ena.sra.cram.impl;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.encoding.BitCodec;
-import uk.ac.ebi.ena.sra.cram.encoding.MeasuringCodec;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecordBlock;
 import uk.ac.ebi.ena.sra.cram.format.compression.CramCompressionException;
+import uk.ac.ebi.ena.sra.cram.impl.RecordCodecFactory.CodecStats;
 import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
-import uk.ac.ebi.ena.sra.cram.io.DebuggingBitOuputStream;
 import uk.ac.ebi.ena.sra.cram.io.DefaultBitInputStream;
 import uk.ac.ebi.ena.sra.cram.io.DefaultBitOutputStream;
 import uk.ac.ebi.ena.sra.cram.io.ExposedByteArrayOutputStream;
 
 public class SequentialCramWriter {
 	private RecordCodecFactory recordCodecFactory = new RecordCodecFactory();
-	private CramRecordBlockWriter blockWriter;
+	private CramRecordBlockWriter blockHeaderWriter;
 	private BitOutputStream bos;
 	private BitCodec<CramRecord> recordCodec;
 	private OutputStream os;
@@ -46,7 +44,7 @@ public class SequentialCramWriter {
 		this.header = header;
 		bos = new DefaultBitOutputStream(os);
 		// bos = new DebuggingBitOuputStream(System.out, '\n') ;
-		blockWriter = new CramRecordBlockWriter(os);
+		blockHeaderWriter = new CramRecordBlockWriter(os);
 	}
 
 	public long write(CramRecordBlock block) throws IOException, CramCompressionException {
@@ -66,7 +64,9 @@ public class SequentialCramWriter {
 		// recordCodec = recordCodecFactory.createRecordCodec(header, block,
 		// referenceBaseProvider) ;
 
-		return blockWriter.write(block);
+		long bits = blockHeaderWriter.write(block);
+
+		return bits;
 	}
 
 	public long write(CramRecord record) throws IOException {
@@ -102,21 +102,12 @@ public class SequentialCramWriter {
 		bos.flush();
 		os.flush();
 	}
-
+	
 	public void dump() {
-		Collection<MeasuringCodec> allCodecs = recordCodecFactory.listAllCodecs(rootNode);
-		MeasuringCodec rootCodec = (MeasuringCodec) rootNode.getUserObject();
+		RecordCodecFactory.dump(rootNode);
+	}
 
-		long totalBits = 0;
-		for (MeasuringCodec codec : allCodecs)
-			if (codec != rootCodec)
-				totalBits += codec.getWrittenBits();
-
-		for (MeasuringCodec codec : allCodecs) {
-			if (rootCodec != codec && codec.getWrittenBits() > 0)
-				System.err.printf("%s:\tbits %d\t%.2f%%\n", codec.getName(), codec.getWrittenBits(),
-						100d * codec.getWrittenBits() / totalBits);
-		}
-		recordCodecFactory.dump(rootNode, totalBits);
+	public CodecStats getCodecStats() {
+		return RecordCodecFactory.getCodecStats(rootNode);
 	}
 }

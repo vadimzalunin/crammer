@@ -3,32 +3,70 @@ package uk.ac.ebi.ena.sra.cram;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+import uk.ac.ebi.ena.sra.cram.bam.InsertSizeTest;
+import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordTest;
 import uk.ac.ebi.ena.sra.cram.encoding.BaseChangeCodecTest;
 import uk.ac.ebi.ena.sra.cram.encoding.BaseSequenceCodecTest;
 import uk.ac.ebi.ena.sra.cram.encoding.GammaCodecTest;
 import uk.ac.ebi.ena.sra.cram.encoding.GolombCodecTest;
 import uk.ac.ebi.ena.sra.cram.encoding.GolombRiceCodecTest;
+import uk.ac.ebi.ena.sra.cram.encoding.HuffmanByteCodec2Test;
+import uk.ac.ebi.ena.sra.cram.encoding.HuffmanByteCodecTest;
 import uk.ac.ebi.ena.sra.cram.encoding.HuffmanCodecTest;
+import uk.ac.ebi.ena.sra.cram.encoding.ReadFeatureCodecTest;
+import uk.ac.ebi.ena.sra.cram.encoding.SubexpCodecTest;
+import uk.ac.ebi.ena.sra.cram.encoding.SubstitutionVariationCodecTest;
 import uk.ac.ebi.ena.sra.cram.encoding.UnaryCodecTest;
+import uk.ac.ebi.ena.sra.cram.format.compression.NumberCodecFactoryTest;
 import uk.ac.ebi.ena.sra.cram.format.text.TRAMRoundTripTests;
 import uk.ac.ebi.ena.sra.cram.impl.CramRecordCodecRoundTripTests;
+import uk.ac.ebi.ena.sra.cram.impl.ReadFeatures2CigarTest;
+import uk.ac.ebi.ena.sra.cram.impl.RestoreBasesTest;
+import uk.ac.ebi.ena.sra.cram.impl.TestCramIterators;
 import uk.ac.ebi.ena.sra.cram.io.BitInputStreamTest;
 import uk.ac.ebi.ena.sra.cram.io.BitOutputStreamTest;
 import uk.ac.ebi.ena.sra.cram.io.BitStreamIntegrationTest;
+import uk.ac.ebi.ena.sra.cram.io.LongBufferBitInputStreamTest;
+import uk.ac.ebi.ena.sra.cram.io.LongBufferBitStreamIntegrationTest;
 import uk.ac.ebi.ena.sra.cram.mask.FastaByteArrayMaskFactoryTest;
 import uk.ac.ebi.ena.sra.cram.mask.IntegerListMaskFactoryTest;
 import uk.ac.ebi.ena.sra.cram.mask.SingleLineMaskReaderTest;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ BaseChangeCodecTest.class, BaseSequenceCodecTest.class,
-		UnaryCodecTest.class, GammaCodecTest.class, GolombRiceCodecTest.class,
-		GolombCodecTest.class, HuffmanCodecTest.class,
-		BitInputStreamTest.class, BitOutputStreamTest.class,
-		BitStreamIntegrationTest.class, BamRoundTripTests.class,
-		FastaByteArrayMaskFactoryTest.class, IntegerListMaskFactoryTest.class,
-		SingleLineMaskReaderTest.class, /* text formating needs re-design: CramRecordTextFormatTest.class,
-		DefaultReadFeatureFormatTest.class,*/
-		CramRecordCodecRoundTripTests.class, TRAMRoundTripTests.class, TestLongJumps.class })
+// @formatter:off
+@Suite.SuiteClasses({
+	BamRoundTripTests.class,
+	BaseChangeCodecTest.class,
+	BaseSequenceCodecTest.class, 
+	BitInputStreamTest.class,
+	BitOutputStreamTest.class, 
+	BitStreamIntegrationTest.class, 
+	CramRecordCodecRoundTripTests.class, 
+	FastaByteArrayMaskFactoryTest.class, 
+	GammaCodecTest.class,
+	GolombCodecTest.class, 
+	GolombRiceCodecTest.class, 
+	HuffmanByteCodec2Test.class, 
+	HuffmanByteCodecTest.class, 
+	HuffmanCodecTest.class,
+	InsertSizeTest.class, 
+	IntegerListMaskFactoryTest.class,
+	LongBufferBitInputStreamTest.class,
+	LongBufferBitStreamIntegrationTest.class,
+	NumberCodecFactoryTest.class,
+	ReadFeatureCodecTest.class, 
+	ReadFeatures2CigarTest.class, 
+	RestoreBasesTest.class, 
+	Sam2CramRecordTest.class,
+	SingleLineMaskReaderTest.class,
+	SubexpCodecTest.class, 
+	SubstitutionVariationCodecTest.class, 
+	TRAMRoundTripTests.class, 
+	TestCramIterators.class,
+	TestLongJumps.class, 
+	UnaryCodecTest.class
+})
+// @formatter:on
 public class TestAll {
 
 }
