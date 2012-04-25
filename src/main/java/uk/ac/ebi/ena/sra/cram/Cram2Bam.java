@@ -415,13 +415,13 @@ public class Cram2Bam {
 	private static final void writeSAMRecord(SAMRecord samRecord, SAMFileWriter writer) {
 		try {
 			// quick fixes:
-			if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getReferenceName())) {
+			if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getReferenceName())) 
 				samRecord.setAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+
+			if (samRecord.getReadUnmappedFlag()) {
+				samRecord.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
 				samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
 			}
-
-			if (samRecord.getReadUnmappedFlag())
-				samRecord.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
 			//
 
 			writer.addAlignment(samRecord);

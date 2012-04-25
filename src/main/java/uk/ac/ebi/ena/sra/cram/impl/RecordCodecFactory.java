@@ -344,10 +344,21 @@ public class RecordCodecFactory {
 		Map<String, CodecStats> children;
 
 		void add(CodecStats foe) {
+			if (foe == null)
+				return;
+
 			bitsWritten += foe.bitsWritten;
 			bitsRead += foe.bitsRead;
 			objectsWritten += foe.objectsWritten;
 			objectsWritten += foe.objectsWritten;
+
+			if (foe.children != null) {
+				if (children == null)
+					children = new TreeMap<String, RecordCodecFactory.CodecStats>();
+				for (Map.Entry<String, CodecStats> foeEntry : foe.children.entrySet())
+					if (!children.containsKey(foeEntry.getKey()))
+						children.put(foeEntry.getKey(), foeEntry.getValue());
+			}
 
 			if (children != null)
 				for (Map.Entry<String, CodecStats> entry : children.entrySet())
