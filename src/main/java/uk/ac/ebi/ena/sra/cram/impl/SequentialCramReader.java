@@ -19,7 +19,7 @@ public class SequentialCramReader {
 	private CramRecordBlock block;
 
 	private BitCodec<CramRecord> recordCodec;
-	private LongBufferBitInputStream bis;
+	private DefaultBitInputStream bis;
 
 	private long awaitingRecords = -1L;
 
@@ -30,8 +30,7 @@ public class SequentialCramReader {
 	private RestoreBases restoreBases;
 	private final CramHeader header;
 
-	public SequentialCramReader(DataInputStream dis,
-			SequenceBaseProvider referenceBaseProvider, CramHeader header) {
+	public SequentialCramReader(DataInputStream dis, SequenceBaseProvider referenceBaseProvider, CramHeader header) {
 		this.dis = dis;
 		this.referenceBaseProvider = referenceBaseProvider;
 		this.header = header;
@@ -54,8 +53,7 @@ public class SequentialCramReader {
 		return bitOffset;
 	}
 
-	public CramRecordBlock readBlock() throws IOException,
-			CramCompressionException, CramFormatException {
+	public CramRecordBlock readBlock() throws IOException, CramCompressionException, CramFormatException {
 		// if (awaitingRecords > 0L)
 		// throw new RuntimeException("Pending records found. ");
 		block = blockReader.read();
@@ -67,13 +65,11 @@ public class SequentialCramReader {
 			return null;
 		}
 		awaitingRecords = block.getRecordCount();
-		bis = new LongBufferBitInputStream(dis);
+		bis = new DefaultBitInputStream(dis);
 
 		if (referenceBaseProvider != null) {
-			recordCodec = recordCodecFactory.createRecordCodec(header, block,
-					referenceBaseProvider);
-			restoreBases = new RestoreBases(referenceBaseProvider,
-					block.getSequenceName());
+			recordCodec = recordCodecFactory.createRecordCodec(header, block, referenceBaseProvider);
+			restoreBases = new RestoreBases(referenceBaseProvider, block.getSequenceName());
 		}
 		return block;
 	}
@@ -95,15 +91,11 @@ public class SequentialCramReader {
 		return referenceBaseProvider;
 	}
 
-	public void setReferenceBaseProvider(
-			SequenceBaseProvider referenceBaseProvider)
-			throws CramCompressionException {
+	public void setReferenceBaseProvider(SequenceBaseProvider referenceBaseProvider) throws CramCompressionException {
 		this.referenceBaseProvider = referenceBaseProvider;
 		if (block != null) {
-			recordCodec = recordCodecFactory.createRecordCodec(header, block,
-					referenceBaseProvider);
-			restoreBases = new RestoreBases(referenceBaseProvider,
-					block.getSequenceName());
+			recordCodec = recordCodecFactory.createRecordCodec(header, block, referenceBaseProvider);
+			restoreBases = new RestoreBases(referenceBaseProvider, block.getSequenceName());
 		}
 	}
 }
