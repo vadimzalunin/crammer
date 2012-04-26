@@ -29,7 +29,7 @@ public class SequentialCramReader {
 
 	private RestoreBases restoreBases;
 	private final CramHeader header;
-
+	
 	public SequentialCramReader(DataInputStream dis, SequenceBaseProvider referenceBaseProvider, CramHeader header) {
 		this.dis = dis;
 		this.referenceBaseProvider = referenceBaseProvider;

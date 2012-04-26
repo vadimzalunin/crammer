@@ -2,6 +2,7 @@ package uk.ac.ebi.ena.sra.cram;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
@@ -35,6 +36,7 @@ import net.sf.samtools.SAMSequenceRecord;
 import net.sf.samtools.SAMTag;
 import net.sf.samtools.util.SeekableStream;
 
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.CramIndexer.CountingInputStream;
@@ -42,6 +44,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
+import uk.ac.ebi.ena.sra.cram.io.ExposedByteArrayOutputStream;
 
 public class Utils {
 	private static Logger log = Logger.getLogger(Utils.class);
@@ -262,8 +265,18 @@ public class Utils {
 			System.err.println("Offensive data block start: " + Arrays.toString(buf));
 			throw e;
 		}
+		
 		InputStream gizIS = new BufferedInputStream(new GZIPInputStream(new ByteArrayInputStream(compressedBlockData)));
-		CountingInputStream uncompressedCIS = new CountingInputStream(gizIS);
+		ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream(8*1024) ;
+		IOUtils.copy(gizIS, baos, 4*1024) ;
+		ByteArrayInputStream bais = new ByteArrayInputStream(baos.getBuffer()) ;
+		
+		CountingInputStream uncompressedCIS = new CountingInputStream(bais);
+		
+//		causes problems for random access: 
+//		GZIPInputStream gizIS = new GZIPInputStream(new ByteArrayInputStream(compressedBlockData));
+//		CountingInputStream uncompressedCIS = new CountingInputStream(gizIS);
+		
 		DataInputStream uncompressedDIS = new DataInputStream(uncompressedCIS);
 		return uncompressedDIS;
 	}

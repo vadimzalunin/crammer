@@ -47,9 +47,17 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	public BitCodec<Byte> flagsCodec;
 
 	private static Logger log = Logger.getLogger(CramRecordCodec.class);
+	
+	private static int debugRecordEndMarkerLen = 0 ;
+	private static long debugRecordEndMarker = ~(-1 << debugRecordEndMarkerLen);
 
 	@Override
 	public CramRecord read(BitInputStream bis) throws IOException {
+		long marker = bis.readLongBits(debugRecordEndMarkerLen) ;
+		if (marker != debugRecordEndMarker) {
+			throw new RuntimeException("Debug marker for beginning of record not found.") ;
+		}
+		
 		CramRecord record = new CramRecord();
 
 		byte b = flagsCodec.read(bis);
@@ -142,12 +150,20 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		// if (!anns.isEmpty())
 		// record.setAnnotations(anns);
 		// }
+		
+		marker = bis.readLongBits(debugRecordEndMarkerLen) ;
+		if (marker != debugRecordEndMarker) {
+			System.out.println(record.toString());
+			throw new RuntimeException("Debug marker for end of record not found.") ;
+		}
 
 		return record;
 	}
 
 	@Override
 	public long write(BitOutputStream bos, CramRecord record) throws IOException {
+		bos.write(debugRecordEndMarker, debugRecordEndMarkerLen) ;
+		
 		long len = 0L;
 
 		len += flagsCodec.write(bos, record.getFlags());
@@ -239,6 +255,8 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		// bos.write(false);
 		// len++;
 		// }
+		
+		bos.write(debugRecordEndMarker, debugRecordEndMarkerLen) ;
 
 		return len;
 	}

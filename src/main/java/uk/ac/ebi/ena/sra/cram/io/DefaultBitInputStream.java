@@ -79,38 +79,52 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
 		nofBufferedBits = 8 ;
 	}
 
-	public final long readLongBits(int n) throws IOException {
-//		if (n > 64)
-//			throw new RuntimeException("More then 64 bits are requested in one read from bit stream.");
+public final long readLongBits(int len) throws IOException {
+		if (len > 64)
+			throw new RuntimeException("More then 64 bits are requested in one read from bit stream.");
 
-		if (n == 0)
-			return 0;
-		
-		long x = 0;
-		long byteBuffer = this.byteBuffer ;
-		if (nofBufferedBits == 0) {
-			byteBuffer = in.read();
-			if (byteBuffer == -1) {
-				endOfStream = true;
-				throw new EOFException("End of stream.");
-			}
-			nofBufferedBits = 8 ;
+		long result = 0;
+		final long last = len - 1;
+		for (long bi = 0; bi <= last; bi++) {
+			final boolean frag = readBit();
+			if (frag)
+				result |= 1L << (last - bi);
 		}
-		byteBuffer &= masks[nofBufferedBits] ;
-		while (n > nofBufferedBits) {
-			n -= nofBufferedBits;
-			x |= byteBuffer << n;
-			byteBuffer = in.read();
-			if (byteBuffer == -1) {
-				endOfStream = true;
-				throw new EOFException("End of stream.");
-			}
-			nofBufferedBits = 8 ;
-		}
-		nofBufferedBits -= n;
-		this.byteBuffer = (int) (byteBuffer & masks[nofBufferedBits]);
-		return x | (byteBuffer >>> nofBufferedBits);
+		return result;
 	}
+
+//	public final long readLongBits(int n) throws IOException {
+////		if (n > 64)
+////			throw new RuntimeException("More then 64 bits are requested in one read from bit stream.");
+//
+//		if (n == 0)
+//			return 0;
+//		
+//		long x = 0;
+//		long byteBuffer = this.byteBuffer ;
+//		if (nofBufferedBits == 0) {
+//			byteBuffer = in.read();
+//			if (byteBuffer == -1) {
+//				endOfStream = true;
+//				throw new EOFException("End of stream.");
+//			}
+//			nofBufferedBits = 8 ;
+//		}
+//		byteBuffer &= masks[nofBufferedBits] ;
+//		while (n > nofBufferedBits) {
+//			n -= nofBufferedBits;
+//			x |= byteBuffer << n;
+//			byteBuffer = in.read();
+//			if (byteBuffer == -1) {
+//				endOfStream = true;
+//				throw new EOFException("End of stream.");
+//			}
+//			nofBufferedBits = 8 ;
+//		}
+//		nofBufferedBits -= n;
+//		this.byteBuffer = (int) (byteBuffer & masks[nofBufferedBits]);
+//		return x | (byteBuffer >>> nofBufferedBits);
+//	}
 
 	public void reset() {
 		nofBufferedBits = 0;
