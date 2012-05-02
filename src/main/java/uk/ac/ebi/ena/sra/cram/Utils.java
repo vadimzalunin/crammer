@@ -2,7 +2,6 @@ package uk.ac.ebi.ena.sra.cram;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
@@ -34,7 +33,6 @@ import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
 import net.sf.samtools.SAMTag;
-import net.sf.samtools.util.SeekableStream;
 
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.log4j.Logger;
@@ -265,18 +263,19 @@ public class Utils {
 			System.err.println("Offensive data block start: " + Arrays.toString(buf));
 			throw e;
 		}
-		
+
 		InputStream gizIS = new BufferedInputStream(new GZIPInputStream(new ByteArrayInputStream(compressedBlockData)));
-		ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream(8*1024) ;
-		IOUtils.copy(gizIS, baos, 4*1024) ;
-		ByteArrayInputStream bais = new ByteArrayInputStream(baos.getBuffer()) ;
-		
+		ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream(8 * 1024);
+		IOUtils.copy(gizIS, baos, 4 * 1024);
+		ByteArrayInputStream bais = new ByteArrayInputStream(baos.getBuffer());
+
 		CountingInputStream uncompressedCIS = new CountingInputStream(bais);
-		
-//		causes problems for random access: 
-//		GZIPInputStream gizIS = new GZIPInputStream(new ByteArrayInputStream(compressedBlockData));
-//		CountingInputStream uncompressedCIS = new CountingInputStream(gizIS);
-		
+
+		// causes problems for random access:
+		// GZIPInputStream gizIS = new GZIPInputStream(new
+		// ByteArrayInputStream(compressedBlockData));
+		// CountingInputStream uncompressedCIS = new CountingInputStream(gizIS);
+
 		DataInputStream uncompressedDIS = new DataInputStream(uncompressedCIS);
 		return uncompressedDIS;
 	}
@@ -284,14 +283,10 @@ public class Utils {
 	public static SAMFileHeader cramHeader2SamHeader(CramHeader cramHeader) {
 		SAMFileHeader samFileHeader = new SAMFileHeader();
 
-		List<CramHeaderRecord> records = new ArrayList<CramHeaderRecord>();
-		for (CramHeaderRecord record : cramHeader.getRecords())
-			records.add(record);
-
-		writeComments(samFileHeader, records);
-		writeProgramRecords(samFileHeader, records);
-		writeSequences(samFileHeader, records);
-		writeReadGroups(samFileHeader, records);
+		writeComments(samFileHeader, cramHeader.getRecords());
+		writeProgramRecords(samFileHeader, cramHeader.getRecords());
+		writeSequences(samFileHeader, cramHeader.getRecords());
+		writeReadGroups(samFileHeader, cramHeader.getRecords());
 
 		return samFileHeader;
 	}
@@ -353,7 +348,8 @@ public class Utils {
 			String id = record.getValue(SAMProgramRecord.PROGRAM_GROUP_ID_TAG);
 			SAMProgramRecord samProgramRecord = new SAMProgramRecord(id);
 			for (String key : record.getKeySet())
-				samProgramRecord.setAttribute(key, record.getValue(key));
+				if (!SAMProgramRecord.PROGRAM_GROUP_ID_TAG.equals(key))
+					samProgramRecord.setAttribute(key, record.getValue(key));
 
 			header.addProgramRecord(samProgramRecord);
 		}
@@ -377,7 +373,9 @@ public class Utils {
 
 			SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(id, len);
 			for (String key : record.getKeySet())
-				sequenceRecord.setAttribute(key, record.getValue(key));
+				if (!SAMSequenceRecord.SEQUENCE_NAME_TAG.equals(key)
+						&& !SAMSequenceRecord.SEQUENCE_LENGTH_TAG.equals(key))
+					sequenceRecord.setAttribute(key, record.getValue(key));
 
 			header.addSequence(sequenceRecord);
 		}
@@ -391,7 +389,8 @@ public class Utils {
 			String id = record.getValue(SAMReadGroupRecord.READ_GROUP_ID_TAG);
 			SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(id);
 			for (String key : record.getKeySet())
-				readGroupRecord.setAttribute(key, record.getValue(key));
+				if (!SAMReadGroupRecord.READ_GROUP_ID_TAG.equals(key))
+					readGroupRecord.setAttribute(key, record.getValue(key));
 
 			header.addReadGroup(readGroupRecord);
 		}
@@ -440,7 +439,7 @@ public class Utils {
 
 		if (majorVersion == 7 && currentMajorVersion == 8)
 			return true;
-		
+
 		return false;
 	}
 

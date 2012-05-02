@@ -126,6 +126,7 @@ public class Cram2Bam {
 		SAMFileHeader header = Utils.cramHeader2SamHeader(cramHeader);
 
 		writer.setHeader(header);
+		
 		Map<String, Integer> seqNameToIndexMap = new TreeMap<String, Integer>();
 		for (SAMSequenceRecord seq : header.getSequenceDictionary().getSequences()) {
 			seqNameToIndexMap.put(seq.getSequenceName(), seq.getSequenceIndex());
