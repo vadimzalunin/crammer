@@ -1,16 +1,14 @@
 package uk.ac.ebi.ena.sra.cram;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.picard.io.IoUtil;
 import net.sf.picard.sam.AlignmentSliceQuery;
-import net.sf.samtools.CRAMFileReader;
-import net.sf.samtools.FileInputStreamFactory;
+import net.sf.samtools.BAMFileWriter;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
 import net.sf.samtools.SAMFileReader;
@@ -21,7 +19,6 @@ import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceRecord;
-import net.sf.samtools.SingleSeekableStreamFactory;
 import uk.ac.ebi.ena.sra.cram.spot.PairedTemplateAssembler;
 
 import com.beust.jcommander.JCommander;
@@ -40,7 +37,7 @@ public class SliceView {
 		System.out.println(sb.toString());
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		Params params = new Params();
 		JCommander jc = new JCommander(params);
 		jc.parse(args);
@@ -71,8 +68,9 @@ public class SliceView {
 				index = new File(file.getAbsolutePath() + ".crai");
 			if (!index.exists())
 				index = null;
-			
-			if (params.reference != null) System.setProperty("reference", params.reference.getAbsolutePath()) ;
+
+			if (params.reference != null)
+				System.setProperty("reference", params.reference.getAbsolutePath());
 			SAMFileReader reader = new SAMFileReader(file, index);
 
 			// reader = new CRAMFileReader(new SingleSeekableStreamFactory(new
@@ -94,8 +92,19 @@ public class SliceView {
 				writer = new SAMFileWriterFactory().makeBAMWriter(header, true, params.outFile);
 			else
 				writer = new SAMFileWriterFactory().makeSAMWriter(header, true, params.outFile);
-		else if (!params.samFormat)
-			throw new RuntimeException("Streaming out BAM format is not supported.");
+		else if (!params.samFormat) {
+			// hack to write BAM format to stdout:
+			File file = File.createTempFile("bam", null);
+			file.deleteOnExit();
+			BAMFileWriter bamWriter = new BAMFileWriter(new BufferedOutputStream(System.out), file);
+			header.setSortOrder(SortOrder.coordinate);
+			bamWriter.setHeader(header);
+			// bamWriter.setSortOrder(SortOrder.coordinate, true) ;
+			writer = bamWriter;
+			// throw new
+			// RuntimeException("Streaming out BAM format is not supported.");
+		}
+
 		else
 			writer = new SAMFileWriterFactory().makeSAMWriter(header, true, new BufferedOutputStream(System.out));
 
@@ -114,7 +123,12 @@ public class SliceView {
 		for (SAMFileReader reader : readers)
 			reader.close();
 
-		writer.close();
+		// hack: BAMFileWriter may throw this when streaming to stdout:
+		try {
+			writer.close();
+		} catch (net.sf.samtools.util.RuntimeIOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private static class MergedSAMRecordIterator implements SAMRecordIterator {
