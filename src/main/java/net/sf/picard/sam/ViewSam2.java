@@ -115,7 +115,7 @@ public class ViewSam2 extends CommandLineProgram {
 			else {
 				AlignmentSliceQuery asq = null;
 				try {
-					asq = createAlignmentSliceQuery(query);
+					asq = new AlignmentSliceQuery(query);
 				} catch (Exception e) {
 					throw new RuntimeException("Malformed alignment query: " + query);
 				}
@@ -145,25 +145,5 @@ public class ViewSam2 extends CommandLineProgram {
 		return 0;
 	}
 
-	private static AlignmentSliceQuery createAlignmentSliceQuery(String spec) {
-		String[] chunks = spec.split(":");
-
-		AlignmentSliceQuery q = new AlignmentSliceQuery();
-		q.sequence = chunks[0];
-
-		if (chunks.length > 1) {
-			chunks = chunks[1].split("-");
-			q.start = Integer.valueOf(chunks[0]);
-			if (chunks.length == 2)
-				q.end = Integer.valueOf(chunks[1]);
-		}
-
-		return q;
-	}
-
-	private static class AlignmentSliceQuery {
-		private String sequence;
-		private int start;
-		private int end;
-	}
+	
 }
