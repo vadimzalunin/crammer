@@ -28,7 +28,9 @@ import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceRecord;
 
+import org.apache.commons.math.util.MathUtils;
 import org.apache.log4j.Logger;
+import org.omg.CORBA.IRObject;
 
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory.TREAT_TYPE;
@@ -334,7 +336,14 @@ public class Bam2Cram {
 				else
 					samRecord.getBaseQualities()[i] = Sam2CramRecordFactory.ignorePositionsWithQualityScore;
 			}
-		}
+		} 
+//		else if (params.qualityScoreBins > 2) {
+//			byte[] originalScores = samRecord.getBaseQualities();
+//			for (int i = 0; i < originalScores.length; i++) {
+//				originalScores[i] = (byte) (params.qualityScoreBins / 2 + originalScores[i] / params.qualityScoreBins
+//						* params.qualityScoreBins);
+//			}
+//		}
 
 		addSAMRecord(samRecord);
 	}
@@ -522,6 +531,7 @@ public class Bam2Cram {
 	}
 
 	public static void main(String[] args) throws Exception {
+
 		Params params = new Params();
 		JCommander jc = new JCommander(params);
 		try {
@@ -548,6 +558,14 @@ public class Bam2Cram {
 			System.out.println("A BAM file is required. ");
 			System.exit(1);
 		}
+
+//		if (params.qualityScoreBins > 0) {
+//			log.info("QS bins: ");
+//			for (int i = 0; i < 40; i++) {
+//				log.info(String.format("%d -> %d", i, (byte) (params.qualityScoreBins / 2 + i / params.qualityScoreBins
+//						* params.qualityScoreBins)));
+//			}
+//		}
 
 		Bam2Cram b2c = new Bam2Cram(params);
 		b2c.init();
@@ -658,5 +676,8 @@ public class Bam2Cram {
 
 		@Parameter(names = { "--skip-first-records" }, description = "Start compressing records after this many. ", hidden = true)
 		int skipFirstRecords = 0;
+
+//		@Parameter(names = { "--quality-score-bins" }, description = "Bin qaulity scores for better compresseion.", hidden = true)
+//		int qualityScoreBins = 0;
 	}
 }
