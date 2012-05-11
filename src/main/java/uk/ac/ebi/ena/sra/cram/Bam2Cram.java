@@ -28,9 +28,7 @@ import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceRecord;
 
-import org.apache.commons.math.util.MathUtils;
 import org.apache.log4j.Logger;
-import org.omg.CORBA.IRObject;
 
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory.TREAT_TYPE;
@@ -336,14 +334,19 @@ public class Bam2Cram {
 				else
 					samRecord.getBaseQualities()[i] = Sam2CramRecordFactory.ignorePositionsWithQualityScore;
 			}
-		} 
-//		else if (params.qualityScoreBins > 2) {
-//			byte[] originalScores = samRecord.getBaseQualities();
-//			for (int i = 0; i < originalScores.length; i++) {
-//				originalScores[i] = (byte) (params.qualityScoreBins / 2 + originalScores[i] / params.qualityScoreBins
-//						* params.qualityScoreBins);
-//			}
-//		}
+		} else if (params.ncbiQualityScoreBinning) {
+			// SAMRecord does not want the byte array to be modified, but it
+			// still works:
+			byte[] originalScores = samRecord.getBaseQualities();
+			for (int i = 0; i < originalScores.length; i++)
+				originalScores[i] = NCBI_binning_matrix[originalScores[i]];
+		} else if (params.qualityScoreBinSize > 2) {
+			byte[] originalScores = samRecord.getBaseQualities();
+			for (int i = 0; i < originalScores.length; i++) {
+				originalScores[i] = (byte) (params.qualityScoreBinSize / 2 + originalScores[i]
+						/ params.qualityScoreBinSize * params.qualityScoreBinSize);
+			}
+		}
 
 		addSAMRecord(samRecord);
 	}
@@ -559,13 +562,23 @@ public class Bam2Cram {
 			System.exit(1);
 		}
 
-//		if (params.qualityScoreBins > 0) {
-//			log.info("QS bins: ");
-//			for (int i = 0; i < 40; i++) {
-//				log.info(String.format("%d -> %d", i, (byte) (params.qualityScoreBins / 2 + i / params.qualityScoreBins
-//						* params.qualityScoreBins)));
-//			}
-//		}
+		if (params.ncbiQualityScoreBinning && params.qualityScoreBinSize > 0) {
+			System.out.println("Bin size cannot be used with NCBI binning scheme.");
+			System.exit(1);
+		}
+
+		if (params.qualityScoreBinSize > 0) {
+			log.info("Quality scores will be binned using static uniform scheme: ");
+			for (int i = 0; i < 40; i++) 
+				log.info(String.format("%d -> %d", i, (byte) (params.qualityScoreBinSize / 2 + i
+						/ params.qualityScoreBinSize * params.qualityScoreBinSize)));
+		}
+		
+		if (params.ncbiQualityScoreBinning) {
+			log.info("Quality scores will be binned using NCBI scheme: ");
+			for (int i = 0; i < 40; i++) 
+				log.info(String.format("%d -> %d", i, NCBI_binning_matrix[i]));
+		}
 
 		Bam2Cram b2c = new Bam2Cram(params);
 		b2c.init();
@@ -677,7 +690,35 @@ public class Bam2Cram {
 		@Parameter(names = { "--skip-first-records" }, description = "Start compressing records after this many. ", hidden = true)
 		int skipFirstRecords = 0;
 
-//		@Parameter(names = { "--quality-score-bins" }, description = "Bin qaulity scores for better compresseion.", hidden = true)
-//		int qualityScoreBins = 0;
+		@Parameter(names = { "--quality-score-bin-size" }, description = "Bin qaulity scores for better compression.")
+		int qualityScoreBinSize = 0;
+
+		@Parameter(names = { "--ncbi-quality-score-binning" }, description = "Use NCBI binning scheme for quality scores.")
+		boolean ncbiQualityScoreBinning = false;
 	}
+
+	// @formatter:off
+//	Low 	High 	Value
+//	0 	0 	0
+//	1 	1 	1
+//	2 	2 	2
+//	3 	14 	9
+//	15 	19 	17
+//	20 	24 	22
+//	25 	29 	28
+//	30 	nolimit 	35
+// @formatter:on
+	private static byte[] NCBI_binning_matrix = new byte[] {
+// @formatter:off
+		0, 1, 2, 
+		9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 
+		17, 17, 17, 17, 17, 
+		22, 22, 22, 22, 22,  
+		28, 28, 28, 28, 28, 
+// @formatter:on
+			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35,
+			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35,
+			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35,
+			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35,
+			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35 };
 }

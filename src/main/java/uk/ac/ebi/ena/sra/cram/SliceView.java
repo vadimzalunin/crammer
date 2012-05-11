@@ -4,7 +4,9 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.PriorityQueue;
 
 import net.sf.picard.io.IoUtil;
 import net.sf.picard.sam.AlignmentSliceQuery;
@@ -19,7 +21,6 @@ import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceRecord;
-import uk.ac.ebi.ena.sra.cram.spot.PairedTemplateAssembler;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -99,10 +100,7 @@ public class SliceView {
 			BAMFileWriter bamWriter = new BAMFileWriter(new BufferedOutputStream(System.out), file);
 			header.setSortOrder(SortOrder.coordinate);
 			bamWriter.setHeader(header);
-			// bamWriter.setSortOrder(SortOrder.coordinate, true) ;
 			writer = bamWriter;
-			// throw new
-			// RuntimeException("Streaming out BAM format is not supported.");
 		}
 
 		else
@@ -123,20 +121,34 @@ public class SliceView {
 		for (SAMFileReader reader : readers)
 			reader.close();
 
-		// hack: BAMFileWriter may throw this when streaming to stdout:
+		// hack: BAMFileWriter may throw this when streaming to stdout, so
+		// silently drop the exception if streaming out BAM format:
 		try {
 			writer.close();
 		} catch (net.sf.samtools.util.RuntimeIOException e) {
-			e.printStackTrace();
+			if (params.samFormat || params.outFile != null
+					|| !e.getMessage().matches("Terminator block not found after closing BGZF file.*"))
+				throw e;
 		}
 	}
 
 	private static class MergedSAMRecordIterator implements SAMRecordIterator {
 
 		private List<SAMRecordIterator> iterators;
-		private PairedTemplateAssembler assembler = new PairedTemplateAssembler(Integer.MAX_VALUE, Integer.MAX_VALUE);
 		private SAMRecord nextRecord;
 		private SAMFileHeader header;
+		private PriorityQueue<SAMRecord> queue = new PriorityQueue<SAMRecord>(10000, new Comparator<SAMRecord>() {
+
+			@Override
+			public int compare(SAMRecord o1, SAMRecord o2) {
+				int result = o1.getAlignmentStart() - o2.getAlignmentStart();
+				if (result != 0)
+					return result;
+				else
+					return o1.getReadName().compareTo(o2.getReadName());
+			}
+
+		});
 
 		public MergedSAMRecordIterator(List<SAMRecordIterator> iterators, SAMFileHeader header) {
 			this.iterators = iterators;
@@ -161,9 +173,15 @@ public class SliceView {
 			for (SAMRecordIterator it : iterators) {
 				counter++;
 				if (it.hasNext()) {
-					SAMRecord record = it.next();
-					record.setReadName(String.valueOf(counter) + "." + record.getReadName());
-					assembler.addSAMRecordNoAssembly(record);
+					SAMRecord record;
+					try {
+						record = (SAMRecord) it.next().clone();
+						record.setReadName(String.valueOf(counter) + "_" + record.getReadName());
+						queue.add(record);
+					} catch (CloneNotSupportedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					hasMore = true;
 				}
 			}
@@ -173,15 +191,22 @@ public class SliceView {
 		private SAMRecord doNext() {
 			SAMRecord nextRecord = null;
 			do {
-				nextRecord = assembler.nextSAMRecord();
+				nextRecord = queue.poll();
 			} while (nextRecord == null && milk());
 
-			if (nextRecord == null)
-				nextRecord = assembler.fetchNextSAMRecord();
-
 			if (nextRecord != null) {
+
 				SAMSequenceRecord sequence = header.getSequence(nextRecord.getReferenceName());
+
+				nextRecord.setHeader(header);
+
 				nextRecord.setReferenceIndex(sequence.getSequenceIndex());
+				if (nextRecord.getMateReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+					nextRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+				} else {
+					SAMSequenceRecord mateSequence = header.getSequence(nextRecord.getMateReferenceName());
+					nextRecord.setMateReferenceIndex(mateSequence.getSequenceIndex());
+				}
 			}
 
 			return nextRecord;
@@ -224,7 +249,7 @@ public class SliceView {
 			}
 
 			for (SAMProgramRecord pro : h.getProgramRecords()) {
-				if (h.getProgramRecord(pro.getProgramGroupId()) == null)
+				if (header.getProgramRecord(pro.getProgramGroupId()) == null)
 					header.addProgramRecord(pro);
 			}
 
@@ -232,7 +257,7 @@ public class SliceView {
 				header.addComment(comment);
 
 			for (SAMReadGroupRecord rg : h.getReadGroups()) {
-				if (h.getReadGroup(rg.getReadGroupId()) == null)
+				if (header.getReadGroup(rg.getReadGroupId()) == null)
 					header.addReadGroup(rg);
 			}
 

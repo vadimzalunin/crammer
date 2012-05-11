@@ -8,7 +8,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
+import net.sf.samtools.SAMSequenceRecord;
+import net.sf.samtools.SAMTag;
 import uk.ac.ebi.ena.sra.cram.Utils;
 import uk.ac.ebi.ena.sra.cram.format.CramFormatException;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
@@ -97,19 +100,19 @@ public class CramHeaderIO {
 			throw new RuntimeException("Not recognized as CRAM format.");
 
 		String version = dis.readUTF();
-		if (!Utils.isCompatible(version)) 
+		if (!Utils.isCompatible(version))
 			throw new CramFormatException("incompatble CRAM data version " + version);
-		
+
 		header.setVersion(version);
 		int seqCount = dis.readInt();
-		ArrayList<CramReferenceSequence> list = new ArrayList<CramReferenceSequence>();
+		ArrayList<CramReferenceSequence> seqList = new ArrayList<CramReferenceSequence>();
 		for (int i = 0; i < seqCount; i++) {
 			CramReferenceSequence cramSeq = new CramReferenceSequence();
 			cramSeq.setName(dis.readUTF());
 			cramSeq.setLength(dis.readInt());
-			list.add(cramSeq);
+			seqList.add(cramSeq);
 		}
-		header.setReferenceSequences(list);
+		header.setReferenceSequences(seqList);
 
 		int annSize = dis.readInt();
 		List<ReadAnnotation> annotations = new ArrayList<ReadAnnotation>(annSize);
@@ -134,17 +137,39 @@ public class CramHeaderIO {
 
 		int recordCount = dis.readInt();
 		List<CramHeaderRecord> records = header.getRecords();
+		Set<String> seqRecordSet = new TreeSet<String>();
 		for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
 			byte[] tagBytes = new byte[2];
 			dis.readFully(tagBytes);
-			CramHeaderRecord record = new CramHeaderRecord(new String(tagBytes));
+			String tag = new String(tagBytes);
+			CramHeaderRecord record = new CramHeaderRecord(tag);
 			records.add(record);
 
 			int recordSize = dis.readInt();
 			for (int keyIndex = 0; keyIndex < recordSize; keyIndex++) {
 				byte[] keyBytes = new byte[2];
 				dis.readFully(keyBytes);
-				record.setValue(new String(keyBytes), dis.readUTF());
+				String key = new String(keyBytes);
+				String value = dis.readUTF() ;
+				record.setValue(key, value);
+				
+				if (SAMTag.SQ.name().equals(tag) && SAMSequenceRecord.SEQUENCE_NAME_TAG.equals(key))
+					seqRecordSet.add(value);
+
+			}
+		}
+
+		// merge sequences, a workaround:
+		if (header.getReferenceSequences() != null && !header.getReferenceSequences().isEmpty()) {
+
+			for (CramReferenceSequence seq : header.getReferenceSequences()) {
+				if (seqRecordSet.contains(seq.getName()))
+					continue;
+				CramHeaderRecord record = new CramHeaderRecord(SAMTag.SQ.name());
+				record.setValue(SAMSequenceRecord.SEQUENCE_LENGTH_TAG, String.valueOf(seq.getLength()));
+				record.setValue(SAMSequenceRecord.SEQUENCE_NAME_TAG, seq.getName());
+
+				records.add(record);
 			}
 		}
 

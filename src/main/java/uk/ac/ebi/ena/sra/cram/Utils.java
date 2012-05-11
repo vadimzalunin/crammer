@@ -453,6 +453,13 @@ public class Utils {
 	 * @param header
 	 */
 	public static void setLooseMateInfo(final SAMRecord rec1, final SAMRecord rec2, final SAMFileHeader header) {
+		if (rec1.getReferenceName() != SAMRecord.NO_ALIGNMENT_REFERENCE_NAME
+				&& rec1.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+			rec1.setReferenceIndex(header.getSequenceIndex(rec1.getReferenceName()));
+		if (rec2.getReferenceName() != SAMRecord.NO_ALIGNMENT_REFERENCE_NAME
+				&& rec2.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+			rec2.setReferenceIndex(header.getSequenceIndex(rec2.getReferenceName()));
+
 		// If neither read is unmapped just set their mate info
 		if (!rec1.getReadUnmappedFlag() && !rec2.getReadUnmappedFlag()) {
 
