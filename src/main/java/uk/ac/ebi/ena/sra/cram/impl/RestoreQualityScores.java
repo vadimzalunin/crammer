@@ -15,31 +15,33 @@ public class RestoreQualityScores {
 	private byte defaultQualityScore = 32;
 
 	public byte[] restoreQualityScores(CramRecord record) throws IOException {
+		if (record.getQualityScores() != null)
+			return record.getQualityScores() ;
+		
 		byte[] scores = new byte[(int) record.getReadLength()];
 		Arrays.fill(scores, defaultQualityScore);
 
-		if (record.getReadFeatures() == null
-				|| record.getReadFeatures().isEmpty())
+		if (record.getReadFeatures() == null || record.getReadFeatures().isEmpty())
 			return scores;
 
 		List<ReadFeature> variations = record.getReadFeatures();
 		for (ReadFeature v : variations) {
 			switch (v.getOperator()) {
 			case BaseQualityScore.operator:
-				BaseQualityScore bqs = (BaseQualityScore) v ;
-				scores[bqs.getPosition() - 1] = bqs.getQualityScore() ;
-				break ;
-//			case SubstitutionVariation.operator:
-//				SubstitutionVariation sv = (SubstitutionVariation) v;
-//				scores[sv.getPosition() - 1] = sv.getQualityScore();
-//				break;
+				BaseQualityScore bqs = (BaseQualityScore) v;
+				scores[bqs.getPosition() - 1] = bqs.getQualityScore();
+				break;
+			// case SubstitutionVariation.operator:
+			// SubstitutionVariation sv = (SubstitutionVariation) v;
+			// scores[sv.getPosition() - 1] = sv.getQualityScore();
+			// break;
 
 			default:
 				break;
 			}
 		}
 
-		// ReadBase has more weight: 
+		// ReadBase has more weight:
 		for (ReadFeature v : variations) {
 			switch (v.getOperator()) {
 			case ReadBase.operator:
@@ -51,8 +53,8 @@ public class RestoreQualityScores {
 				break;
 			}
 		}
-		
-		record.setQualityScores(scores) ;
+
+		record.setQualityScores(scores);
 		return scores;
 	}
 }

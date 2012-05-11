@@ -85,7 +85,18 @@ public class ReadFeatures2Cigar {
 	}
 
 	private static final void rewriteFlankingInsertsAsSoftClips(List<CigarElement> elements) {
-		if (elements.isEmpty())
+		if (elements.isEmpty() || elements.size() == 1)
+			return;
+
+		boolean flat = true;
+		for (CigarElement ce : elements) {
+			if (ce.getOperator() != CigarOperator.INSERTION && ce.getOperator() != CigarOperator.SOFT_CLIP) {
+				flat = false;
+				break;
+			}
+		}
+
+		if (flat)
 			return;
 
 		CigarElement first = elements.get(0);
@@ -175,7 +186,7 @@ public class ReadFeatures2Cigar {
 				lastOpPos = f.getPosition();
 			} else
 				lastOpLen += rfLen;
-			
+
 			if (co == CigarOperator.DELETION)
 				lastOpPos -= rfLen;
 		}

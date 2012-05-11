@@ -337,6 +337,7 @@ public class Utils {
 				record.setValue(entry.getKey(), entry.getValue());
 
 			records.add(record);
+			
 		}
 	}
 

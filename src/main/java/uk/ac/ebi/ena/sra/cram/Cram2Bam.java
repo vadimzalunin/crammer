@@ -317,7 +317,7 @@ public class Cram2Bam {
 					samRecord.setAlignmentStart((int) cramRecord.getAlignmentStart());
 					samRecord.setReadBases(restoreBases.restoreReadBases(cramRecord));
 					byte[] scores = cramRecord.getQualityScores();
-					if (scores == null || scores.length == 0)
+//					if (scores == null || scores.length == 0)
 						scores = restoreQualityScores.restoreQualityScores(cramRecord);
 
 					injectQualityScores(scores, samRecord);

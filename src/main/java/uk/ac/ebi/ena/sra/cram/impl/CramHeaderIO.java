@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMSequenceRecord;
 import net.sf.samtools.SAMTag;
 import uk.ac.ebi.ena.sra.cram.Utils;
@@ -138,6 +139,7 @@ public class CramHeaderIO {
 		int recordCount = dis.readInt();
 		List<CramHeaderRecord> records = header.getRecords();
 		Set<String> seqRecordSet = new TreeSet<String>();
+		Set<String> rgRecordSet = new TreeSet<String>();
 		for (int recordIndex = 0; recordIndex < recordCount; recordIndex++) {
 			byte[] tagBytes = new byte[2];
 			dis.readFully(tagBytes);
@@ -150,10 +152,13 @@ public class CramHeaderIO {
 				byte[] keyBytes = new byte[2];
 				dis.readFully(keyBytes);
 				String key = new String(keyBytes);
-				String value = dis.readUTF() ;
+				String value = dis.readUTF();
 				record.setValue(key, value);
-				
+
 				if (SAMTag.SQ.name().equals(tag) && SAMSequenceRecord.SEQUENCE_NAME_TAG.equals(key))
+					seqRecordSet.add(value);
+
+				if (SAMTag.RG.name().equals(tag) && SAMReadGroupRecord.READ_GROUP_ID_TAG.equals(key))
 					seqRecordSet.add(value);
 
 			}
@@ -168,6 +173,16 @@ public class CramHeaderIO {
 				CramHeaderRecord record = new CramHeaderRecord(SAMTag.SQ.name());
 				record.setValue(SAMSequenceRecord.SEQUENCE_LENGTH_TAG, String.valueOf(seq.getLength()));
 				record.setValue(SAMSequenceRecord.SEQUENCE_NAME_TAG, seq.getName());
+
+				records.add(record);
+			}
+
+			for (CramReadGroup rg : header.getReadGroups()) {
+				if (rg.getId() == null || seqRecordSet.contains(rg.getId()))
+					continue;
+				CramHeaderRecord record = new CramHeaderRecord(SAMTag.RG.name());
+				record.setValue(SAMReadGroupRecord.READ_GROUP_ID_TAG, rg.getId());
+				record.setValue(SAMReadGroupRecord.READ_GROUP_SAMPLE_TAG, rg.getSample());
 
 				records.add(record);
 			}
