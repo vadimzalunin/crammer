@@ -91,7 +91,6 @@ public class Bam2Cram {
 
 	public void init() throws IOException, CramException {
 		if (params.bamFile == null) {
-			if (params.bamFile == null)
 				throw new RuntimeException("Input BAM file name is required.");
 		} else {
 			ValidationStringency defaultValidationStringency = SAMFileReader.getDefaultValidationStringency();

@@ -191,6 +191,7 @@ public class Cram2Bam {
 				if (provider == null || !seqName.equals(prevSeqName)) {
 					refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, seqName);
 					provider = new ByteArraySequenceBaseProvider(refBases);
+					provider.setN_extension(1000) ;
 				}
 			}
 			reader.setReferenceBaseProvider(provider);

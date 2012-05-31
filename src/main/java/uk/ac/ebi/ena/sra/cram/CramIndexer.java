@@ -29,6 +29,7 @@ import uk.ac.ebi.ena.sra.cram.format.CramReferenceSequence;
 import uk.ac.ebi.ena.sra.cram.format.text.CramRecordFormat;
 import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.impl.CramHeaderIO;
+import uk.ac.ebi.ena.sra.cram.impl.FakeBaseProvider;
 import uk.ac.ebi.ena.sra.cram.impl.SequentialCramReader;
 
 import com.beust.jcommander.JCommander;
@@ -194,7 +195,7 @@ public class CramIndexer {
 		List<Integer> sequenceNumbers = new ArrayList<Integer>();
 
 		int blockCounter = 0;
-		ByteArraySequenceBaseProvider provider = null;
+		SequenceBaseProvider provider = null;
 
 		while (true) {
 			long blockTime1 = System.currentTimeMillis();
@@ -238,8 +239,8 @@ public class CramIndexer {
 
 			if (provider == null || !seqName.equals(prevSeqName)) {
 				log.debug("Starting sequence: " + seqName);
-				byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, seqName);
-				provider = new ByteArraySequenceBaseProvider(refBases);
+//				byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, seqName);
+				provider = new FakeBaseProvider() ;
 			}
 			reader.setReferenceBaseProvider(provider);
 

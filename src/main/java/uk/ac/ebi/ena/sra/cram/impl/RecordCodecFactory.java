@@ -284,8 +284,13 @@ public class RecordCodecFactory {
 				compression.getScoreFrequencies());
 		hbQSCodec.setName("Record quality codec");
 		root.add(new DefaultMutableTreeNode(hbQSCodec));
-
 		recordCodec.qualityCodec = hbQSCodec;
+		
+//		SR2_BACodec sr2Codec = new SR2_BACodec("Record base codec") ;
+//		root.add(new DefaultMutableTreeNode(sr2Codec));
+//		recordCodec.qualityCodec = sr2Codec;
+
+
 		// recordCodec.qualityCodec = new
 		// MeasuringCodec<Byte>(qualityScoreCodec, "Record quality codec");
 

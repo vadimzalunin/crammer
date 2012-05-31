@@ -43,6 +43,8 @@ public class HuffmanByteArrayBitCodec implements ByteArrayBitCodec {
 			len += byteCodec.write(bos, b);
 		
 		stats.nofBis += len ;
+		stats.arraysWritten ++ ;
+		stats.bytesWritten += bytes.length ;
 
 		return len;
 	}

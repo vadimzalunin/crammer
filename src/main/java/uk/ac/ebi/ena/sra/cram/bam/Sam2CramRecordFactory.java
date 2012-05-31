@@ -65,11 +65,11 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 	private boolean captureFlankingDeletionScores = false;
 	private int uncategorisedQualityScoreCutoff = 0;
 	public boolean captureAllTags = false;
-	public Set<String> ignoreTags = new TreeSet<String>() ;
+	public Set<String> ignoreTags = new TreeSet<String>();
 	{
-		ignoreTags.add(SAMTag.NM.name()) ;
-		ignoreTags.add(SAMTag.MD.name()) ;
-		ignoreTags.add(SAMTag.RG.name()) ;
+		ignoreTags.add(SAMTag.NM.name());
+		ignoreTags.add(SAMTag.MD.name());
+		ignoreTags.add(SAMTag.RG.name());
 	}
 
 	public boolean losslessQS = false;
@@ -150,7 +150,8 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 			if (attributes != null && !attributes.isEmpty()) {
 				List<ReadTag> tags = new ArrayList<ReadTag>(attributes.size());
 				for (SAMTagAndValue tv : attributes) {
-					if (ignoreTags.contains(tv.tag)) continue ;
+					if (ignoreTags.contains(tv.tag))
+						continue;
 
 					ReadTag ra = ReadTag.deriveTypeFromValue(tv.tag, tv.value);
 					tags.add(ra);
@@ -158,8 +159,8 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 				cramRecord.tags = tags;
 			}
 		}
-		
-		cramRecord.vendorFiltered = record.getReadFailsVendorQualityCheckFlag() ;
+
+		cramRecord.vendorFiltered = record.getReadFailsVendorQualityCheckFlag();
 
 		return cramRecord;
 	}
@@ -204,7 +205,7 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 				features.add(new DeletionVariation(zeroBasedPositionInRead + 1, cigarElementLength));
 				break;
 			case H:
-				break ;
+				break;
 			case S:
 				switch (treatSoftClipsAs) {
 				// case ALIGNMENT:
@@ -275,16 +276,21 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 		int i = 0;
 		boolean qualityAdded = false;
 		boolean qualityMasked = false;
+		byte refBase ;
 		for (i = 0; i < nofReadBases; i++) {
 			oneBasedPositionInRead = i + fromPosInRead + 1;
 			int refCoord = (int) (cramRecord.getAlignmentStart() + i + alignmentStartOffset) - 1;
 			qualityAdded = false;
+			if (refCoord >= refBases.length)
+				refBase = 'N';
+			else
+				refBase = refBases[refCoord];
 
-			if (bases[i + fromPosInRead] != refBases[refCoord]) {
+			if (bases[i + fromPosInRead] != refBase) {
 				SubstitutionVariation sv = new SubstitutionVariation();
 				sv.setPosition(oneBasedPositionInRead);
 				sv.setBase(bases[i + fromPosInRead]);
-				sv.setRefernceBase(refBases[refCoord]);
+				sv.setRefernceBase(refBase);
 				sv.setBaseChange(new BaseChange(sv.getRefernceBase(), sv.getBase()));
 
 				features.add(sv);
@@ -309,7 +315,7 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 			}
 
 			if (!qualityAdded && refPile != null) {
-				if (refPile.shouldStore(refCoord, refBases[refCoord])) {
+				if (refPile.shouldStore(refCoord, refBase)) {
 					byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);
 					features.add(new BaseQualityScore(oneBasedPositionInRead, score));
 					qualityAdded = true;
