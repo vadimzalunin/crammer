@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.io;
 
 import java.io.DataInputStream;
@@ -83,8 +98,8 @@ public class LongBufferBitInputStream extends DataInputStream implements BitInpu
 		byteBuffer = (byteBuffer << numBits) | masked;
 
 		nofBufferedBits += numBits;
-		
-		return true ;
+
+		return true;
 	}
 
 	private static final int rightBits(int n, int x) {
@@ -121,6 +136,31 @@ public class LongBufferBitInputStream extends DataInputStream implements BitInpu
 
 	public int getNofBufferedBits() {
 		return nofBufferedBits;
+	}
+
+	/* 
+	 * NOT TESTED!!!
+	 * (non-Javadoc)
+	 * @see uk.ac.ebi.ena.sra.cram.io.BitInputStream#alignToByte()
+	 */
+	@Override
+	public void alignToByte() throws IOException {
+		int bitsToSkip = nofBufferedBits % 8;
+
+		nofBufferedBits -= bitsToSkip;
+
+		long mask = -1L >>> (64 - (nofBufferedBits - bitsToSkip));
+		byteBuffer = byteBuffer & mask;
+	}
+
+	@Override
+	public int readAlignedBytes(byte[] array) throws IOException {
+		throw new RuntimeException("Not implemented.") ;
+	}
+
+	@Override
+	public boolean ensureMarker(long marker, int nofBits) throws IOException {
+		throw new RuntimeException("Not implemented.") ;
 	}
 
 }

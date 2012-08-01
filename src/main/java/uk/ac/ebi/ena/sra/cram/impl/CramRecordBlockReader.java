@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.impl;
 
 import java.io.DataInputStream;
@@ -56,6 +71,7 @@ class CramRecordBlockReader {
 		block.setSubstitutionQualityScoresIncluded(dis.readBoolean());
 		block.setMaskedQualityScoresIncluded(dis.readBoolean());
 		block.losslessQualityScores = dis.readBoolean();
+		block.preserveReadNames = dis.readBoolean();
 
 		ensureExpectedBytes("COMPRESSIONBEGIN".getBytes());
 		block.setCompression(readCompression());
@@ -128,16 +144,21 @@ class CramRecordBlockReader {
 			compression.tagKeyAlphabet[i] = tagKey;
 			compression.tagKeyFrequency[i] = dis.readInt();
 
-			ByteFrequencies bf = new ByteFrequencies(readByteArray(), readIntArray());
-			compression.tagByteFrequencyMap.put(tagKey, bf);
+			if (dis.readBoolean()) {
+				ByteFrequencies bf = new ByteFrequencies(readByteArray(), readIntArray());
+				compression.tagByteFrequencyMap.put(tagKey, bf);
+			}
 
 			IntFrequencies bl = new IntFrequencies(readIntArray(), readIntArray());
 			compression.tagByteLengthMap.put(tagKey, bl);
 		}
 
+		compression.tagCountFrequency = readByteFrequencies();
+
 		compression.flagStats = new ByteFrequencies(readByteArray(), readIntArray());
-		
-//		compression.score2 = readDiByteFrequencies(dis) ;
+
+		compression.readNameFreqs = readByteFrequencies();
+		compression.readNameLengthFreqs = readIntFrequencies();
 
 		return compression;
 	}
@@ -149,16 +170,24 @@ class CramRecordBlockReader {
 		encoding.setParameters(dis.readUTF());
 		return encoding;
 	}
-	
-	private static DiByteFrequencies readDiByteFrequencies (DataInputStream dis) throws IOException {
-		int len = dis.readInt() ;
-		DiByteFrequencies f = new DiByteFrequencies() ;
-		for (int i=0; i<len; i++) {
-			byte value1 = dis.readByte() ;
-			byte value2 = dis.readByte() ;
-			f.add(value1, value2, dis.readInt()) ;
+
+	private static DiByteFrequencies readDiByteFrequencies(DataInputStream dis) throws IOException {
+		int len = dis.readInt();
+		DiByteFrequencies f = new DiByteFrequencies();
+		for (int i = 0; i < len; i++) {
+			byte value1 = dis.readByte();
+			byte value2 = dis.readByte();
+			f.add(value1, value2, dis.readInt());
 		}
-		
-		return f ;
+
+		return f;
+	}
+
+	private ByteFrequencies readByteFrequencies() throws IOException {
+		return new ByteFrequencies(readByteArray(), readIntArray());
+	}
+
+	private IntFrequencies readIntFrequencies() throws IOException {
+		return new IntFrequencies(readIntArray(), readIntArray());
 	}
 }

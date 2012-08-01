@@ -1,10 +1,25 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.compression;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
 
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.apache.tools.bzip2.CBZip2OutputStream;
 
 public class ArrayCompressionReport {
 	private String name;
@@ -42,7 +57,7 @@ public class ArrayCompressionReport {
 		gzipBAOS = null;
 
 		ByteArrayOutputStream bzip2BAOS = new ByteArrayOutputStream();
-		BZip2CompressorOutputStream bz2OS = new BZip2CompressorOutputStream(
+		CBZip2OutputStream bz2OS = new CBZip2OutputStream(
 				bzip2BAOS);
 		bz2OS.write(array);
 		bz2OS.close();

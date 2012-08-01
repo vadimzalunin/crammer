@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.io;
 
 import java.io.IOException;
@@ -90,5 +105,27 @@ public class DebuggingBitOuputStream implements BitOutputStream {
 	private void append(boolean bit) throws IOException {
 		os.write(bit ? '1' : '0');
 		
+	}
+
+	@Override
+	public int alignToByte() throws IOException {
+		os.write("align".getBytes()) ;
+		os.write(opSeparator);
+		if (delegate != null) return delegate.alignToByte() ;
+		return 0;
+	}
+
+	@Override
+	public void write(byte[] data) throws IOException {
+		os.write(data) ;
+		os.write(opSeparator);
+		if (delegate != null) delegate.write(data) ;
+	}
+
+	@Override
+	public void write(byte b) throws IOException {
+		os.write(b) ;
+		os.write(opSeparator);
+		if (delegate != null) delegate.write(b) ;
 	}
 }

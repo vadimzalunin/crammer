@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.stats;
 
 import java.io.PrintStream;
@@ -8,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.apache.commons.collections.bag.HashBag;
 import org.apache.commons.math.stat.HashMapFrequency;
 
 import uk.ac.ebi.ena.sra.compression.huffman.HuffmanCode;
@@ -53,13 +67,14 @@ public class CramStats {
 	private Map<String, ByteFrequencies> tagFreqs = new TreeMap<String, ByteFrequencies>();
 	private Map<String, IntFrequencies> tagLengths = new TreeMap<String, IntFrequencies>();
 	private HashMapFrequency tagKeyAndTypeFrequency = new HashMapFrequency();
+	private ByteFrequencies tagCountFrequency = new ByteFrequencies();
 
 	private ByteFrequencies flagStats = new ByteFrequencies();
 
 	private int[] baseFreqArray = new int[256];
 	private int[] qsFreqArray = new int[256];
 
-	private DiByteFrequencies qs2Frequency = new DiByteFrequencies() ;
+	private DiByteFrequencies qs2Frequency = new DiByteFrequencies();
 	private byte prevQS = -1;
 
 	private long nofSubstituions = 0L;
@@ -79,6 +94,9 @@ public class CramStats {
 	private final float qualityBudget;
 
 	private int[] heapByteFreqArray = new int[256];
+
+	private ByteFrequencies readNameFreqs = new ByteFrequencies();
+	private IntFrequencies readNameLengthFreqs = new IntFrequencies();
 
 	public CramStats(CramHeader header, PrintStream statsPS, float qualityBudget) {
 		this.header = header;
@@ -122,10 +140,12 @@ public class CramStats {
 					bl = new IntFrequencies();
 					tagLengths.put(keyAndType, bl);
 				}
-				// potential problem, length can be greater than 256:
 				bl.add(bytes.length);
 			}
-		}
+
+			tagCountFrequency.add((byte) record.tags.size());
+		} else
+			tagCountFrequency.add((byte) 0);
 
 		if (!record.isLastFragment())
 			distanceToNextFragmentFreq.addValue(record.getRecordsToNextFragment());
@@ -151,9 +171,9 @@ public class CramStats {
 				}
 				if (scores != null && scores.length != 0) {
 					qsFreqArray[scores[i]]++;
-//					if (i > 0)
-//						qs2Frequency.add(prevQS, scores[i]);
-//					prevQS = scores[i] ;
+					// if (i > 0)
+					// qs2Frequency.add(prevQS, scores[i]);
+					// prevQS = scores[i] ;
 				}
 			}
 
@@ -217,22 +237,25 @@ public class CramStats {
 				readFeatureFreq.addValue(ReadFeature.STOP_OPERATOR);
 		}
 
-		if (record.getReadName() != null)
-			addString(record.getReadName());
-		if (record.next != null) {
-			addMate(record.next);
-			addString(String.valueOf(record.insertSize));
+		boolean readNameAdded = false;
+		if (record.getReadName() != null) {
+			byte[] readNameBytes = record.getReadName().getBytes();
+			readNameFreqs.add(readNameBytes);
+			readNameLengthFreqs.add(readNameBytes.length);
+			readNameAdded = true;
 		}
-		if (record.previous != null) {
-			addMate(record.previous);
-			addString(String.valueOf(record.insertSize));
-		}
-	}
 
-	private void addMate(CramRecord mate) {
-		addString(mate.getReadName());
-		addString(String.valueOf(mate.getAlignmentStart()));
-		addString(String.valueOf(mate.getSequenceName()));
+		CramRecord mate = record.next == null ? record.previous : record.next;
+		if (mate != null) {
+			if (!readNameAdded) {
+				byte[] readNameBytes = record.getReadName().getBytes();
+				readNameFreqs.add(readNameBytes);
+				readNameLengthFreqs.add(readNameBytes.length);
+			}
+			addString(String.valueOf(mate.getAlignmentStart()));
+			addString(String.valueOf(mate.getSequenceName()));
+			addString(String.valueOf(record.insertSize));
+		}
 	}
 
 	private void addString(String s) {
@@ -253,6 +276,8 @@ public class CramStats {
 
 		compression.flagStats = flagStats;
 
+		compression.tagKeyAlphabet = new String[0];
+		compression.tagKeyFrequency = new int[0];
 		int tagCount = tagKeyAndTypeFrequency.getUniqueCount();
 		compression.tagKeyAlphabet = new String[tagCount];
 		compression.tagKeyFrequency = new int[tagCount];
@@ -261,9 +286,18 @@ public class CramStats {
 			String keyAndType = (String) tagIterator.next();
 			compression.tagKeyAlphabet[i] = keyAndType;
 			compression.tagKeyFrequency[i] = (int) tagKeyAndTypeFrequency.getCount(keyAndType);
+
+			if (keyAndType.startsWith("OQ") || keyAndType.startsWith("BQ") || keyAndType.startsWith("BC")
+					|| keyAndType.startsWith("CQ") || keyAndType.startsWith("Q2"))
+				if (tagLengths.get(keyAndType).getValues().length > 8)
+					tagFreqs.remove(keyAndType);
+			char type = keyAndType.charAt(3) ;
+			if (type == 'B') 
+					tagFreqs.remove(keyAndType);
 		}
 		compression.tagByteFrequencyMap = tagFreqs;
 		compression.tagByteLengthMap = tagLengths;
+		compression.tagCountFrequency = tagCountFrequency;
 
 		ValueFrequencyHolder holder = getValueFrequencies(baseFreqArray);
 		compression.setBaseAlphabet(holder.values);
@@ -272,8 +306,8 @@ public class CramStats {
 		holder = getValueFrequencies(qsFreqArray);
 		compression.setScoreAlphabet(holder.values);
 		compression.setScoreFrequencies(holder.frequencies);
-		
-		compression.score2 = qs2Frequency ;
+
+		compression.score2 = qs2Frequency;
 
 		holder = getValueFrequencies(stopBaseFreqArray);
 		compression.setStopBaseAlphabet(holder.values);
@@ -339,6 +373,9 @@ public class CramStats {
 		holder = getValueFrequencies(heapByteFreqArray);
 		compression.setHeapByteAlphabet(holder.values);
 		compression.setHeapByteFrequencies(holder.frequencies);
+
+		compression.readNameFreqs = readNameFreqs;
+		compression.readNameLengthFreqs = readNameLengthFreqs;
 
 		if (statsPS != null) {
 			statsPS.println("Read feature frequencies: ");

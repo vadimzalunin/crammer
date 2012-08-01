@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -55,7 +70,7 @@ public class BamRoundTripTests {
 		cramFileGeneration1.deleteOnExit();
 
 		String cmd1 = String
-				.format("-l ERROR cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores --capture-all-tags",
+				.format("-l INFO cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores --include-unmapped-reads --preserve-read-names --capture-all-tags",
 						inputBamPath, refPath,
 						cramFileGeneration1.getAbsolutePath());
 		// System.out.println(cmd1);
@@ -67,7 +82,7 @@ public class BamRoundTripTests {
 //		System.out.println(bamFile.getAbsolutePath());
 
 		String cmd2 = String
-				.format("-l ERROR bam --input-cram-file %s --reference-fasta-file %s --output-bam-file %s",
+				.format("-l INFO bam --input-cram-file %s --reference-fasta-file %s --output-bam-file %s",
 						cramFileGeneration1.getAbsolutePath(), refPath, bamFile);
 		// System.out.println(cmd2);
 
@@ -86,7 +101,7 @@ public class BamRoundTripTests {
 		cramFileGeneration2.deleteOnExit();
 
 		String cmd3 = String
-				.format("-l ERROR cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores --capture-all-tags",
+				.format("-l INFO cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores --include-unmapped-reads --preserve-read-names --capture-all-tags",
 						bamFile, refPath, cramFileGeneration2.getAbsolutePath());
 		// System.out.println(cmd3);
 

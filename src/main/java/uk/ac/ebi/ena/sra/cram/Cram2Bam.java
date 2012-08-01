@@ -1,30 +1,48 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.BAMFileWriter;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
 import net.sf.samtools.SAMFileWriter;
+import net.sf.samtools.SAMFileWriterFactory;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
 
 import org.apache.log4j.Logger;
 
-import uk.ac.ebi.ena.sra.cram.encoding.HuffmanByteCodec2;
 import uk.ac.ebi.ena.sra.cram.format.CramHeader;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
@@ -34,6 +52,7 @@ import uk.ac.ebi.ena.sra.cram.format.text.CramRecordFormat;
 import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.impl.CramHeaderIO;
 import uk.ac.ebi.ena.sra.cram.impl.ReadFeatures2Cigar;
+import uk.ac.ebi.ena.sra.cram.impl.RecordCodecFactory;
 import uk.ac.ebi.ena.sra.cram.impl.RestoreBases;
 import uk.ac.ebi.ena.sra.cram.impl.RestoreQualityScores;
 import uk.ac.ebi.ena.sra.cram.impl.SequentialCramReader;
@@ -47,12 +66,19 @@ import com.beust.jcommander.converters.FileConverter;
 public class Cram2Bam {
 	private static Logger log = Logger.getLogger(Cram2Bam.class);
 	private static byte defaultQS = '?';
+	private static long samWriterNanos;
+	private static long refReadingNanos;
+	private Params params;
+
+	public Cram2Bam(Params params) {
+		this.params = params;
+	}
 
 	private static InputStream createCramInputStream(File file) throws IOException {
 		FileInputStream fis = new FileInputStream(file);
 
 		// gzip magic:
-		if (fis.read() == 31 && fis.read() == 139) 
+		if (fis.read() == 31 && fis.read() == 139)
 			return new GZIPInputStream(new BufferedInputStream(new FileInputStream(file)));
 
 		return new BufferedInputStream(new FileInputStream(file));
@@ -103,49 +129,58 @@ public class Cram2Bam {
 			params.outputFile = new File(params.cramFile.getAbsolutePath() + ".bam");
 		}
 
-		convert(referenceSequenceFile, cramIS, params.outputFile, params.maxRecords, params.printCramRecords,
-				params.sequences, params);
-		HuffmanByteCodec2.dump() ;
+		new Cram2Bam(params).convert(referenceSequenceFile, cramIS, params.outputFile, params.maxRecords,
+				params.printCramRecords, params.sequences, params);
 
 	}
 
-	private static void convert(ReferenceSequenceFile referenceSequenceFile, InputStream cramInputStream,
-			File outputBamFile, long maxRecords, boolean printCramRecords, List<String> sequences, Params params)
-			throws Exception {
+	private void convert(ReferenceSequenceFile referenceSequenceFile, InputStream cramInputStream, File outputFile,
+			long maxRecords, boolean printCramRecords, List<String> sequences, Params params) throws Exception {
 
 		Utils.isCRAM(cramInputStream);
 
 		DataInputStream cramDIS = new DataInputStream(cramInputStream);
 
 		CramHeader cramHeader = CramHeaderIO.read(Utils.getNextChunk(cramDIS));
-		log.info("CRAM format version: " + cramHeader.getVersion()) ;
+		log.info("CRAM format version: " + cramHeader.getVersion());
 		log.info("Using default quality score: " + (char) defaultQS);
 
-		BAMFileWriter writer = new BAMFileWriter(outputBamFile);
-		writer.setSortOrder(SortOrder.coordinate, true);
+		SAMFileWriter writer = null;
 		SAMFileHeader header = Utils.cramHeader2SamHeader(cramHeader);
+		OutputStream os = null;
+		if (outputFile.getName().endsWith(".sam.gz")) {
+			os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(outputFile)));
+			writer = new SAMFileWriterFactory().makeSAMWriter(header, true, os);
+		} else if (outputFile.getName().endsWith(".sam")) {
+			os = new BufferedOutputStream(new FileOutputStream(outputFile));
+			writer = new SAMFileWriterFactory().makeSAMWriter(header, true, os);
+		} else {
+			os = new BufferedOutputStream(new FileOutputStream(outputFile));
+			BAMFileWriter bWriter = new BAMFileWriter(os, outputFile);
+			bWriter.setSortOrder(SortOrder.coordinate, true);
 
-		writer.setHeader(header);
-		
-		Map<String, Integer> seqNameToIndexMap = new TreeMap<String, Integer>();
+			bWriter.setHeader(header);
+			writer = bWriter;
+		}
+
+		Map<String, Integer> seqNameToIndexMap = new HashMap<String, Integer>();
 		for (SAMSequenceRecord seq : header.getSequenceDictionary().getSequences()) {
 			seqNameToIndexMap.put(seq.getSequenceName(), seq.getSequenceIndex());
 		}
-
-		long indexOfFirstRecordInTheBlock = 0L;
-		CramRecordBlock prevBlock = null;
-		long prevAlStart = 0L;
 
 		long time1 = System.currentTimeMillis();
 		CramRecordFormat cramRecordFormat = new CramRecordFormat();
 
 		PairedTemplateAssembler assembler = new PairedTemplateAssembler(Integer.MAX_VALUE, Integer.MAX_VALUE);
 		String prevSeqName = null;
-		Map<Long, Long> indexes = new HashMap<Long, Long>();
+		Map<Long, String> indexes = new HashMap<Long, String>();
 
 		long counter = 1;
 		ByteArraySequenceBaseProvider provider = null;
 		byte[] refBases = null;
+
+		samWriterNanos = 0;
+		refReadingNanos = 0;
 
 		NEXT_BLOCK: while (true) {
 
@@ -157,16 +192,10 @@ public class Cram2Bam {
 			CramRecordBlock readBlock = reader.readBlock();
 			if (sequences != null && !sequences.contains(readBlock.getSequenceName()))
 				continue;
-			prevAlStart = readBlock.getFirstRecordPosition();
 
-			if (prevBlock != null) {
-				if (!prevBlock.getSequenceName().equals(readBlock.getSequenceName())) {
-					prevAlStart = readBlock.getFirstRecordPosition();
-				}
-			}
 			cramRecordFormat.setSequenceID(readBlock.getSequenceName());
 
-			log.info(readBlock);
+			log.debug(readBlock);
 			SAMSequenceRecord sequence = header.getSequence(readBlock.getSequenceName());
 			if (sequence == null) {
 				sequence = new SAMSequenceRecord(readBlock.getSequenceName(), readBlock.getSequenceLength());
@@ -184,6 +213,7 @@ public class Cram2Bam {
 				// counter = 1;
 			}
 
+			long refReadingStart = System.nanoTime();
 			if ("*".equals(seqName)) {
 				refBases = new byte[] {};
 				provider = new ByteArraySequenceBaseProvider(refBases);
@@ -191,21 +221,32 @@ public class Cram2Bam {
 				if (provider == null || !seqName.equals(prevSeqName)) {
 					refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, seqName);
 					provider = new ByteArraySequenceBaseProvider(refBases);
-					provider.setN_extension(1000) ;
+					provider.setN_extension(100000);
 				}
 			}
+			refReadingNanos += (System.nanoTime() - refReadingStart);
+
 			reader.setReferenceBaseProvider(provider);
 			prevSeqName = seqName;
 
 			CramRecord cramRecord = null;
 			RestoreBases restoreBases = new RestoreBases();
 			restoreBases.setProvider(provider);
+
+			// reader.setReferenceBaseProvider(new FakeBaseProvider());
+			// prevSeqName = seqName;
+			//
+			// CramRecord cramRecord = null;
+			// RestoreBases restoreBases = new RestoreBases();
+			// restoreBases.setProvider(new FakeBaseProvider());
+
 			restoreBases.setSequenceName(seqName);
 			RestoreQualityScores restoreQualityScores = new RestoreQualityScores();
 			ReadFeatures2Cigar readFeatures2Cigar = new ReadFeatures2Cigar();
 
 			ArrayList<CramRecord> records = new ArrayList<CramRecord>((int) readBlock.getRecordCount());
 			readBlock.setRecords(records);
+			long blockReadStart = System.currentTimeMillis();
 			for (long i = 0; i < readBlock.getRecordCount(); i++) {
 				try {
 					cramRecord = reader.readRecord();
@@ -222,6 +263,9 @@ public class Cram2Bam {
 					throw e;
 				}
 			}
+			long blockReadEnd = System.currentTimeMillis();
+			log.info(String.format("Block read: sequence %s; records %d; %.3f seconds.\n", readBlock.getSequenceName(),
+					readBlock.getRecordCount(), (blockReadEnd - blockReadStart) / 1000f));
 			counter -= records.size();
 
 			for (CramRecord record : records) {
@@ -283,32 +327,31 @@ public class Cram2Bam {
 					}
 					samRecord.setReadName(cramRecord.getReadName());
 				} else {
-					if (!cramRecord.isLastFragment())
-						indexes.put(counter + cramRecord.getRecordsToNextFragment(), counter);
+					String readName = cramRecord.getReadName();
+					if (readName == null)
+						readName = String.valueOf(counter);
 
-					Long index = indexes.remove(counter);
+					if (!cramRecord.isLastFragment())
+						indexes.put(counter + cramRecord.getRecordsToNextFragment(), readName);
+
+					String index = indexes.remove(counter);
 
 					if (index != null) {
-						samRecord.setReadName(String.valueOf(index.intValue())
-						// + ".2"
-								);
+						samRecord.setReadName(index);
 						samRecord.setFirstOfPairFlag(cramRecord.isFirstInPair());
 						samRecord.setSecondOfPairFlag(!cramRecord.isFirstInPair());
 						samRecord.setReadPairedFlag(true);
 					} else {
 						if (cramRecord.isLastFragment()) {
-							samRecord.setReadName(String.valueOf(counter));
+							samRecord.setReadName(readName);
 							samRecord.setReadPairedFlag(false);
 							samRecord.setFirstOfPairFlag(false);
 							samRecord.setSecondOfPairFlag(false);
 						} else {
-							samRecord.setReadName(String.valueOf(counter)
-							// + ".1"
-									);
+							samRecord.setReadName(readName);
 							samRecord.setFirstOfPairFlag(cramRecord.isFirstInPair());
 							samRecord.setSecondOfPairFlag(!cramRecord.isFirstInPair());
 							samRecord.setReadPairedFlag(true);
-							// samRecord.setMateReferenceName(readBlock.getSequenceName());
 						}
 					}
 				}
@@ -318,14 +361,11 @@ public class Cram2Bam {
 					samRecord.setAlignmentStart((int) cramRecord.getAlignmentStart());
 					samRecord.setReadBases(restoreBases.restoreReadBases(cramRecord));
 					byte[] scores = cramRecord.getQualityScores();
-//					if (scores == null || scores.length == 0)
-						scores = restoreQualityScores.restoreQualityScores(cramRecord);
+					scores = restoreQualityScores.restoreQualityScores(cramRecord);
 
 					injectQualityScores(scores, samRecord);
-					prevAlStart = samRecord.getAlignmentStart();
 				} else {
 					samRecord.setAlignmentStart((int) cramRecord.getAlignmentStart());
-					// samRecord.setAlignmentStart((int) prevAlStart);
 					samRecord.setReadBases(cramRecord.getReadBases());
 					byte[] scores = cramRecord.getQualityScores();
 					injectQualityScores(scores, samRecord);
@@ -362,20 +402,21 @@ public class Cram2Bam {
 				}
 
 				if (counter++ >= maxRecords) {
-					indexOfFirstRecordInTheBlock += records.size();
 					break NEXT_BLOCK;
 				}
 			}
 
-			indexOfFirstRecordInTheBlock += records.size();
-			prevBlock = readBlock;
 		}
 
 		flushAssembler(assembler, writer, header);
 
 		writer.close();
 		long time2 = System.currentTimeMillis();
-		log.info("Decoded in: " + (time2 - time1) + " millis");
+		log.info("Ref reading took " + refReadingNanos / (1000 * 1000 * 1000) + " seconds.");
+		log.info("SAM/BAM writing took " + samWriterNanos / (1000 * 1000 * 1000) + " seconds.");
+		log.info("Total time: " + (time2 - time1) / 1000 + " seconds.");
+
+		os.close();
 	}
 
 	private static void fixMateInfo(PairedTemplateAssembler assembler, SAMRecord samRecord, SAMFileHeader header) {
@@ -414,10 +455,12 @@ public class Cram2Bam {
 		}
 	}
 
+//	private static long recordCounter = 0;
+
 	private static final void writeSAMRecord(SAMRecord samRecord, SAMFileWriter writer) {
 		try {
 			// quick fixes:
-			if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getReferenceName())) 
+			if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getReferenceName()))
 				samRecord.setAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
 
 			if (samRecord.getReadUnmappedFlag()) {
@@ -426,8 +469,11 @@ public class Cram2Bam {
 			}
 			//
 
+			long writerStart = System.nanoTime();
 			writer.addAlignment(samRecord);
-			// System.out.println(samRecord.format());
+			samWriterNanos += (System.nanoTime() - writerStart);
+//			if (recordCounter++ < 3)
+//				System.out.println(samRecord.getSAMString());
 		} catch (IllegalArgumentException e) {
 			log.error("Offensive SAM record: " + samRecord.format());
 			log.error("SAM record al start=" + samRecord.getAlignmentStart());
@@ -467,12 +513,15 @@ public class Cram2Bam {
 		@Parameter(names = { "--calculate-nm-tag" }, description = "Calculate NM tag.")
 		boolean calculateNmTag = false;
 
+		@Parameter(names = { "--use-star-for-missing-quality-scores" }, description = "Calculate NM tag.")
+		boolean useStarForMissingQualityScores = false;
+
 		@Parameter()
 		List<String> sequences;
 
 	}
 
-	private static final void injectQualityScores(byte[] scores, SAMRecord record) {
+	private final void injectQualityScores(byte[] scores, SAMRecord record) {
 		if (scores == null || scores.length == 0) {
 			injectNullQualityScores(record);
 			return;
@@ -502,9 +551,13 @@ public class Cram2Bam {
 		record.setBaseQualities(scores);
 	}
 
-	private static final void injectNullQualityScores(SAMRecord record) {
-		byte[] scores = new byte[record.getReadLength()];
-		Arrays.fill(scores, (byte) (defaultQS - 33));
-		record.setBaseQualities(scores);
+	private final void injectNullQualityScores(SAMRecord record) {
+		if (params.useStarForMissingQualityScores) {
+			record.setBaseQualities(SAMRecord.NULL_QUALS);
+		} else {
+			byte[] scores = new byte[record.getReadLength()];
+			Arrays.fill(scores, (byte) (defaultQS - 33));
+			record.setBaseQualities(scores);
+		}
 	}
 }

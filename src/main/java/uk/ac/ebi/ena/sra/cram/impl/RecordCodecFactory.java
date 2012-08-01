@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.impl;
 
 import java.io.IOException;
@@ -285,11 +300,10 @@ public class RecordCodecFactory {
 		hbQSCodec.setName("Record quality codec");
 		root.add(new DefaultMutableTreeNode(hbQSCodec));
 		recordCodec.qualityCodec = hbQSCodec;
-		
-//		SR2_BACodec sr2Codec = new SR2_BACodec("Record base codec") ;
-//		root.add(new DefaultMutableTreeNode(sr2Codec));
-//		recordCodec.qualityCodec = sr2Codec;
 
+		// SR2_BACodec sr2Codec = new SR2_BACodec("Record base codec") ;
+		// root.add(new DefaultMutableTreeNode(sr2Codec));
+		// recordCodec.qualityCodec = sr2Codec;
 
 		// recordCodec.qualityCodec = new
 		// MeasuringCodec<Byte>(qualityScoreCodec, "Record quality codec");
@@ -307,38 +321,48 @@ public class RecordCodecFactory {
 			root.add(tagCodecsNode);
 
 			recordCodec.tagCodecMap = new TreeMap<String, BitCodec<byte[]>>();
+			recordCodec.tagValueByteLenCodec = new TreeMap<String, BitCodec<Integer>>();
+			recordCodec.tagCountCodec = HuffmanByteCodec2.build(compression.tagCountFrequency);
 			for (int i = 0; i < compression.tagKeyAlphabet.length; i++) {
 				String tagKey = compression.tagKeyAlphabet[i];
 				ByteFrequencies byteFreqs = compression.tagByteFrequencyMap.get(tagKey);
-
 				IntFrequencies lenFreqs = compression.tagByteLengthMap.get(tagKey);
 
 				int[] lenValues = lenFreqs.getValues();
 
-				BitCodec<byte[]> codec = null;
-				if (lenValues.length == 1)
-					codec = new FixedLengthByteArrayHuffmanCodec(byteFreqs.getValues(), byteFreqs.getFrequencies(),
-							lenValues[0]);
-				else {
-					codec = new VariableLengthByteArrayHuffmanCodec(byteFreqs.getValues(), byteFreqs.getFrequencies(),
-							lenFreqs.getValues(), lenFreqs.getFrequencies());
-				}
-				// int[] values = new int[byteFreqs.getValues().length] ;
-				// for (int vi=0; vi<values.length; vi++)
-				// values[vi] = byteFreqs.getValues()[vi] ;
-				//
-				// codec = new ArithCodec(byteFreqs.getFrequencies(), values) ;
-				MeasuringCodec<byte[]> measuringCodec = new MeasuringCodec<byte[]>(codec, tagKey);
-				recordCodec.tagCodecMap.put(tagKey, measuringCodec);
-				root.add(new DefaultMutableTreeNode(measuringCodec));
-			}
+				HuffmanTree<Integer> lenTree = HuffmanCode.buildTree(lenFreqs.getFrequencies(),
+						Utils.autobox(lenValues));
+				BitCodec<Integer> lenCodec = new HuffmanCodec<Integer>(lenTree);
+				recordCodec.tagValueByteLenCodec.put(tagKey, lenCodec);
 
-		}
+				if (byteFreqs != null) {
+					BitCodec<byte[]> codec = null;
+					if (lenValues.length == 1)
+						codec = new FixedLengthByteArrayHuffmanCodec(byteFreqs.getValues(), byteFreqs.getFrequencies(),
+								lenValues[0]);
+					else {
+						codec = new VariableLengthByteArrayHuffmanCodec(byteFreqs.getValues(),
+								byteFreqs.getFrequencies(), lenFreqs.getValues(), lenFreqs.getFrequencies());
+					}
+					recordCodec.tagCodecMap.put(tagKey, codec);
+				}
+			}
+		} else
+			recordCodec.tagCountCodec = new SingleValueBitCodec<Byte>((byte) 0);
+
 		HuffmanTree<Byte> flagsTree = HuffmanCode.buildTree(compression.flagStats.getFrequencies(),
 				Utils.autobox(compression.flagStats.getValues()));
 		HuffmanByteCodec2 flagsCodec = new HuffmanByteCodec2(flagsTree);
 		recordCodec.flagsCodec = new MeasuringCodec<Byte>(flagsCodec, "Read flags codec");
 		root.add(new DefaultMutableTreeNode(recordCodec.flagsCodec));
+
+		BitCodec<byte[]> readNameCodec = new VariableLengthByteArrayHuffmanCodec(compression.readNameFreqs.getValues(),
+				compression.readNameFreqs.getFrequencies(), compression.readNameLengthFreqs.getValues(),
+				compression.readNameLengthFreqs.getFrequencies());
+		recordCodec.readNameCodec = new MeasuringCodec<byte[]>(readNameCodec, "Read name codec");
+		root.add(new DefaultMutableTreeNode(recordCodec.readNameCodec));
+
+		recordCodec.preserveReadNames = block.preserveReadNames;
 
 		return root;
 	}
@@ -697,6 +721,8 @@ public class RecordCodecFactory {
 
 		if (compression.tagKeyAlphabet != null && compression.tagKeyAlphabet.length > 0) {
 			recordCodec.tagCodecMap = new TreeMap<String, BitCodec<byte[]>>();
+			recordCodec.tagValueByteLenCodec = new TreeMap<String, BitCodec<Integer>>();
+			recordCodec.tagCountCodec = HuffmanByteCodec2.build(compression.tagCountFrequency);
 			for (int i = 0; i < compression.tagKeyAlphabet.length; i++) {
 				String tagKey = compression.tagKeyAlphabet[i];
 				ByteFrequencies byteFreqs = compression.tagByteFrequencyMap.get(tagKey);
@@ -704,24 +730,38 @@ public class RecordCodecFactory {
 
 				int[] lenValues = lenFreqs.getValues();
 
-				BitCodec<byte[]> codec = null;
-				if (lenValues.length == 1)
-					codec = new FixedLengthByteArrayHuffmanCodec(byteFreqs.getValues(), byteFreqs.getFrequencies(),
-							lenValues[0]);
-				else {
-					codec = new VariableLengthByteArrayHuffmanCodec(byteFreqs.getValues(), byteFreqs.getFrequencies(),
-							lenFreqs.getValues(), lenFreqs.getFrequencies());
+				HuffmanTree<Integer> lenTree = HuffmanCode.buildTree(lenFreqs.getFrequencies(),
+						Utils.autobox(lenValues));
+				BitCodec<Integer> lenCodec = new HuffmanCodec<Integer>(lenTree);
+				recordCodec.tagValueByteLenCodec.put(tagKey, lenCodec);
+
+				if (byteFreqs != null) {
+					BitCodec<byte[]> codec = null;
+					if (lenValues.length == 1)
+						codec = new FixedLengthByteArrayHuffmanCodec(byteFreqs.getValues(), byteFreqs.getFrequencies(),
+								lenValues[0]);
+					else {
+						codec = new VariableLengthByteArrayHuffmanCodec(byteFreqs.getValues(),
+								byteFreqs.getFrequencies(), lenFreqs.getValues(), lenFreqs.getFrequencies());
+					}
+					recordCodec.tagCodecMap.put(tagKey, codec);
 				}
-				recordCodec.tagCodecMap.put(tagKey, codec);
 			}
 
 			HuffmanTree<String> tree = HuffmanCode.buildTree(compression.tagKeyFrequency, compression.tagKeyAlphabet);
 			recordCodec.tagKeyAndTypeCodec = new HuffmanCodec<String>(tree);
-		}
+		} else
+			recordCodec.tagCountCodec = new SingleValueBitCodec<Byte>((byte) 0);
 
 		HuffmanTree<Byte> flagsTree = HuffmanCode.buildTree(compression.flagStats.getFrequencies(),
 				Utils.autobox(compression.flagStats.getValues()));
 		recordCodec.flagsCodec = new HuffmanByteCodec2(flagsTree);
+
+		BitCodec<byte[]> readNameCodec = new VariableLengthByteArrayHuffmanCodec(compression.readNameFreqs.getValues(),
+				compression.readNameFreqs.getFrequencies(), compression.readNameLengthFreqs.getValues(),
+				compression.readNameLengthFreqs.getFrequencies());
+		recordCodec.readNameCodec = readNameCodec;
+		recordCodec.preserveReadNames = block.preserveReadNames;
 
 		return recordCodec;
 	}

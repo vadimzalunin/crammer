@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram;
 
 import java.io.BufferedInputStream;
@@ -19,6 +34,7 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import net.sf.picard.PicardException;
+import net.sf.picard.io.IoUtil;
 import net.sf.picard.reference.IndexedFastaSequenceFile;
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
@@ -34,7 +50,6 @@ import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceRecord;
 import net.sf.samtools.SAMTag;
 
-import org.apache.commons.compress.utils.IOUtils;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.CramIndexer.CountingInputStream;
@@ -46,6 +61,10 @@ import uk.ac.ebi.ena.sra.cram.io.ExposedByteArrayOutputStream;
 
 public class Utils {
 	private static Logger log = Logger.getLogger(Utils.class);
+
+	public final static int toInt(byte[] bytes) {
+		return (int) (bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[31] << 24));
+	}
 
 	public final static byte[] toBytes(int value) {
 		final byte[] bytes = new byte[4];
@@ -266,7 +285,7 @@ public class Utils {
 
 		InputStream gizIS = new BufferedInputStream(new GZIPInputStream(new ByteArrayInputStream(compressedBlockData)));
 		ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream(8 * 1024);
-		IOUtils.copy(gizIS, baos, 4 * 1024);
+		IoUtil.copyStream(gizIS, baos);
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.getBuffer());
 
 		CountingInputStream uncompressedCIS = new CountingInputStream(bais);
@@ -337,7 +356,7 @@ public class Utils {
 				record.setValue(entry.getKey(), entry.getValue());
 
 			records.add(record);
-			
+
 		}
 	}
 
@@ -614,9 +633,24 @@ public class Utils {
 			if (op == CigarOperator.MATCH_OR_MISMATCH || op == CigarOperator.EQ || op == CigarOperator.X) {
 				for (j = 0; j < l; ++j) {
 					int z = y + j;
-					int c1 = seq[z], c2 = ref[x + j];
-					if (ref[x + j] == 0)
+
+					if (ref.length <= x + j)
 						break; // out of boundary
+
+					int c1 = 0;
+					int c2 = 0;
+					// try {
+					c1 = seq[z];
+					c2 = ref[x + j];
+					// } catch (ArrayIndexOutOfBoundsException e) {
+					// System.err.println("Offending record: ");
+					// System.err.println(record.getSAMString());
+					// System.err.printf("z=%d; x=%d; j=%d; i=%d; y=%d, l=%d\n",
+					// z, x, j, i, y, l);
+					// System.err.printf("Cigar op=%s\n", op.name());
+					// throw e ;
+					// }
+
 					if ((c1 == c2 && c1 != 15 && c2 != 15) || c1 == 0) {
 						// a match
 						++u;

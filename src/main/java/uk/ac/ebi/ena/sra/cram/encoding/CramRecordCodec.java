@@ -1,9 +1,26 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.encoding;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
@@ -22,8 +39,6 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	public BitCodec<Long> readlengthCodec;
 	public BitCodec<List<ReadFeature>> variationsCodec;
 	public SequenceBaseProvider sequenceBaseProvider;
-	// public BitCodec<byte[]> basesCodec;
-	// public BitCodec<byte[]> qualitiesCodec;
 
 	public BitCodec<Byte> baseCodec;
 	public ByteArrayBitCodec qualityCodec;
@@ -41,27 +56,61 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	public boolean storeMappedQualityScores = false;
 	public BitCodec<Byte> heapByteCodec;
 
-	public Map<String, BitCodec<byte[]>> tagCodecMap;
+	public TreeMap<String, BitCodec<byte[]>> tagCodecMap;
 	public BitCodec<String> tagKeyAndTypeCodec;
+	public Map<String, BitCodec<Integer>> tagValueByteLenCodec;
+	public BitCodec<Byte> tagCountCodec;
 
 	public BitCodec<Byte> flagsCodec;
 
 	private static Logger log = Logger.getLogger(CramRecordCodec.class);
+
+	private static int debugRecordEndMarkerLen = 0;
+	private static long debugRecordEndMarker = ~(-1 << (debugRecordEndMarkerLen / 2));
+
+	public BitCodec<byte[]> readNameCodec;
+	public boolean preserveReadNames = false;
+
+	private List<Integer> tagLens = new ArrayList<Integer>();
+
+	private List<String> deferredTags = new ArrayList<String>();
+
+	private long[] timePoints = new long[10];
+	private long time = 0;
+	private int timeIndex = 0;
 	
-	private static int debugRecordEndMarkerLen = 0 ;
-	private static long debugRecordEndMarker = ~(-1 << debugRecordEndMarkerLen);
+
+	private void timeTick() {
+		long stop = System.nanoTime();
+		timePoints[timeIndex++] += stop - time;
+		time = stop;
+	}
+	
+	long readTime = 0 ;
 
 	@Override
 	public CramRecord read(BitInputStream bis) throws IOException {
-		long marker = bis.readLongBits(debugRecordEndMarkerLen) ;
-		if (marker != debugRecordEndMarker) {
-			throw new RuntimeException("Debug marker for beginning of record not found.") ;
-		}
+		long startMillis = System.currentTimeMillis() ;
 		
+		timeIndex = 0;
+		time = System.nanoTime();
+
+		recordCounter++;
+
+		// long marker = bis.readLongBits(debugRecordEndMarkerLen);
+		// if (marker != debugRecordEndMarker) {
+		// throw new
+		// RuntimeException("Debug marker for beginning of record not found.");
+		// }
+
 		CramRecord record = new CramRecord();
 
 		byte b = flagsCodec.read(bis);
 		record.setFlags(b);
+
+		String readName = null;
+		if (preserveReadNames)
+			readName = new String(readNameCodec.read(bis));
 
 		if (!record.isLastFragment()) {
 			if (!record.detached) {
@@ -71,7 +120,9 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 				mate.setReadMapped(bis.readBit());
 				mate.setNegativeStrand(bis.readBit());
 				mate.setFirstInPair(bis.readBit());
-				mate.setReadName(readZeroTerminatedString(heapByteCodec, bis));
+				if (readName == null)
+					readName = new String(readNameCodec.read(bis));
+				mate.setReadName(readName);
 				mate.setSequenceName(readZeroTerminatedString(heapByteCodec, bis));
 				mate.setAlignmentStart(Long.valueOf(readZeroTerminatedString(heapByteCodec, bis)));
 				record.insertSize = Integer.valueOf(readZeroTerminatedString(heapByteCodec, bis));
@@ -81,10 +132,11 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 					record.next = mate;
 				else
 					record.previous = mate;
-
-				record.setReadName(mate.getReadName());
 			}
 		}
+		record.setReadName(readName);
+
+		timeTick();
 
 		int readLen;
 		if (bis.readBit())
@@ -93,80 +145,143 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			readLen = (int) defaultReadLength;
 		record.setReadLength(readLen);
 
-		if (record.isReadMapped()) {
-			long position = prevPosInSeq + inSeqPosCodec.read(bis);
-			prevPosInSeq = position;
-			record.setAlignmentStart(position);
+		record.setReadGroupID(readGroupCodec.read(bis));
 
+		long position = prevPosInSeq + inSeqPosCodec.read(bis);
+		prevPosInSeq = position;
+		record.setAlignmentStart(position);
+
+		timeTick();
+
+		int tagCount = tagCountCodec.read(bis);
+		deferredTags.clear();
+		tagLens.clear();
+		if (tagCount > 0)
+			record.tags = new ArrayList<ReadTag>();
+		for (int i = 0; i < tagCount; i++) {
+			String tagKeyAndType = tagKeyAndTypeCodec.read(bis);
+
+			BitCodec<byte[]> tagValueCodec = tagCodecMap.get(tagKeyAndType);
+			if (tagValueCodec != null) {
+				byte[] value = tagValueCodec.read(bis);
+
+				ReadTag tag = ReadTag.deriveTypeFromKeyAndType(tagKeyAndType,
+						ReadTag.restoreValueFromByteArray(tagKeyAndType.charAt(3), value));
+				record.tags.add(tag);
+			} else {
+				BitCodec<Integer> lenCodec = tagValueByteLenCodec.get(tagKeyAndType);
+				int tagValueByteLen = lenCodec.read(bis);
+				tagLens.add(tagValueByteLen);
+				deferredTags.add(tagKeyAndType);
+			}
+		}
+
+		timeTick();
+
+		boolean bisByteAligned = false;
+
+		if (record.isReadMapped()) {
 			boolean imperfectMatch = bis.readBit();
 			if (imperfectMatch) {
 				List<ReadFeature> features = variationsCodec.read(bis);
 				record.setReadFeatures(features);
 			}
 
+			record.setMappingQuality(mappingQualityCodec.read(bis));
+
 			if (storeMappedQualityScores) {
-				byte[] scores = qualityCodec.read(bis, readLen);
-				// byte[] scores = new byte[readLen];
-				// readNonEmptyByteArray(bis, scores, qualityCodec);
-				record.setQualityScores(scores);
+				boolean hasQS = bis.readBit();
+				if (hasQS) {
+					bis.alignToByte();
+					bisByteAligned = true;
+					if (hasQS) {
+						byte[] scores = new byte[readLen];
+						bis.readAlignedBytes(scores);
+						record.setQualityScores(scores);
+					}
+				}
 			}
 
-			record.setMappingQuality(mappingQualityCodec.read(bis));
 		} else {
-			long position = prevPosInSeq + inSeqPosCodec.read(bis);
-			prevPosInSeq = position;
-			record.setAlignmentStart(position);
+			boolean hasQS = bis.readBit();
+			bis.alignToByte();
+			bisByteAligned = true;
 
 			byte[] bases = new byte[readLen];
-			readNonEmptyByteArray(bis, bases, baseCodec);
+			bis.readAlignedBytes(bases);
 			record.setReadBases(bases);
 
-			byte[] scores = qualityCodec.read(bis, readLen);
-			// byte[] scores = new byte[readLen];
-			// readNonEmptyByteArray(bis, scores, qualityCodec);
-			record.setQualityScores(scores);
+			if (hasQS) {
+				byte[] scores = new byte[readLen];
+				bis.readAlignedBytes(scores);
+				record.setQualityScores(scores);
+			}
 		}
 
-		record.setReadGroupID(readGroupCodec.read(bis));
+		timeTick();
 
-		while (bis.readBit()) {
-			if (record.tags == null)
-				record.tags = new ArrayList<ReadTag>();
-			String tagKeyAndType = tagKeyAndTypeCodec.read(bis);
-			BitCodec<byte[]> codec = tagCodecMap.get(tagKeyAndType);
-			byte[] valueBytes = codec.read(bis);
-			char type = tagKeyAndType.charAt(3);
-			Object value = ReadTag.restoreValueFromByteArray(type, valueBytes);
+		if (!deferredTags.isEmpty()) {
+			bis.alignToByte();
 
-			ReadTag tag = new ReadTag(tagKeyAndType.substring(0, 2), type, value);
-			record.tags.add(tag);
+			for (int i = 0; i < deferredTags.size(); i++) {
+				String tagKeyAndType = deferredTags.get(i);
+				int len = tagLens.get(i);
+				byte[] value = new byte[len];
+				bis.readAlignedBytes(value);
+
+				ReadTag tag = ReadTag.deriveTypeFromKeyAndType(tagKeyAndType,
+						ReadTag.restoreValueFromByteArray(tagKeyAndType.charAt(3), value));
+				record.tags.add(tag);
+			}
 		}
 
-		// if (bis.readBit()) {
-		// List<ReadAnnotation> anns = new ArrayList<ReadAnnotation>();
-		// do {
-		// anns.add(readAnnoCodec.read(bis));
-		// } while (bis.readBit());
-		// if (!anns.isEmpty())
-		// record.setAnnotations(anns);
+		timeTick();
+
+		if (recordCounter % 99999 == 0) {
+			StringBuffer sb = new StringBuffer("CramRecordCodec read time: ") ;
+			for (int i = 0; i < timeIndex; i++) {
+				sb.append(String.format("\t%.3f", (timePoints[i]) / 1000000f));
+			}
+			log.info(sb.toString()) ;
+//			log.info("Total read time: "+readTime);
+			Arrays.fill(timePoints, 0);
+			readTime = 0 ;
+		}
+
+		// marker = bis.readLongBits(debugRecordEndMarkerLen);
+		// if (marker != debugRecordEndMarker) {
+		// System.out.println(record.toString());
+		// throw new
+		// RuntimeException("Debug marker for end of record not found.");
 		// }
 		
-		marker = bis.readLongBits(debugRecordEndMarkerLen) ;
-		if (marker != debugRecordEndMarker) {
-			System.out.println(record.toString());
-			throw new RuntimeException("Debug marker for end of record not found.") ;
-		}
-
+		readTime += System.currentTimeMillis()-startMillis ;
 		return record;
 	}
 
+	private void checkMarker(BitInputStream bis, CramRecord record) throws IOException {
+		long marker = bis.readLongBits(debugRecordEndMarkerLen);
+		if (marker != debugRecordEndMarker) {
+			System.err.println("Record counter=" + recordCounter);
+			System.err.println("Record so far: " + record.toString());
+			throw new RuntimeException("Oops.");
+		}
+
+	}
+
+	private long recordCounter = 0;
+	private List<byte[]> deferredByteArrays = new ArrayList<byte[]>();
+
 	@Override
 	public long write(BitOutputStream bos, CramRecord record) throws IOException {
-		bos.write(debugRecordEndMarker, debugRecordEndMarkerLen) ;
-		
+		recordCounter++;
+
 		long len = 0L;
 
 		len += flagsCodec.write(bos, record.getFlags());
+
+		if (preserveReadNames)
+			len += readNameCodec.write(bos, record.getReadName().getBytes());
 
 		if (!record.isLastFragment()) {
 			if (record.getRecordsToNextFragment() > 0) {
@@ -177,7 +292,9 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 				bos.write(mate.isReadMapped());
 				bos.write(mate.isNegativeStrand());
 				bos.write(mate.isFirstInPair());
-				len += writeZeroTerminatedString(record.getReadName(), heapByteCodec, bos);
+				if (!preserveReadNames) {
+					len += readNameCodec.write(bos, record.getReadName().getBytes());
+				}
 				len += writeZeroTerminatedString(mate.getSequenceName(), heapByteCodec, bos);
 				len += writeZeroTerminatedString(String.valueOf(mate.getAlignmentStart()), heapByteCodec, bos);
 				len += writeZeroTerminatedString(String.valueOf(record.insertSize), heapByteCodec, bos);
@@ -191,14 +308,39 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			bos.write(false);
 		len++;
 
+		len += readGroupCodec.write(bos, record.getReadGroupID());
+
+		len += inSeqPosCodec.write(bos, record.getAlignmentStart() - prevPosInSeq);
+		prevPosInSeq = record.getAlignmentStart();
+
+		deferredByteArrays.clear();
+		if (record.tags == null || record.tags.isEmpty())
+			len += tagCountCodec.write(bos, (byte) 0);
+		else {
+			len += tagCountCodec.write(bos, (byte) record.tags.size());
+			for (ReadTag tag : record.tags) {
+				len += tagKeyAndTypeCodec.write(bos, tag.getKeyAndType());
+
+				BitCodec<byte[]> tagValueCodec = tagCodecMap.get(tag.getKeyAndType());
+				if (tagValueCodec != null) {
+					len += tagValueCodec.write(bos, tag.getValueAsByteArray());
+				} else {
+					BitCodec<Integer> lenCodec = tagValueByteLenCodec.get(tag.getKeyAndType());
+					byte[] value = tag.getValueAsByteArray();
+					len += lenCodec.write(bos, value.length);
+
+					deferredByteArrays.add(value);
+				}
+			}
+		}
+
+		boolean bosByteAligned = false;
+
 		if (record.isReadMapped()) {
 			if (record.getAlignmentStart() - prevPosInSeq < 0) {
 				log.error("Negative relative position in sequence: prev=" + prevPosInSeq);
 				log.error(record.toString());
 			}
-			len += inSeqPosCodec.write(bos, record.getAlignmentStart() - prevPosInSeq);
-			prevPosInSeq = record.getAlignmentStart();
-
 			List<ReadFeature> vars = record.getReadFeatures();
 			if (vars == null || vars.isEmpty())
 				bos.write(false);
@@ -208,55 +350,60 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			}
 			len++;
 
-			if (storeMappedQualityScores)
-				// len += writeNonEmptyByteArray(bos, record.getQualityScores(),
-				// qualityCodec);
-				len += qualityCodec.write(bos, record.getQualityScores());
+			len += mappingQualityCodec.write(bos, record.getMappingQuality());
 
-			mappingQualityCodec.write(bos, record.getMappingQuality());
+			if (storeMappedQualityScores) {
+				if (record.getQualityScores() == null || record.getQualityScores().length == 0) {
+					bos.write(false);
+				} else {
+					bos.write(true);
+				}
+				len++;
+
+				len += bos.alignToByte();
+				bosByteAligned = true;
+
+				if (record.getQualityScores() != null && record.getQualityScores().length != 0) {
+					bos.write(record.getQualityScores());
+					len += 8 * record.getQualityScores().length;
+				}
+			}
+
 		} else {
 			if (record.getAlignmentStart() - prevPosInSeq < 0) {
 				log.error("Negative relative position in sequence: prev=" + prevPosInSeq);
 				log.error(record.toString());
 			}
-			len += inSeqPosCodec.write(bos, record.getAlignmentStart() - prevPosInSeq);
-			prevPosInSeq = record.getAlignmentStart();
 
-			len += writeNonEmptyByteArray(bos, record.getReadBases(), baseCodec);
-//			len += writeNonEmptyByteArray(bos, record.getQualityScores(), qualityCodec);
-			len += qualityCodec.write(bos, record.getQualityScores());
-		}
-
-		len += readGroupCodec.write(bos, record.getReadGroupID());
-
-		if (record.tags != null && !record.tags.isEmpty()) {
-			for (ReadTag tag : record.tags) {
+			if (record.getQualityScores() == null || record.getQualityScores().length == 0) {
+				bos.write(false);
+			} else {
 				bos.write(true);
-				len++;
-				tagKeyAndTypeCodec.write(bos, tag.getKeyAndType());
-				BitCodec<byte[]> codec = tagCodecMap.get(tag.getKeyAndType());
-				long bits = codec.write(bos, tag.getValueAsByteArray());
-				len += bits;
+			}
+			len++;
+
+			len += bos.alignToByte();
+			bosByteAligned = true;
+
+			bos.write(record.getReadBases());
+			len += 8 * record.getReadBases().length;
+
+			if (record.getQualityScores() != null && record.getQualityScores().length != 0) {
+				bos.write(record.getQualityScores());
+				len += 8 * record.getQualityScores().length;
 			}
 		}
-		bos.write(false);
-		len++;
+		if (deferredByteArrays != null && !deferredByteArrays.isEmpty()) {
+			len += bos.alignToByte();
+			bosByteAligned = true;
 
-		// Collection<ReadAnnotation> annotations = record.getAnnotations();
-		// if (annotations == null || annotations.isEmpty()) {
-		// bos.write(false);
-		// len++;
-		// } else {
-		// for (ReadAnnotation a : annotations) {
-		// bos.write(true);
-		// len++;
-		// len += readAnnoCodec.write(bos, a);
-		// }
-		// bos.write(false);
-		// len++;
-		// }
-		
-		bos.write(debugRecordEndMarker, debugRecordEndMarkerLen) ;
+			for (byte[] bytes : deferredByteArrays) {
+				bos.write(bytes);
+				len += 8 * bytes.length;
+			}
+		}
+
+		// bos.write(debugRecordEndMarker, debugRecordEndMarkerLen);
 
 		return len;
 	}
@@ -268,25 +415,6 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private static int writeNonEmptyByteArray(BitOutputStream bos, byte[] array, BitCodec<Byte> codec)
-			throws IOException {
-		if (array == null || array.length == 0)
-			throw new RuntimeException("Expecting a non-empty array.");
-
-		int len = 0;
-		for (byte b : array)
-			len += codec.write(bos, b);
-		return len;
-	}
-
-	private static byte[] readNonEmptyByteArray(BitInputStream bis, byte[] array, BitCodec<Byte> codec)
-			throws IOException {
-		for (int i = 0; i < array.length; i++)
-			array[i] = codec.read(bis);
-
-		return array;
 	}
 
 	private static long writeZeroTerminatedString(String string, BitCodec<Byte> codec, BitOutputStream bos)

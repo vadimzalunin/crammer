@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.impl;
 
 import java.io.DataOutputStream;
@@ -36,6 +51,7 @@ class CramRecordBlockWriter {
 		dos.writeBoolean(block.isSubstitutionQualityScoresIncluded());
 		dos.writeBoolean(block.isMaskedQualityScoresIncluded());
 		dos.writeBoolean(block.losslessQualityScores);
+		dos.writeBoolean(block.preserveReadNames);
 
 		dos.write("COMPRESSIONBEGIN".getBytes());
 		writeCramCompression(dos, block.getCompression());
@@ -102,37 +118,57 @@ class CramRecordBlockWriter {
 			os.writeInt(compression.tagKeyFrequency[i]);
 
 			ByteFrequencies byteFrequencies = compression.tagByteFrequencyMap.get(tagKey);
-			byte[] alphabet = byteFrequencies.getValues();
-			writeArray(os, alphabet);
-			int[] freqs = byteFrequencies.getFrequencies();
-			writeArray(os, freqs);
+			os.writeBoolean(byteFrequencies != null);
+			if (byteFrequencies != null) {
+				byte[] alphabet = byteFrequencies.getValues();
+				writeArray(os, alphabet);
+				int[] freqs = byteFrequencies.getFrequencies();
+				writeArray(os, freqs);
+			}
 
 			IntFrequencies byteLengths = compression.tagByteLengthMap.get(tagKey);
 			writeArray(os, byteLengths.getValues());
 			writeArray(os, byteLengths.getFrequencies());
 		}
 
+		write(os, compression.tagCountFrequency);
+
 		byte[] alphabet = compression.flagStats.getValues();
 		writeArray(os, alphabet);
 		int[] freqs = compression.flagStats.getFrequencies();
 		writeArray(os, freqs);
-		
-//		write (os, compression.score2) ;
+
+		write(os, compression.readNameFreqs);
+		write(os, compression.readNameLengthFreqs);
 	}
 
 	private static final void writeEncoding(DataOutputStream os, Encoding encoding) throws IOException {
 		os.writeByte(encoding.getAlgorithm().ordinal());
 		os.writeUTF(encoding.getParameters());
 	}
-	
+
 	private static final void write(DataOutputStream os, DiByteFrequencies f) throws IOException {
-		byte[][] values = f.getValues() ;
-		int[] freqs = f.getFrequencies() ;
-		
-		os.writeInt(values.length) ;
-		for (int i=0; i<values.length; i++) {
-			os.write(values[i]) ;
-			os.writeInt(freqs[i]) ;
+		byte[][] values = f.getValues();
+		int[] freqs = f.getFrequencies();
+
+		os.writeInt(values.length);
+		for (int i = 0; i < values.length; i++) {
+			os.write(values[i]);
+			os.writeInt(freqs[i]);
 		}
+	}
+
+	private static final void write(DataOutputStream os, ByteFrequencies bf) throws IOException {
+		byte[] alphabet = bf.getValues();
+		writeArray(os, alphabet);
+		int[] freqs = bf.getFrequencies();
+		writeArray(os, freqs);
+	}
+
+	private static final void write(DataOutputStream os, IntFrequencies bf) throws IOException {
+		int[] alphabet = bf.getValues();
+		writeArray(os, alphabet);
+		int[] freqs = bf.getFrequencies();
+		writeArray(os, freqs);
 	}
 }

@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.bam;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -14,7 +29,6 @@ import net.sf.samtools.util.StringUtil;
 import org.junit.Test;
 
 import uk.ac.ebi.ena.sra.cram.SequenceBaseProvider;
-import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory.TREAT_TYPE;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
 import uk.ac.ebi.ena.sra.cram.impl.ByteArraySequenceBaseProvider;
 import uk.ac.ebi.ena.sra.cram.impl.ReadFeatures2Cigar;
@@ -110,7 +124,6 @@ public class Sam2CramRecordTest {
 		SAMRecord samRecord = createSAMRecord(samRecordString, referenceBases);
 
 		Sam2CramRecordFactory factory = new Sam2CramRecordFactory(refString.getBytes());
-		factory.setTreatSoftClipsAs(TREAT_TYPE.INSERTION);
 		CramRecord cramRecord = factory.createCramRecord(samRecord);
 		SequenceBaseProvider provider = new ByteArraySequenceBaseProvider(refString.getBytes());
 		byte[] restoredBases = new RestoreBases(provider, samRecord.getReferenceName()).restoreReadBases(cramRecord);
@@ -131,7 +144,6 @@ public class Sam2CramRecordTest {
 		SAMRecord samRecord = createSAMRecord(samRecordString, referenceBases);
 
 		Sam2CramRecordFactory factory = new Sam2CramRecordFactory(refString.getBytes());
-		factory.setTreatSoftClipsAs(TREAT_TYPE.INSERTION);
 		CramRecord cramRecord = factory.createCramRecord(samRecord);
 		SequenceBaseProvider provider = new ByteArraySequenceBaseProvider(refString.getBytes());
 		byte[] restoredBases = new RestoreBases(provider, samRecord.getReferenceName()).restoreReadBases(cramRecord);
@@ -172,7 +184,6 @@ public class Sam2CramRecordTest {
 		SAMRecord samRecord = createSAMRecord(samRecordString, referenceBases);
 
 		Sam2CramRecordFactory factory = new Sam2CramRecordFactory(refString.getBytes());
-		factory.setTreatSoftClipsAs(TREAT_TYPE.INSERTION);
 		CramRecord cramRecord = factory.createCramRecord(samRecord);
 		SequenceBaseProvider provider = new ByteArraySequenceBaseProvider(refString.getBytes());
 		byte[] restoredBases = new RestoreBases(provider, samRecord.getReferenceName()).restoreReadBases(cramRecord);

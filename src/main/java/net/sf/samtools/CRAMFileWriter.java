@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package net.sf.samtools;
 
 import java.io.BufferedReader;
@@ -11,13 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.commons.collections.map.MultiValueMap;
-
 import net.sf.picard.reference.ReferenceSequenceFile;
 import uk.ac.ebi.ena.sra.cram.CramException;
 import uk.ac.ebi.ena.sra.cram.Utils;
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
-import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory.TREAT_TYPE;
 import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
@@ -67,7 +79,7 @@ public class CRAMFileWriter implements SAMFileWriter {
 
 		List<CramHeaderRecord> headerRecords = Utils.getCramHeaderRecords (samHeader) ;
 		cramWriter = new CramWriter(os, null, sequences, false, 100000, true, true, false, null, null, cramReadGroups,
-				false, headerRecords);
+				false, headerRecords, false);
 		cramWriter.init();
 
 		cramRecordFactory = new Sam2CramRecordFactory();
@@ -75,8 +87,8 @@ public class CRAMFileWriter implements SAMFileWriter {
 		cramRecordFactory.setCaptureSubtitutionScores(true);
 		cramRecordFactory.setCaptureUnmappedScores(true);
 		cramRecordFactory.setUncategorisedQualityScoreCutoff(0);
-		cramRecordFactory.setTreatSoftClipsAs(TREAT_TYPE.IGNORE);
 		cramRecordFactory.losslessQS = false;
+		cramRecordFactory.preserveReadNames = false;
 	}
 
 	private static byte[] refPos2RefSNPs(InputStream is, int refLen, byte onValue) throws IOException {

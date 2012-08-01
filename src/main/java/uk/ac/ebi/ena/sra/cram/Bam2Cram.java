@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram;
 
 import java.io.BufferedOutputStream;
@@ -23,6 +38,8 @@ import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
+import net.sf.samtools.SAMFileWriter;
+import net.sf.samtools.SAMFileWriterFactory;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
@@ -31,7 +48,6 @@ import net.sf.samtools.SAMSequenceRecord;
 import org.apache.log4j.Logger;
 
 import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory;
-import uk.ac.ebi.ena.sra.cram.bam.Sam2CramRecordFactory.TREAT_TYPE;
 import uk.ac.ebi.ena.sra.cram.format.CramHeaderRecord;
 import uk.ac.ebi.ena.sra.cram.format.CramReadGroup;
 import uk.ac.ebi.ena.sra.cram.format.CramRecord;
@@ -91,7 +107,7 @@ public class Bam2Cram {
 
 	public void init() throws IOException, CramException {
 		if (params.bamFile == null) {
-				throw new RuntimeException("Input BAM file name is required.");
+			throw new RuntimeException("Input BAM file name is required.");
 		} else {
 			ValidationStringency defaultValidationStringency = SAMFileReader.getDefaultValidationStringency();
 			SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
@@ -152,9 +168,10 @@ public class Bam2Cram {
 		cramWriter = new CramWriter(os, provider, sequences, params.roundTripCheck, params.maxBlockSize,
 				params.captureUnmappedQualityScore, params.captureSubstitutionQualityScore,
 				params.captureMaskedQualityScore, readAnnoReader == null ? null : readAnnoReader.listUniqAnnotations(),
-				statsPS, cramReadGroups, params.captureAllQualityScore, headerRecords);
+				statsPS, cramReadGroups, params.captureAllQualityScore, headerRecords, params.preserveReadNames);
 		cramWriter.setAutodump(log.isDebugEnabled());
 		cramWriter.init();
+		
 	}
 
 	public void close() throws IOException {
@@ -220,7 +237,7 @@ public class Bam2Cram {
 			iterator = samReader.queryUnmapped();
 		else
 			iterator = samReader.query(name, 0, 0, false);
-
+		
 		while (params.skipFirstRecords-- > 0 && iterator.hasNext())
 			iterator.next();
 
@@ -246,6 +263,8 @@ public class Bam2Cram {
 			cramRecordFactory.setCaptureUnmappedScores(params.captureUnmappedQualityScore);
 			cramRecordFactory.setUncategorisedQualityScoreCutoff(params.qualityCutoff);
 			cramRecordFactory.captureAllTags = params.captureAllTags;
+			cramRecordFactory.preserveReadNames = params.preserveReadNames;
+
 			if (params.ignoreTags != null && params.ignoreTags.length() > 0)
 				cramRecordFactory.ignoreTags.addAll(Arrays.asList(params.ignoreTags.split(":")));
 
@@ -255,10 +274,6 @@ public class Bam2Cram {
 				cramRecordFactory.losslessQS = false;
 			}
 
-			if (params.ignoreSoftClips)
-				cramRecordFactory.setTreatSoftClipsAs(TREAT_TYPE.IGNORE);
-			else
-				cramRecordFactory.setTreatSoftClipsAs(TREAT_TYPE.INSERTION);
 			boolean enforceAlignmentOrder = false;
 
 			cramWriter.startSequence(name, refBases);
@@ -323,7 +338,58 @@ public class Bam2Cram {
 		}
 	}
 
+	private static boolean[] softClipsCollapseMask = new boolean[CigarOperator.values().length];
+	static {
+		Arrays.fill(softClipsCollapseMask, false);
+		softClipsCollapseMask[CigarOperator.S.ordinal()] = true;
+	}
+
+	private void collapseCigarOps(SAMRecord record, boolean[] collapseOpsMask) {
+		final Cigar cigar = record.getCigar();
+		if (cigar.isEmpty()) return ;
+
+		int collapsedReadLength = record.getReadLength();
+		for (final CigarElement e : cigar.getCigarElements())
+			if (collapseOpsMask[e.getOperator().ordinal()])
+				collapsedReadLength -= e.getLength();
+
+		byte[] collapsedBases = new byte[collapsedReadLength];
+		byte[] collapsedScores = new byte[collapsedReadLength];
+
+		int posInOriginalRead = 0;
+		int posInCollapsedRead = 0;
+
+		List<CigarElement> newCEList = new ArrayList<CigarElement>(collapsedReadLength);
+		for (CigarElement e : cigar.getCigarElements()) {
+
+			if (collapseOpsMask[e.getOperator().ordinal()]) {
+				posInOriginalRead += e.getLength();
+			} else {
+				if (e.getOperator().consumesReadBases()) {
+					try {
+						System.arraycopy(record.getReadBases(), posInOriginalRead, collapsedBases, posInCollapsedRead,
+								e.getLength());
+						System.arraycopy(record.getBaseQualities(), posInOriginalRead, collapsedScores,
+								posInCollapsedRead, e.getLength());
+					} catch (java.lang.ArrayIndexOutOfBoundsException aob) {
+						aob.printStackTrace();
+					}
+					posInCollapsedRead += e.getLength();
+					posInOriginalRead += e.getLength();
+				}
+				newCEList.add(e);
+			}
+		}
+
+		record.setCigar(new Cigar(newCEList));
+		record.setReadBases(collapsedBases);
+		record.setBaseQualities(collapsedScores);
+	}
+
 	private void compressRecord(SAMRecord samRecord) throws IOException, CramException {
+		if (params.ignoreSoftClips && !samRecord.getReadUnmappedFlag())
+			collapseCigarOps(samRecord, softClipsCollapseMask);
+
 		if (params.qualityCutoff > 0) {
 			byte[] originalScores = new byte[samRecord.getBaseQualities().length];
 			System.arraycopy(samRecord.getBaseQualities(), 0, originalScores, 0, originalScores.length);
@@ -568,14 +634,14 @@ public class Bam2Cram {
 
 		if (params.qualityScoreBinSize > 0) {
 			log.info("Quality scores will be binned using static uniform scheme: ");
-			for (int i = 0; i < 40; i++) 
+			for (int i = 0; i < 40; i++)
 				log.info(String.format("%d -> %d", i, (byte) (params.qualityScoreBinSize / 2 + i
 						/ params.qualityScoreBinSize * params.qualityScoreBinSize)));
 		}
-		
+
 		if (params.ncbiQualityScoreBinning) {
 			log.info("Quality scores will be binned using NCBI scheme: ");
-			for (int i = 0; i < 40; i++) 
+			for (int i = 0; i < 40; i++)
 				log.info(String.format("%d -> %d", i, NCBI_binning_matrix[i]));
 		}
 
@@ -694,6 +760,9 @@ public class Bam2Cram {
 
 		@Parameter(names = { "--ncbi-quality-score-binning" }, description = "Use NCBI binning scheme for quality scores.")
 		boolean ncbiQualityScoreBinning = false;
+
+		@Parameter(names = { "--preserve-read-names" }, description = "Preserve all read names.")
+		boolean preserveReadNames = false;
 	}
 
 	// @formatter:off
@@ -720,4 +789,5 @@ public class Bam2Cram {
 			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35,
 			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35,
 			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35 };
+
 }

@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.io;
 
 import java.io.IOException;
@@ -22,12 +37,17 @@ public class DefaultBitOutputStream extends OutputStream implements
 	public DefaultBitOutputStream(OutputStream delegate) {
 		this.out = delegate;
 	}
+	
+	public void write (byte b) throws IOException {
+		out.write((int)b) ;
+	}
 
 	@Override
 	public void write(int value) throws IOException {
-		write(toBytes(value));
+//		write(toBytes(value));
+		out.write(value) ;
 	}
-
+	
 	private final static byte[] toBytes(int value) {
 		final byte[] bytes = new byte[4];
 		bytes[0] = (byte) (value >>> 24);
@@ -177,4 +197,27 @@ public class DefaultBitOutputStream extends OutputStream implements
 		return out ;
 	}
 
+	@Override
+	public int alignToByte() throws IOException {
+		int bitsFlushed = bufferedNumberOfBits ;
+		
+		if (bufferedNumberOfBits > 0)
+			out.write(bufferByte);
+
+		bufferedNumberOfBits = 0 ;
+		bufferByte = 0 ;
+		
+		return bitsFlushed ;
+	}
+	
+	@Override
+	public void write(byte[] b) throws IOException {
+		out.write(b);
+	}
+	
+	@Override
+	public void write(byte[] b, int off, int len) throws IOException {
+		out.write(b, off, len);
+	}
+	
 }

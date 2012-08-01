@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.format;
 
 import java.util.Arrays;
@@ -37,7 +52,7 @@ public class CramRecord {
 	public CramRecord next, previous;
 	public boolean detached = false;
 	public int insertSize;
-	public long counter =1 ;
+	public long counter = 1;
 
 	private Byte flags = null;
 
@@ -131,7 +146,19 @@ public class CramRecord {
 		if (!Arrays.equals(qualityScores, r.qualityScores))
 			return false;
 
+		if (flags != r.flags)
+			return false;
+
+		if (!areEqual(readName, r.readName))
+			return false;
+
 		return true;
+	}
+
+	private boolean areEqual(Object o1, Object o2) {
+		if (o1 == null && o2 == null)
+			return true;
+		return o1 != null && o1.equals(o2);
 	}
 
 	private boolean deepEquals(Collection<?> c1, Collection<?> c2) {
@@ -145,7 +172,9 @@ public class CramRecord {
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer("[");
-		sb.append("readMapped=").append(readMapped);
+		if (readName != null) sb.append(readName).append("; ") ;
+		sb.append("flags=").append(flags) ;
+		sb.append("; readMapped=").append(readMapped);
 		sb.append("; alignmentStart=").append(alignmentStart);
 		sb.append("; negativeStrand=").append(negativeStrand);
 		sb.append("; vendorFiltered=").append(vendorFiltered);

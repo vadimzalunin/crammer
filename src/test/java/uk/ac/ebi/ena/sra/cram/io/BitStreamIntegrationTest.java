@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.io;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -165,6 +180,7 @@ public class BitStreamIntegrationTest {
 			bos.write(value, 32);
 
 		bos.flush();
+		bos.close() ;
 
 		byte[] buf = baos.toByteArray();
 		assertThat(buf.length, is(maxValues*4)) ;
@@ -175,6 +191,41 @@ public class BitStreamIntegrationTest {
 
 			long readBits = bis.readLongBits(32);
 			assertThat(readBits, is(value));
+		}
+		bis.close() ;
+	}
+	
+	@Test
+	public void test_Align() throws IOException {
+		for (int bits=0; bits<64; bits++) {
+			for (int markerLen = 0; markerLen<64; markerLen++) {
+				long marker = ~(-1 << (markerLen / 2));
+				
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
+//				DebuggingBitOuputStream bos = new DebuggingBitOuputStream(System.err, '\n', new DefaultBitOutputStream(baos)) ; 
+				
+				bos.write(0L, bits) ;
+				bos.alignToByte() ;
+				bos.write(marker, markerLen) ;
+				bos.write(0L, bits) ;
+				bos.write(marker, markerLen) ;
+				
+				bos.close() ;
+//				bos.flush() ;
+				
+				ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+				DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+				
+				assertThat(bis.readBits(bits), is(0)) ;
+				bis.alignToByte() ;
+				assertThat(bis.ensureMarker(marker, markerLen), is(true)) ;
+				assertThat(bis.readBits(bits), is(0)) ;
+				assertThat(bis.ensureMarker(marker, markerLen), is(true)) ;
+				
+				bis.close() ;
+				
+			}
 		}
 	}
 }

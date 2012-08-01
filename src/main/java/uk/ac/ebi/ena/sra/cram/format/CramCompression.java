@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.format;
 
 import java.io.Serializable;
@@ -22,7 +37,7 @@ public class CramCompression implements Serializable {
 
 	private byte[] scoreAlphabet;
 	private int[] scoreFrequencies;
-	
+
 	public DiByteFrequencies score2;
 
 	private byte[] stopScoreAlphabet;
@@ -50,8 +65,12 @@ public class CramCompression implements Serializable {
 	public Map<String, IntFrequencies> tagByteLengthMap = new TreeMap<String, IntFrequencies>();
 	public String[] tagKeyAlphabet;
 	public int[] tagKeyFrequency;
-	
-	public ByteFrequencies flagStats ;
+	public ByteFrequencies tagCountFrequency;
+
+	public ByteFrequencies flagStats;
+
+	public ByteFrequencies readNameFreqs;
+	public IntFrequencies readNameLengthFreqs;
 
 	public CramCompression() {
 	}
@@ -195,8 +214,10 @@ public class CramCompression implements Serializable {
 				sb.append(tagKeyAndType).append("\n");
 
 				ByteFrequencies bf = tagByteFrequencyMap.get(tagKeyAndType);
-				sb.append("Bytes:").append(Arrays.toString(bf.getValues())).append("\n");
-				sb.append("Byte freqs:").append(Arrays.toString(bf.getFrequencies())).append("\n");
+				if (bf != null) {
+					sb.append("Bytes:").append(Arrays.toString(bf.getValues())).append("\n");
+					sb.append("Byte freqs:").append(Arrays.toString(bf.getFrequencies())).append("\n");
+				}
 
 				IntFrequencies lf = tagByteLengthMap.get(tagKeyAndType);
 				sb.append("Length:").append(Arrays.toString(lf.getValues())).append("\n");
@@ -204,10 +225,10 @@ public class CramCompression implements Serializable {
 			}
 
 		}
-		
+
 		sb.append("Flags:").append(Arrays.toString(flagStats.getValues())).append("\n");
 		sb.append("Flags freqs:").append(Arrays.toString(flagStats.getFrequencies())).append("\n");
-		
+
 		return sb.toString();
 	}
 

@@ -1,9 +1,23 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.spot;
 
-import java.util.Map;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Queue;
-import java.util.TreeMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import net.sf.samtools.SAMRecord;
 
@@ -11,8 +25,8 @@ public class PairedTemplateAssembler {
 	public static final int POINTEE_DISTANCE_NOT_SET = -2;
 	public static final int DISTANCE_NOT_SET = -1;
 
-	private Queue<Record> recordQueue = new LinkedBlockingQueue<PairedTemplateAssembler.Record>();
-	private Map<String, Record> recordsByNameMap = new TreeMap<String, PairedTemplateAssembler.Record>();
+	private Queue<Record> recordQueue = new LinkedList<PairedTemplateAssembler.Record>();
+	private HashMap<String, Record> recordsByNameMap = new HashMap<String, PairedTemplateAssembler.Record>();
 
 	private static class Record {
 		SAMRecord samRecord;
@@ -71,6 +85,10 @@ public class PairedTemplateAssembler {
 		} else
 			recordsByNameMap.put(spotName, record);
 
+		// if (counter % 9999 == 0)
+		// System.err.println("Template assembler record queue size: " +
+		// recordQueue.size() + "; records map size: "
+		// + recordsByNameMap.size());
 	}
 
 	public void addSAMRecordNoAssembly(SAMRecord samRecord) {
@@ -90,7 +108,7 @@ public class PairedTemplateAssembler {
 			return null;
 		if (!record.needsAssembly)
 			return fetchNextSAMRecord();
-		
+
 		SAMRecord samRecord = record.samRecord;
 		if (!samRecord.getReferenceName().equals(lastAddedReadSeqName))
 			return fetchNextSAMRecord();
@@ -120,7 +138,9 @@ public class PairedTemplateAssembler {
 
 		distanceToNextFragment = record.nofRecordsToNextFragment;
 		mateRecord = record.mateRecord;
-		Record remove = recordsByNameMap.remove(record.samRecord.getReadName());
+
+		String readName = record.samRecord.getReadName();
+		Record remove = recordsByNameMap.remove(readName);
 		return record.samRecord;
 	}
 
@@ -140,21 +160,21 @@ public class PairedTemplateAssembler {
 	}
 
 	public void dumpHead() {
-		System.out.println("PairedTemplateAssembler record queue size: " + recordQueue.size());
-		System.out.println("PairedTemplateAssembler records by name map size: " + recordsByNameMap.size());
+		System.err.println("PairedTemplateAssembler record queue size: " + recordQueue.size());
+		System.err.println("PairedTemplateAssembler records by name map size: " + recordsByNameMap.size());
 		Record head = recordQueue.peek();
 		if (head == null)
-			System.out.println("PairedTemplateAssembler head is null.");
+			System.err.println("PairedTemplateAssembler head is null.");
 		else {
 			if (head.samRecord != null)
-				System.out.println(head.samRecord.getSAMString());
+				System.err.println(head.samRecord.getSAMString());
 			else
-				System.out.println("PairedTemplateAssembler head: samRecord is null.");
+				System.err.println("PairedTemplateAssembler head: samRecord is null.");
 			if (head.mateRecord != null)
-				System.out.println(head.mateRecord.getSAMString());
+				System.err.println(head.mateRecord.getSAMString());
 			else
-				System.out.println("PairedTemplateAssembler head: mateRecord is null.");
-			System.out.println("distance=" + head.nofRecordsToNextFragment);
+				System.err.println("PairedTemplateAssembler head: mateRecord is null.");
+			System.err.println("distance=" + head.nofRecordsToNextFragment);
 
 		}
 	}

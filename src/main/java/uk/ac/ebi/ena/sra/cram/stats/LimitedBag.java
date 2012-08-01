@@ -1,21 +1,34 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.stats;
 
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.commons.collections.Bag;
-import org.apache.commons.collections.bag.HashBag;
 import org.apache.commons.math.stat.Frequency;
 
-public class LimitedBag implements Bag {
+public class LimitedBag extends HashBag {
 	public static final int MAX_DISTINCT_VALUES = 1000;
 
 	private String key;
-	private Bag bag;
+	private HashBag bag;
 	private int maxDistinctValues;
 
-	public LimitedBag(String key, int maxDistinctValues, Bag bag) {
+	public LimitedBag(String key, int maxDistinctValues, HashBag bag) {
 		if (key == null)
 			throw new NullPointerException("Key is null.");
 		if (bag == null)
@@ -50,7 +63,7 @@ public class LimitedBag implements Bag {
 		return key;
 	}
 
-	public Bag getValueBag() {
+	public HashBag getValueBag() {
 		return bag;
 	}
 
@@ -69,7 +82,7 @@ public class LimitedBag implements Bag {
 	}
 
 	public boolean remove(Object object, int nCopies) {
-		return bag.remove(object, nCopies);
+		return bag.remove(object);
 	}
 
 	public Set uniqueSet() {
@@ -80,43 +93,4 @@ public class LimitedBag implements Bag {
 		return bag.size();
 	}
 
-	public boolean containsAll(Collection coll) {
-		return bag.containsAll(coll);
-	}
-
-	public boolean isEmpty() {
-		return bag.isEmpty();
-	}
-
-	public boolean contains(Object o) {
-		return bag.contains(o);
-	}
-
-	public boolean removeAll(Collection coll) {
-		return bag.removeAll(coll);
-	}
-
-	public boolean retainAll(Collection coll) {
-		return bag.retainAll(coll);
-	}
-
-	public Object[] toArray() {
-		return bag.toArray();
-	}
-
-	public Object[] toArray(Object[] a) {
-		return bag.toArray(a);
-	}
-
-	public Iterator iterator() {
-		return bag.iterator();
-	}
-
-	public boolean addAll(Collection c) {
-		return bag.addAll(c);
-	}
-
-	public void clear() {
-		bag.clear();
-	}
 }

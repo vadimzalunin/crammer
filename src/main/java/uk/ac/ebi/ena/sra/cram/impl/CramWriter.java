@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.impl;
 
 import java.io.DataOutputStream;
@@ -55,12 +70,13 @@ public class CramWriter {
 	private final List<CramHeaderRecord> headerRecords;
 
 	private CodecStats codecStats;
+	private final boolean preserveReadNames;
 
 	public CramWriter(OutputStream os, SequenceBaseProvider provider, List<CramReferenceSequence> sequences,
 			boolean roundTripCheck, int maxRecordsPerBlock, boolean captureUnammpedQualityScortes,
 			boolean captureSubstituionQualityScore, boolean captureMaskedQualityScores,
 			List<ReadAnnotation> readAnnotations, PrintStream statsPS, List<CramReadGroup> cramReadGroups,
-			boolean captureAllQS, List<CramHeaderRecord> headerRecords) {
+			boolean captureAllQS, List<CramHeaderRecord> headerRecords, boolean preserveReadNames) {
 		this.os = os;
 		this.provider = provider;
 		this.sequences = sequences;
@@ -74,6 +90,7 @@ public class CramWriter {
 		this.cramReadGroups = cramReadGroups;
 		this.captureAllQS = captureAllQS;
 		this.headerRecords = headerRecords;
+		this.preserveReadNames = preserveReadNames;
 	}
 
 	public void dump() {
@@ -93,7 +110,7 @@ public class CramWriter {
 
 		writerOS.reset();
 
-		// write compresseed data size:
+		// write compressed data size:
 		DataOutputStream dos = new DataOutputStream(os);
 		dos.writeInt(compressedOS.size());
 
@@ -179,8 +196,8 @@ public class CramWriter {
 			block.setRecordCount(block.getRecords().size());
 			log.debug(block.toString());
 			len = write(block);
-			log.info(String.format("Block purged: %s\t%d\t%d\t%.2f\t%.4f\t%.3fs\t%d\t%d", block.getSequenceName(),
-					block.getRecordCount(), len, (float) len / block.getRecordCount(),
+			log.info(String.format("Block purged: %s\t%d\t%d\t%d\t%.2f\t%.4f\t%.3fs\t%d\t%d", block.getSequenceName(),
+					block.getRecordCount(), writer.gzippedBlockHeaderBytes, len, (float) len / block.getRecordCount(),
 					(float) len / stats.getBaseCount(), (System.currentTimeMillis() - blockCreationTime) / 1000f,
 					beyondHorizon, extraChromosomePairs));
 		}
@@ -198,6 +215,7 @@ public class CramWriter {
 		this.block.setUnmappedReadQualityScoresIncluded(captureUnammpedQualityScortes);
 		this.block.setSubstitutionQualityScoresIncluded(captureSubstituionQualityScore);
 		this.block.setMaskedQualityScoresIncluded(captureMaskedQualityScores);
+		this.block.preserveReadNames = preserveReadNames ;
 		if (this.block.getCompression() == null)
 			this.block.setCompression(new CramCompression());
 		this.block.losslessQualityScores = captureAllQS;

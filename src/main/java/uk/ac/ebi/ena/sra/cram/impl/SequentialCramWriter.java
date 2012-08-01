@@ -1,8 +1,25 @@
+/*******************************************************************************
+ * Copyright 2012 EMBL-EBI, Hinxton outstation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.impl;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -38,12 +55,15 @@ public class SequentialCramWriter {
 	private DefaultMutableTreeNode rootNode;
 	private final CramHeader header;
 
+	public int gzippedBlockHeaderBytes = 0;
+
 	public SequentialCramWriter(OutputStream os, SequenceBaseProvider referenceBaseProvider, CramHeader header) {
 		this.os = os;
 		this.referenceBaseProvider = referenceBaseProvider;
 		this.header = header;
 		bos = new DefaultBitOutputStream(os);
-		// bos = new DebuggingBitOuputStream(System.out, '\n') ;
+		// bos = new DebuggingBitOuputStream(System.out, '\n', new
+		// DefaultBitOutputStream(os));
 		blockHeaderWriter = new CramRecordBlockWriter(os);
 	}
 
@@ -64,7 +84,15 @@ public class SequentialCramWriter {
 		// recordCodec = recordCodecFactory.createRecordCodec(header, block,
 		// referenceBaseProvider) ;
 
-		long bits = blockHeaderWriter.write(block);
+		long bits = 0;
+		bits = blockHeaderWriter.write(block);
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		GZIPOutputStream gos = new GZIPOutputStream(baos);
+		CramRecordBlockWriter bw = new CramRecordBlockWriter(gos);
+		bw.write(block);
+		gos.close();
+		gzippedBlockHeaderBytes = baos.size();
 
 		return bits;
 	}
@@ -84,7 +112,8 @@ public class SequentialCramWriter {
 		// the codec does not handle alignment start of the first sequence in
 		// the block:
 		checkRecord.setAlignmentStart(record.getAlignmentStart());
-		restoreBases.restoreReadBases(checkRecord);
+		if (checkRecord.isReadMapped())
+			restoreBases.restoreReadBases(checkRecord);
 
 		if (!checkRecord.equals(record)) {
 			System.err.println(record.toString());
@@ -102,7 +131,7 @@ public class SequentialCramWriter {
 		bos.flush();
 		os.flush();
 	}
-	
+
 	public void dump() {
 		RecordCodecFactory.dump(rootNode);
 	}
