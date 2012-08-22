@@ -48,7 +48,7 @@ public class LimitedBag extends HashBag {
 	public LimitedBag(String key) {
 		this(key, MAX_DISTINCT_VALUES, new HashBag());
 	}
-	
+
 	public boolean add(Object value) {
 		if (isFull())
 			return true;

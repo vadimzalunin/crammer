@@ -32,15 +32,12 @@ public class NumberCodecFactoryTest {
 	}
 
 	@Test
-	public void test_string_representation_round_trip()
-			throws CramCompressionException {
+	public void test_string_representation_round_trip() throws CramCompressionException {
 		for (EncodingAlgorithm encoding : EncodingAlgorithm.values()) {
 			NumberCodecStub stub = NumberCodecFactory.createStub(encoding);
 			String stringRepresentation = stub.getStringRepresentation();
 			stub.initFromString(stringRepresentation);
-			assertThat(
-					"String representaion round trip failed for " + encoding,
-					stub.getStringRepresentation(),
+			assertThat("String representaion round trip failed for " + encoding, stub.getStringRepresentation(),
 					equalTo(stringRepresentation));
 		}
 	}

@@ -141,7 +141,19 @@ public class PairedTemplateAssembler {
 
 		String readName = record.samRecord.getReadName();
 		Record remove = recordsByNameMap.remove(readName);
-		return record.samRecord;
+
+		SAMRecord samRecord = record.samRecord;
+
+		// to avoid memory leak bug in LinkedList:
+		record.mateRecord = null;
+		record.samRecord = null;
+
+		if (remove != null) {
+			remove.mateRecord = null;
+			remove.samRecord = null;
+		}
+
+		return samRecord;
 	}
 
 	public int distanceToNextFragment() {

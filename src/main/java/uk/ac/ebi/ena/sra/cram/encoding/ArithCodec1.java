@@ -129,11 +129,12 @@ public class ArithCodec1 implements ByteArrayBitCodec {
 		System.out.println(curByte);
 		System.out.println(curBit);
 		int nofBits = 8 - curBit;
-//		int nofBits = (fileData.size() - curByte) * 8 + 8 - curBit;
+		// int nofBits = (fileData.size() - curByte) * 8 + 8 - curBit;
 		System.out.println(nofBits);
-		int bits = fileData.get(fileData.size() - 1) ;
-//		int bits = (fileData.get(fileData.size() - 2) << 8) | fileData.get(fileData.size() - 1) ;
-		
+		int bits = fileData.get(fileData.size() - 1);
+		// int bits = (fileData.get(fileData.size() - 2) << 8) |
+		// fileData.get(fileData.size() - 1) ;
+
 		bis.putBack(curBit, (bits >> curBit) & (((1 << nofBits) - 1)));
 
 		return this.baos.toByteArray();

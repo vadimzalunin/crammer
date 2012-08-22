@@ -146,7 +146,7 @@ public class CramRecord {
 		if (!Arrays.equals(qualityScores, r.qualityScores))
 			return false;
 
-		if (flags != r.flags)
+		if (!areEqual(flags, r.flags))
 			return false;
 
 		if (!areEqual(readName, r.readName))
@@ -172,8 +172,9 @@ public class CramRecord {
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer("[");
-		if (readName != null) sb.append(readName).append("; ") ;
-		sb.append("flags=").append(flags) ;
+		if (readName != null)
+			sb.append(readName).append("; ");
+		sb.append("flags=").append(flags);
 		sb.append("; readMapped=").append(readMapped);
 		sb.append("; alignmentStart=").append(alignmentStart);
 		sb.append("; negativeStrand=").append(negativeStrand);

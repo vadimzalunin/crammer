@@ -17,14 +17,12 @@ package net.sf.samtools;
 
 import net.sf.samtools.util.CloseableIterator;
 
-public class PreemptiveUnmappedSAMRecordIterator implements
-		CloseableIterator<SAMRecord> {
+public class PreemptiveUnmappedSAMRecordIterator implements CloseableIterator<SAMRecord> {
 	CloseableIterator<SAMRecord> delegate;
 	SAMRecord nextRecord;
 	boolean eof = false;
-	
-	public PreemptiveUnmappedSAMRecordIterator(
-			CloseableIterator<SAMRecord> delegate) {
+
+	public PreemptiveUnmappedSAMRecordIterator(CloseableIterator<SAMRecord> delegate) {
 		super();
 		this.delegate = delegate;
 	}

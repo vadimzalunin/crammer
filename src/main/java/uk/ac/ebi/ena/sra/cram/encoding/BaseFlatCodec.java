@@ -61,9 +61,7 @@ class BaseFlatCodec implements BitCodec<Byte> {
 
 	public BaseFlatCodec(byte[] order) {
 		if (order.length != 5)
-			throw new IllegalArgumentException(
-					"Expecting 5 bases order only but got: "
-							+ new String(order));
+			throw new IllegalArgumentException("Expecting 5 bases order only but got: " + new String(order));
 
 		this.order = order;
 		this.base2indexArray = new int[255];
@@ -81,9 +79,8 @@ class BaseFlatCodec implements BitCodec<Byte> {
 		int threeBits = bis.readBits(3);
 
 		if (threeBits >= order.length)
-			throw new RuntimeException("Unexpected base flat code: "
-					+ threeBits);
-		
+			throw new RuntimeException("Unexpected base flat code: " + threeBits);
+
 		return order[threeBits];
 	}
 

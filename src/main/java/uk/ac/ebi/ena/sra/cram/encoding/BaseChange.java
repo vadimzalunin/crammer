@@ -15,7 +15,6 @@
  ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.encoding;
 
-
 public class BaseChange {
 	private int change;
 

@@ -28,9 +28,7 @@ class BaseSequenceSteepCodec implements BitCodec<byte[]> {
 
 	public BaseSequenceSteepCodec(byte[] order) {
 		if (order.length != 6)
-			throw new IllegalArgumentException(
-					"Expecting 5 bases and 1 stop only but got: "
-							+ new String(order));
+			throw new IllegalArgumentException("Expecting 5 bases and 1 stop only but got: " + new String(order));
 
 		this.order = order;
 		this.codes = new BitCode[255];
@@ -70,8 +68,7 @@ class BaseSequenceSteepCodec implements BitCodec<byte[]> {
 		int length = 0;
 		for (byte base : bases) {
 			if (base == 'S')
-				throw new IllegalArgumentException(
-						"Stop code is not allowed in a base sequence.");
+				throw new IllegalArgumentException("Stop code is not allowed in a base sequence.");
 			BitCode code = codes[base];
 			bos.write(code.value, code.bits);
 			length += code.bits;
@@ -88,8 +85,7 @@ class BaseSequenceSteepCodec implements BitCodec<byte[]> {
 		int length = 0;
 		for (byte base : bases) {
 			if (base == 'S')
-				throw new IllegalArgumentException(
-						"Stop code is not allowed in a base sequence.");
+				throw new IllegalArgumentException("Stop code is not allowed in a base sequence.");
 			BitCode code = codes[base];
 			length += code.bits;
 		}

@@ -46,8 +46,7 @@ public class UnaryCodec implements BitCodec<Long> {
 	public final long write(BitOutputStream bos, Long value) throws IOException {
 		long newValue = value + offset;
 		if (newValue < 0)
-			throw new IllegalArgumentException(
-					"Unary codec, negative values not allowed: " + newValue);
+			throw new IllegalArgumentException("Unary codec, negative values not allowed: " + newValue);
 
 		long bits = newValue + 1;
 

@@ -52,10 +52,8 @@ public class CramRecordCodecRoundTripTests {
 
 	@Parameters
 	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] {
-				{ "1	223022	54	*	POS	M26D1M21y M5g 	*	*" },
-				{ "*	*	16	*	POS	*	AAAAAAAAAAAAAAAA	!!!!!!!!!!!!!!!!" },
-		};
+		Object[][] data = new Object[][] { { "1	223022	54	*	POS	M26D1M21y M5g 	*	*" },
+				{ "*	*	16	*	POS	*	AAAAAAAAAAAAAAAA	!!!!!!!!!!!!!!!!" }, };
 		return Arrays.asList(data);
 	}
 
@@ -70,8 +68,8 @@ public class CramRecordCodecRoundTripTests {
 
 		RecordCodecFactory factory = new RecordCodecFactory();
 		CramRecordBlock block = new CramRecordBlock();
-		block.setUnmappedReadQualityScoresIncluded(true) ;
-		CramCompression compression = CramCompression.createDefaultCramCompression() ;
+		block.setUnmappedReadQualityScoresIncluded(true);
+		CramCompression compression = CramCompression.createDefaultCramCompression();
 		block.setCompression(compression);
 
 		stats.adjustBlock(block);
@@ -82,13 +80,13 @@ public class CramRecordCodecRoundTripTests {
 
 		codec.write(bos, record);
 		bos.close();
-		
 
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
 		codec = factory.createRecordCodec(null, block, null);
 		CramRecord derivedRecord = codec.read(bis);
-		
+		derivedRecord.setFlags(derivedRecord.getFlags());
+
 		assertThat(derivedRecord, equalTo(record));
 
 	}

@@ -69,20 +69,17 @@ public class TRAMRoundTripTests {
 
 		File sourceFolder = findDataSetFolder(sourceDatasetName);
 		if (!sourceFolder.exists() || !sourceFolder.isDirectory())
-			throw new RuntimeException("Dataset folder not found: "
-					+ sourceDatasetName);
+			throw new RuntimeException("Dataset folder not found: " + sourceDatasetName);
 
 		File destFolder = findDataSetFolder(destDatasetName);
 		if (!destFolder.exists() || !destFolder.isDirectory())
-			throw new RuntimeException("Dataset folder not found: "
-					+ destDatasetName);
+			throw new RuntimeException("Dataset folder not found: " + destDatasetName);
 
 		File inputBamPath = new File(sourceFolder, "input.bam");
 		File refPath = new File(sourceFolder, "ref.fa");
 		File readQualityMaskFile = new File(destFolder, "readmask.pos");
 
-		ReferenceSequenceFile referenceSequenceFile = ReferenceSequenceFileFactory
-				.getReferenceSequenceFile(refPath);
+		ReferenceSequenceFile referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(refPath);
 
 		// generate CRAM from BAM:
 		File cramFile = new File(destFolder, "input.cram");
@@ -91,27 +88,22 @@ public class TRAMRoundTripTests {
 
 		String cmd1 = String
 				.format("-l ERROR cram --print-cram-records --max-records 10000 --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --read-quality-mask-file %s --capture-unmapped-quality-scores --capture-substitution-quality-scores --capture-masked-quality-scores",
-						inputBamPath, refPath, cramFile.getAbsolutePath(),
-						readQualityMaskFile.getAbsolutePath());
+						inputBamPath, refPath, cramFile.getAbsolutePath(), readQualityMaskFile.getAbsolutePath());
 
 		CramTools.main(cmd1.split(" "));
 
 		File textCramFile = new File(destFolder, "input.tram");
 		FileWriter textCramWriter = new FileWriter(textCramFile);
 
-		DataInputStream cramDIS = new DataInputStream(new FileInputStream(
-				cramFile));
+		DataInputStream cramDIS = new DataInputStream(new FileInputStream(cramFile));
 		CramHeader cramHeader = CramHeaderIO.read(cramDIS);
-		ReferenceSequence nextSequence = referenceSequenceFile
-				.getSequence(cramHeader.getReferenceSequences().iterator()
-						.next().getName());
-		byte[] refBases = referenceSequenceFile.getSubsequenceAt(
-				nextSequence.getName(), 1, nextSequence.length()).getBases();
+		ReferenceSequence nextSequence = referenceSequenceFile.getSequence(cramHeader.getReferenceSequences()
+				.iterator().next().getName());
+		byte[] refBases = referenceSequenceFile.getSubsequenceAt(nextSequence.getName(), 1, nextSequence.length())
+				.getBases();
 		Utils.capitaliseAndCheckBases(refBases, true);
-		ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
-				refBases);
-		SequentialCramReader reader = new SequentialCramReader(cramDIS,
-				provider, cramHeader);
+		ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(refBases);
+		SequentialCramReader reader = new SequentialCramReader(cramDIS, provider, cramHeader);
 
 		System.out.println();
 		CramRecordFormat format = new CramRecordFormat();
@@ -154,16 +146,13 @@ public class TRAMRoundTripTests {
 		File refFile = new File(folder, "ref.fa");
 		File bamFile = new File(folder, "input.bam");
 
-		SAMFileReader
-				.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
 		SAMFileReader samFileReader = new SAMFileReader(bamFile);
 		SAMRecordIterator iterator = samFileReader.iterator();
 
-		ReferenceSequenceFile referenceSequenceFile = ReferenceSequenceFileFactory
-				.getReferenceSequenceFile(refFile);
+		ReferenceSequenceFile referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile);
 		byte[] refBases = referenceSequenceFile.getSequence("1").getBases();
-		ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
-				refBases);
+		ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(refBases);
 		RestoreBases restoreBases = new RestoreBases(provider, "1");
 		RestoreQualityScores restoreQualityScores = new RestoreQualityScores();
 
@@ -184,29 +173,21 @@ public class TRAMRoundTripTests {
 			else
 				restoredReadBases = record.getReadBases();
 			try {
-				assertThat(
-						"Bases mismatch for record: " + samRecord.getReadName()
-								+ " for read number " + readCounter,
-						new String(restoredReadBases), equalTo(new String(
-								samRecord.getReadBases())));
-				byte[] restoredScore = restoreQualityScores
-						.restoreQualityScores(record);
+				assertThat("Bases mismatch for record: " + samRecord.getReadName() + " for read number " + readCounter,
+						new String(restoredReadBases), equalTo(new String(samRecord.getReadBases())));
+				byte[] restoredScore = restoreQualityScores.restoreQualityScores(record);
 				byte[] bamScores = samRecord.getBaseQualities();
 				for (int i = 0; i < restoredScore.length; i++) {
 					if (restoredScore[i] != 32)
-						assertThat(
-								"QScores mismatch for record: "
-										+ samRecord.getReadName()
-										+ " for read number " + readCounter,
-								restoredScore[i],
-								is((byte) (bamScores[i] + 33)));
+						assertThat("QScores mismatch for record: " + samRecord.getReadName() + " for read number "
+								+ readCounter, restoredScore[i], is((byte) (bamScores[i] + 33)));
 				}
 				readCounter++;
 			} catch (AssertionError e) {
 				System.err.println(line);
 				System.err.println(derivedString);
 				System.err.println(samRecord.format());
-				throw e ;
+				throw e;
 			}
 		}
 	}

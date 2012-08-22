@@ -20,8 +20,7 @@ import java.io.OutputStream;
 
 import uk.ac.ebi.ena.sra.cram.Utils;
 
-public class DefaultBitOutputStream extends OutputStream implements
-		BitOutputStream {
+public class DefaultBitOutputStream extends OutputStream implements BitOutputStream {
 
 	private static final byte[] bitMasks = new byte[8];
 	static {
@@ -37,17 +36,17 @@ public class DefaultBitOutputStream extends OutputStream implements
 	public DefaultBitOutputStream(OutputStream delegate) {
 		this.out = delegate;
 	}
-	
-	public void write (byte b) throws IOException {
-		out.write((int)b) ;
+
+	public void write(byte b) throws IOException {
+		out.write((int) b);
 	}
 
 	@Override
 	public void write(int value) throws IOException {
-//		write(toBytes(value));
-		out.write(value) ;
+		// write(toBytes(value));
+		out.write(value);
 	}
-	
+
 	private final static byte[] toBytes(int value) {
 		final byte[] bytes = new byte[4];
 		bytes[0] = (byte) (value >>> 24);
@@ -60,8 +59,7 @@ public class DefaultBitOutputStream extends OutputStream implements
 	@Override
 	public String toString() {
 		return "DefaultBitOutputStream: "
-				+ Utils.toBitString(new byte[] { (byte) bufferByte })
-						.substring(0, bufferedNumberOfBits);
+				+ Utils.toBitString(new byte[] { (byte) bufferByte }).substring(0, bufferedNumberOfBits);
 	}
 
 	public void write(long value, int nofBitsToWrite) throws IOException {
@@ -85,8 +83,7 @@ public class DefaultBitOutputStream extends OutputStream implements
 		}
 	}
 
-	void write_int_LSB_0(int value, int nofBitsToWrite)
-			throws IOException {
+	void write_int_LSB_0(int value, int nofBitsToWrite) throws IOException {
 		if (nofBitsToWrite == 0)
 			return;
 
@@ -189,35 +186,35 @@ public class DefaultBitOutputStream extends OutputStream implements
 		if (bufferedNumberOfBits > 0)
 			out.write(bufferByte);
 
-		bufferedNumberOfBits = 0 ;
+		bufferedNumberOfBits = 0;
 		out.flush();
 	}
-	
-	public OutputStream getDelegate () {
-		return out ;
+
+	public OutputStream getDelegate() {
+		return out;
 	}
 
 	@Override
 	public int alignToByte() throws IOException {
-		int bitsFlushed = bufferedNumberOfBits ;
-		
+		int bitsFlushed = bufferedNumberOfBits;
+
 		if (bufferedNumberOfBits > 0)
 			out.write(bufferByte);
 
-		bufferedNumberOfBits = 0 ;
-		bufferByte = 0 ;
-		
-		return bitsFlushed ;
+		bufferedNumberOfBits = 0;
+		bufferByte = 0;
+
+		return bitsFlushed;
 	}
-	
+
 	@Override
 	public void write(byte[] b) throws IOException {
 		out.write(b);
 	}
-	
+
 	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
 		out.write(b, off, len);
 	}
-	
+
 }

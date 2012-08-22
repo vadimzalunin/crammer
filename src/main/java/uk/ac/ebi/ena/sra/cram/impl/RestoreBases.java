@@ -42,8 +42,7 @@ public class RestoreBases {
 	}
 
 	private static final long calcRefLength(CramRecord record) {
-		if (record.getReadFeatures() == null
-				|| record.getReadFeatures().isEmpty())
+		if (record.getReadFeatures() == null || record.getReadFeatures().isEmpty())
 			return record.getReadLength();
 		long len = record.getReadLength();
 		for (ReadFeature rf : record.getReadFeatures()) {
@@ -72,27 +71,23 @@ public class RestoreBases {
 		long alignmentStart = record.getAlignmentStart() - 1;
 
 		int posInSeq = 0;
-		provider.copyBases(sequenceName, alignmentStart, refBases.length,
-				refBases);
-		if (record.getReadFeatures() == null
-				|| record.getReadFeatures().isEmpty()) {
+		provider.copyBases(sequenceName, alignmentStart, refBases.length, refBases);
+		if (record.getReadFeatures() == null || record.getReadFeatures().isEmpty()) {
 			for (posInRead = 1; posInRead <= readLength; posInRead++)
 				bases[posInRead - 1] = refBases[posInSeq++];
-			
-			record.setReadBases(bases) ;
+
+			record.setReadBases(bases);
 			return bases;
 		}
 		List<ReadFeature> variations = record.getReadFeatures();
 		for (ReadFeature v : variations) {
 			for (; posInRead < v.getPosition(); posInRead++)
-				bases[posInRead - 1] = provider.getBaseAt(sequenceName,
-						alignmentStart + posInSeq++);
+				bases[posInRead - 1] = provider.getBaseAt(sequenceName, alignmentStart + posInSeq++);
 
 			switch (v.getOperator()) {
 			case SubstitutionVariation.operator:
 				SubstitutionVariation sv = (SubstitutionVariation) v;
-				byte refBase = provider.getBaseAt(sequenceName, alignmentStart
-						+ posInSeq);
+				byte refBase = provider.getBaseAt(sequenceName, alignmentStart + posInSeq);
 				byte base = sv.getBaseChange().getBaseForReference(refBase);
 				sv.setBase(base);
 				sv.setRefernceBase(refBase);
@@ -119,8 +114,7 @@ public class RestoreBases {
 			}
 		}
 		for (; posInRead <= readLength; posInRead++)
-			bases[posInRead - 1] = provider.getBaseAt(sequenceName,
-					alignmentStart + posInSeq++);
+			bases[posInRead - 1] = provider.getBaseAt(sequenceName, alignmentStart + posInSeq++);
 
 		// ReadBase overwrites bases:
 		for (ReadFeature v : variations) {
@@ -133,8 +127,8 @@ public class RestoreBases {
 				break;
 			}
 		}
-		
-		record.setReadBases(bases) ;
+
+		record.setReadBases(bases);
 		return bases;
 	}
 

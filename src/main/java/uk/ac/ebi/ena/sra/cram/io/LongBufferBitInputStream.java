@@ -138,9 +138,9 @@ public class LongBufferBitInputStream extends DataInputStream implements BitInpu
 		return nofBufferedBits;
 	}
 
-	/* 
-	 * NOT TESTED!!!
-	 * (non-Javadoc)
+	/*
+	 * NOT TESTED!!! (non-Javadoc)
+	 * 
 	 * @see uk.ac.ebi.ena.sra.cram.io.BitInputStream#alignToByte()
 	 */
 	@Override
@@ -155,12 +155,12 @@ public class LongBufferBitInputStream extends DataInputStream implements BitInpu
 
 	@Override
 	public int readAlignedBytes(byte[] array) throws IOException {
-		throw new RuntimeException("Not implemented.") ;
+		throw new RuntimeException("Not implemented.");
 	}
 
 	@Override
 	public boolean ensureMarker(long marker, int nofBits) throws IOException {
-		throw new RuntimeException("Not implemented.") ;
+		throw new RuntimeException("Not implemented.");
 	}
 
 }

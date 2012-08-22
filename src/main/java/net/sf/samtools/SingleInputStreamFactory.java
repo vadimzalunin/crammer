@@ -26,8 +26,7 @@ public class SingleInputStreamFactory implements InputStreamFactory {
 	}
 
 	@Override
-	public InputStream createInputStream() throws FileNotFoundException,
-			ExhaustedFactoryException {
+	public InputStream createInputStream() throws FileNotFoundException, ExhaustedFactoryException {
 		if (delegate == null)
 			throw new ExhaustedFactoryException();
 		InputStream is = delegate;

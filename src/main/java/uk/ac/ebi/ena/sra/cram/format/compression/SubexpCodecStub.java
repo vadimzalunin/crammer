@@ -30,8 +30,7 @@ class SubexpCodecStub extends SubexpCodec implements NumberCodecStub {
 
 	@Override
 	public String getStringRepresentation() {
-		return String.format("%d,%d,%d", getK(), getOffset(), isUnaryBit() ? 1
-				: 0);
+		return String.format("%d,%d,%d", getK(), getOffset(), isUnaryBit() ? 1 : 0);
 	}
 
 	@Override
@@ -51,9 +50,8 @@ class SubexpCodecStub extends SubexpCodec implements NumberCodecStub {
 			setUnaryBit(quotientBit);
 			break;
 		default:
-			throw new CramCompressionException(
-					"Not supported number of parameters to golomb-rice codec: "
-							+ params.length);
+			throw new CramCompressionException("Not supported number of parameters to golomb-rice codec: "
+					+ params.length);
 		}
 	}
 

@@ -20,6 +20,5 @@ import java.io.InputStream;
 
 public interface InputStreamFactory {
 
-	public InputStream createInputStream() throws IOException,
-			ExhaustedFactoryException;
+	public InputStream createInputStream() throws IOException, ExhaustedFactoryException;
 }

@@ -46,9 +46,7 @@ class UnaryCodecStub extends UnaryCodec implements NumberCodecStub {
 			setOffset(offset);
 			break;
 		default:
-			throw new CramCompressionException(
-					"Not supported number of parameters to unary codec: "
-							+ params.length);
+			throw new CramCompressionException("Not supported number of parameters to unary codec: " + params.length);
 		}
 	}
 

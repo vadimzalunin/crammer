@@ -15,6 +15,8 @@
  ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.format;
 
+import net.sf.samtools.SAMTagUtil;
+
 public class ReadTag implements Comparable<ReadTag> {
 	private static final long MAX_INT = Integer.MAX_VALUE;
 	private static final long MAX_UINT = MAX_INT * 2 + 1;
@@ -28,6 +30,7 @@ public class ReadTag implements Comparable<ReadTag> {
 	private String keyAndType;
 	private char type;
 	private Object value;
+	public short code ;
 
 	public ReadTag(String key, char type, Object value) {
 		if (key == null)
@@ -39,13 +42,15 @@ public class ReadTag implements Comparable<ReadTag> {
 
 		if (key.length() == 2) {
 			this.key = key;
-			this.type = type ;
-//			this.type = getTagValueType(value);
+			this.type = type;
+			// this.type = getTagValueType(value);
 			keyAndType = key + ":" + getType();
 		} else if (key.length() == 4) {
 			this.key = key.substring(0, 2);
 			this.type = key.charAt(3);
 		}
+		
+		code = SAMTagUtil.getSingleton().makeBinaryTag(this.key) ;
 	}
 
 	public static ReadTag deriveTypeFromKeyAndType(String keyAndType, Object value) {

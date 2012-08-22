@@ -77,7 +77,7 @@ public class CRAMFileWriter implements SAMFileWriter {
 			cramReadGroups.add(new CramReadGroup(rgr.getId(), rgr.getSample()));
 		}
 
-		List<CramHeaderRecord> headerRecords = Utils.getCramHeaderRecords (samHeader) ;
+		List<CramHeaderRecord> headerRecords = Utils.getCramHeaderRecords(samHeader);
 		cramWriter = new CramWriter(os, null, sequences, false, 100000, true, true, false, null, null, cramReadGroups,
 				false, headerRecords, false);
 		cramWriter.init();

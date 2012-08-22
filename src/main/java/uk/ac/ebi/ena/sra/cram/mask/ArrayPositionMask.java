@@ -57,16 +57,15 @@ public class ArrayPositionMask implements PositionMask {
 		return array.length > 0 ? array[array.length - 1] : -1;
 	}
 
-	public static final PositionMask EMPTY_INSTANCE = new ArrayPositionMask(
-			new int[] {});
+	public static final PositionMask EMPTY_INSTANCE = new ArrayPositionMask(new int[] {});
 
 	@Override
 	public byte[] toByteArrayUsing(byte mask, byte nonMask) {
-		byte[] ba = new byte[array[array.length-1]] ;
-		Arrays.fill(ba, nonMask) ;
-		for (int pos:array) 
-			ba[pos-1] = mask ;
-		
+		byte[] ba = new byte[array[array.length - 1]];
+		Arrays.fill(ba, nonMask);
+		for (int pos : array)
+			ba[pos - 1] = mask;
+
 		return ba;
 	}
 }

@@ -38,8 +38,6 @@ import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
@@ -171,7 +169,7 @@ public class Bam2Cram {
 				statsPS, cramReadGroups, params.captureAllQualityScore, headerRecords, params.preserveReadNames);
 		cramWriter.setAutodump(log.isDebugEnabled());
 		cramWriter.init();
-		
+
 	}
 
 	public void close() throws IOException {
@@ -237,7 +235,7 @@ public class Bam2Cram {
 			iterator = samReader.queryUnmapped();
 		else
 			iterator = samReader.query(name, 0, 0, false);
-		
+
 		while (params.skipFirstRecords-- > 0 && iterator.hasNext())
 			iterator.next();
 
@@ -346,7 +344,8 @@ public class Bam2Cram {
 
 	private void collapseCigarOps(SAMRecord record, boolean[] collapseOpsMask) {
 		final Cigar cigar = record.getCigar();
-		if (cigar.isEmpty()) return ;
+		if (cigar.isEmpty())
+			return;
 
 		int collapsedReadLength = record.getReadLength();
 		for (final CigarElement e : cigar.getCigarElements())
@@ -405,6 +404,11 @@ public class Bam2Cram {
 			byte[] originalScores = samRecord.getBaseQualities();
 			for (int i = 0; i < originalScores.length; i++)
 				originalScores[i] = NCBI_binning_matrix[originalScores[i]];
+
+		} else if (params.illuminaQualityScoreBinning) {
+			byte[] originalScores = samRecord.getBaseQualities();
+			for (int i = 0; i < originalScores.length; i++)
+				originalScores[i] = Illumina_binning_matrix[originalScores[i]];
 		} else if (params.qualityScoreBinSize > 2) {
 			byte[] originalScores = samRecord.getBaseQualities();
 			for (int i = 0; i < originalScores.length; i++) {
@@ -627,8 +631,8 @@ public class Bam2Cram {
 			System.exit(1);
 		}
 
-		if (params.ncbiQualityScoreBinning && params.qualityScoreBinSize > 0) {
-			System.out.println("Bin size cannot be used with NCBI binning scheme.");
+		if ((params.ncbiQualityScoreBinning || params.illuminaQualityScoreBinning) && params.qualityScoreBinSize > 0) {
+			System.out.println("Bin size cannot be used with a binning scheme.");
 			System.exit(1);
 		}
 
@@ -639,10 +643,21 @@ public class Bam2Cram {
 						/ params.qualityScoreBinSize * params.qualityScoreBinSize)));
 		}
 
+		if (params.ncbiQualityScoreBinning && params.illuminaQualityScoreBinning) {
+			System.out.println("Only one quliaty score binning scheme is expected.");
+			System.exit(1);
+		}
+
 		if (params.ncbiQualityScoreBinning) {
 			log.info("Quality scores will be binned using NCBI scheme: ");
 			for (int i = 0; i < 40; i++)
 				log.info(String.format("%d -> %d", i, NCBI_binning_matrix[i]));
+		}
+
+		if (params.illuminaQualityScoreBinning) {
+			log.info("Quality scores will be binned using Illumina scheme: ");
+			for (int i = 0; i < 40; i++)
+				log.info(String.format("%d -> %d", i, Illumina_binning_matrix[i]));
 		}
 
 		Bam2Cram b2c = new Bam2Cram(params);
@@ -761,11 +776,15 @@ public class Bam2Cram {
 		@Parameter(names = { "--ncbi-quality-score-binning" }, description = "Use NCBI binning scheme for quality scores.")
 		boolean ncbiQualityScoreBinning = false;
 
+		@Parameter(names = { "--illumina-quality-score-binning" }, description = "Use NCBI binning scheme for quality scores.")
+		boolean illuminaQualityScoreBinning = false;
+
 		@Parameter(names = { "--preserve-read-names" }, description = "Preserve all read names.")
 		boolean preserveReadNames = false;
 	}
 
 	// @formatter:off
+	// NCBI binning scheme:
 //	Low 	High 	Value
 //	0 	0 	0
 //	1 	1 	1
@@ -790,4 +809,25 @@ public class Bam2Cram {
 			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35,
 			35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35 };
 
+	// @formatter:off
+	// Illumina binning scheme: 
+//	2-9	6
+//	10-19	15
+//	20-24	22
+//	25-29	27
+//	30-34	33
+//	35-39	37
+//	≥40	40
+	// @formatter:on
+	private static byte[] Illumina_binning_matrix = new byte[] {// @formatter:off
+		0, 1,
+		6, 6, 6, 6, 6, 6, 6, 6, 
+		15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+		22, 22, 22, 22, 22, 
+		27, 27, 27, 27, 27, 
+		33, 33, 33, 33, 33, 
+		37, 37, 37, 37, 37, 
+		40
+	};
+// @formatter:on
 }

@@ -117,8 +117,7 @@ public class RefMaskUtils {
 		return 15 & (mask >>> (4 * base2index[base]));
 	}
 
-	public static final short addReadBase(short mask, byte readBase,
-			byte refBase) {
+	public static final short addReadBase(short mask, byte readBase, byte refBase) {
 		short baseMask = 0;
 		switch (readBase) {
 		case 'A':

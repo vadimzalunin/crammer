@@ -156,7 +156,7 @@ public class CachingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 			newSequence(cramRecord.getSequenceName());
 
 		SAMRecord samRecord = new SAMRecord(samFileHeader);
-		
+
 		if (cramRecord.tags != null && !cramRecord.tags.isEmpty()) {
 			for (ReadTag rt : cramRecord.tags) {
 				samRecord.setAttribute(rt.getKey(), rt.getValue());

@@ -30,8 +30,7 @@ class GolombRiceCodecStub extends GolombRiceCodec implements NumberCodecStub {
 
 	@Override
 	public String getStringRepresentation() {
-		return String.format("%d,%d,%d", getLog2m(), getOffset(),
-				isQuotientBit() ? 1 : 0);
+		return String.format("%d,%d,%d", getLog2m(), getOffset(), isQuotientBit() ? 1 : 0);
 	}
 
 	@Override
@@ -41,7 +40,7 @@ class GolombRiceCodecStub extends GolombRiceCodec implements NumberCodecStub {
 		case 1:
 			int log2m = StringRepresentation.toInt(params[0]);
 			setLog2m(log2m);
-			break ;
+			break;
 		case 3:
 			log2m = StringRepresentation.toInt(params[0]);
 			setLog2m(log2m);
@@ -49,18 +48,18 @@ class GolombRiceCodecStub extends GolombRiceCodec implements NumberCodecStub {
 			setQuotientBit(quotientBit);
 			long offset = StringRepresentation.toLong(params[2]);
 			setOffset(offset);
-			break ;
+			break;
 		default:
-			throw new CramCompressionException(
-					"Not supported number of parameters to golomb-rice codec: "
-							+ params.length);
+			throw new CramCompressionException("Not supported number of parameters to golomb-rice codec: "
+					+ params.length);
 		}
 	}
-	
+
 	@Override
 	public Object[] getParameters() {
-		return new Object[]{getLog2m(), getOffset(), isQuotientBit()};
+		return new Object[] { getLog2m(), getOffset(), isQuotientBit() };
 	}
+
 	@Override
 	public void setParameters(Object[] params) {
 		setLog2m((Integer) params[0]);

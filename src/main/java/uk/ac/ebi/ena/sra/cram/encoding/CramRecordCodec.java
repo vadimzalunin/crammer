@@ -65,7 +65,7 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 
 	private static Logger log = Logger.getLogger(CramRecordCodec.class);
 
-	private static int debugRecordEndMarkerLen = 0;
+	private static int debugRecordEndMarkerLen = 21;
 	private static long debugRecordEndMarker = ~(-1 << (debugRecordEndMarkerLen / 2));
 
 	public BitCodec<byte[]> readNameCodec;
@@ -78,30 +78,28 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	private long[] timePoints = new long[10];
 	private long time = 0;
 	private int timeIndex = 0;
-	
 
 	private void timeTick() {
 		long stop = System.nanoTime();
 		timePoints[timeIndex++] += stop - time;
 		time = stop;
 	}
-	
-	long readTime = 0 ;
+
+	long readTime = 0;
 
 	@Override
 	public CramRecord read(BitInputStream bis) throws IOException {
-		long startMillis = System.currentTimeMillis() ;
-		
+		long startMillis = System.currentTimeMillis();
+
 		timeIndex = 0;
 		time = System.nanoTime();
 
 		recordCounter++;
 
-		// long marker = bis.readLongBits(debugRecordEndMarkerLen);
-		// if (marker != debugRecordEndMarker) {
-		// throw new
-		// RuntimeException("Debug marker for beginning of record not found.");
-		// }
+		long marker = bis.readLongBits(debugRecordEndMarkerLen);
+		if (marker != debugRecordEndMarker) {
+			throw new RuntimeException("Debug marker for beginning of record not found.");
+		}
 
 		CramRecord record = new CramRecord();
 
@@ -180,6 +178,11 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 
 		boolean bisByteAligned = false;
 
+		boolean expectAlignedBases = false;
+		boolean expectAlignedScores = false;
+
+		boolean scoreStarred = false;
+
 		if (record.isReadMapped()) {
 			boolean imperfectMatch = bis.readBit();
 			if (imperfectMatch) {
@@ -190,38 +193,72 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			record.setMappingQuality(mappingQualityCodec.read(bis));
 
 			if (storeMappedQualityScores) {
-				boolean hasQS = bis.readBit();
-				if (hasQS) {
-					bis.alignToByte();
-					bisByteAligned = true;
-					if (hasQS) {
-						byte[] scores = new byte[readLen];
-						bis.readAlignedBytes(scores);
-						record.setQualityScores(scores);
-					}
+				scoreStarred = !bis.readBit();
+				if (!scoreStarred) {
+					if (qualityCodec != null)
+						record.setQualityScores(qualityCodec.read(bis, (int) record.getReadLength()));
+					else
+						expectAlignedScores = true;
+
+					// bis.alignToByte();
+					// bisByteAligned = true;
+					// if (scoreStarred) {
+					// byte[] scores = new byte[readLen];
+					// bis.readAlignedBytes(scores);
+					// record.setQualityScores(scores);
+					// }
 				}
 			}
 
 		} else {
-			boolean hasQS = bis.readBit();
-			bis.alignToByte();
-			bisByteAligned = true;
+			if (baseCodec != null) {
+				byte[] bases = new byte[(int) record.getReadLength()];
+				for (int i = 0; i < bases.length; i++)
+					bases[i] = baseCodec.read(bis);
+				record.setReadBases(bases) ;
+			} else
+				expectAlignedBases = true;
 
-			byte[] bases = new byte[readLen];
-			bis.readAlignedBytes(bases);
-			record.setReadBases(bases);
-
-			if (hasQS) {
-				byte[] scores = new byte[readLen];
-				bis.readAlignedBytes(scores);
-				record.setQualityScores(scores);
+			scoreStarred = !bis.readBit();
+			if (!scoreStarred) {
+				if (qualityCodec != null)
+					record.setQualityScores(qualityCodec.read(bis, (int) record.getReadLength()));
+				else
+					expectAlignedScores = true;
 			}
+
+			// bis.alignToByte();
+			// bisByteAligned = true;
+			//
+			// byte[] bases = new byte[readLen];
+			// bis.readAlignedBytes(bases);
+			// record.setReadBases(bases);
+			//
+			// if (!scoreStarred) {
+			// byte[] scores = new byte[readLen];
+			// bis.readAlignedBytes(scores);
+			// record.setQualityScores(scores);
+			// }
 		}
 
 		timeTick();
 
-		if (!deferredTags.isEmpty()) {
+		if (expectAlignedBases || expectAlignedScores || !deferredTags.isEmpty())
 			bis.alignToByte();
+
+		if (expectAlignedBases) {
+			byte[] bases = new byte[(int) record.getReadLength()];
+			bis.readAlignedBytes(bases);
+			record.setReadBases(bases);
+		}
+
+		if (expectAlignedScores) {
+			byte[] scores = new byte[(int) record.getReadLength()];
+			bis.readAlignedBytes(scores);
+			record.setQualityScores(scores);
+		}
+
+		if (!deferredTags.isEmpty()) {
 
 			for (int i = 0; i < deferredTags.size(); i++) {
 				String tagKeyAndType = deferredTags.get(i);
@@ -238,24 +275,26 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 		timeTick();
 
 		if (recordCounter % 99999 == 0) {
-			StringBuffer sb = new StringBuffer("CramRecordCodec read time: ") ;
+			StringBuffer sb = new StringBuffer("CramRecordCodec read time: ");
 			for (int i = 0; i < timeIndex; i++) {
 				sb.append(String.format("\t%.3f", (timePoints[i]) / 1000000f));
 			}
-			log.info(sb.toString()) ;
-//			log.info("Total read time: "+readTime);
+			log.info(sb.toString());
+			// log.info("Total read time: "+readTime);
 			Arrays.fill(timePoints, 0);
-			readTime = 0 ;
+			readTime = 0;
 		}
 
-		// marker = bis.readLongBits(debugRecordEndMarkerLen);
-		// if (marker != debugRecordEndMarker) {
-		// System.out.println(record.toString());
-		// throw new
-		// RuntimeException("Debug marker for end of record not found.");
-		// }
-		
-		readTime += System.currentTimeMillis()-startMillis ;
+		marker = bis.readLongBits(debugRecordEndMarkerLen);
+		if (marker != debugRecordEndMarker) {
+			System.out.println(record.toString());
+			throw new RuntimeException("Debug marker for end of record not found.");
+		}
+
+//		if (recordCounter > 24)
+//			System.out.println("Reading: " + record.toString());
+
+		readTime += System.currentTimeMillis() - startMillis;
 		return record;
 	}
 
@@ -275,6 +314,7 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 	@Override
 	public long write(BitOutputStream bos, CramRecord record) throws IOException {
 		recordCounter++;
+		bos.write(debugRecordEndMarker, debugRecordEndMarkerLen);
 
 		long len = 0L;
 
@@ -336,6 +376,10 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 
 		boolean bosByteAligned = false;
 
+		byte[] bases = null;
+		byte[] scores = null;
+		boolean scoreStarred = (record.getQualityScores() == null || record.getQualityScores().length == 0);
+
 		if (record.isReadMapped()) {
 			if (record.getAlignmentStart() - prevPosInSeq < 0) {
 				log.error("Negative relative position in sequence: prev=" + prevPosInSeq);
@@ -353,20 +397,24 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			len += mappingQualityCodec.write(bos, record.getMappingQuality());
 
 			if (storeMappedQualityScores) {
-				if (record.getQualityScores() == null || record.getQualityScores().length == 0) {
+				if (scoreStarred) {
 					bos.write(false);
 				} else {
 					bos.write(true);
+					if (qualityCodec != null)
+						len += qualityCodec.write(bos, record.getQualityScores());
+					else
+						scores = record.getQualityScores();
 				}
 				len++;
 
-				len += bos.alignToByte();
-				bosByteAligned = true;
-
-				if (record.getQualityScores() != null && record.getQualityScores().length != 0) {
-					bos.write(record.getQualityScores());
-					len += 8 * record.getQualityScores().length;
-				}
+				// len += bos.alignToByte();
+				// bosByteAligned = true;
+				//
+				// if (!scoreStarred) {
+				// bos.write(record.getQualityScores());
+				// len += 8 * record.getQualityScores().length;
+				// }
 			}
 
 		} else {
@@ -375,27 +423,47 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 				log.error(record.toString());
 			}
 
-			if (record.getQualityScores() == null || record.getQualityScores().length == 0) {
+			if (baseCodec != null)
+				for (int i = 0; i < record.getReadLength(); i++)
+					len += baseCodec.write(bos, record.getReadBases()[i]);
+			else
+				bases = record.getReadBases();
+			
+			if (scoreStarred) {
 				bos.write(false);
 			} else {
 				bos.write(true);
+				if (qualityCodec != null)
+					len += qualityCodec.write(bos, record.getQualityScores());
+				else
+					scores = record.getQualityScores();
 			}
 			len++;
 
-			len += bos.alignToByte();
-			bosByteAligned = true;
 
-			bos.write(record.getReadBases());
-			len += 8 * record.getReadBases().length;
-
-			if (record.getQualityScores() != null && record.getQualityScores().length != 0) {
-				bos.write(record.getQualityScores());
-				len += 8 * record.getQualityScores().length;
-			}
+			// len += bos.alignToByte();
+			// bosByteAligned = true;
+			//
+			// bos.write(record.getReadBases());
+			// len += 8 * record.getReadBases().length;
+			//
+			// if (!scoreStarred) {
+			// bos.write(record.getQualityScores());
+			// len += 8 * record.getQualityScores().length;
+			// }
 		}
-		if (deferredByteArrays != null && !deferredByteArrays.isEmpty()) {
+
+		if (bases != null || scores != null || !deferredByteArrays.isEmpty()) {
 			len += bos.alignToByte();
 			bosByteAligned = true;
+		}
+
+		if (bases != null)
+			bos.write(bases);
+		if (scores != null)
+			bos.write(scores);
+
+		if (!deferredByteArrays.isEmpty()) {
 
 			for (byte[] bytes : deferredByteArrays) {
 				bos.write(bytes);
@@ -403,7 +471,10 @@ public class CramRecordCodec implements BitCodec<CramRecord> {
 			}
 		}
 
-		// bos.write(debugRecordEndMarker, debugRecordEndMarkerLen);
+		bos.write(debugRecordEndMarker, debugRecordEndMarkerLen);
+
+//		if (recordCounter > 24)
+//			System.out.println("Writering: " + record.toString());
 
 		return len;
 	}

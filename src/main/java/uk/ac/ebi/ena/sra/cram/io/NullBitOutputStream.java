@@ -17,12 +17,14 @@ package uk.ac.ebi.ena.sra.cram.io;
 
 import java.io.IOException;
 
-/** Does nothing. 
+/**
+ * Does nothing.
+ * 
  * @author vadim
- *
+ * 
  */
 public class NullBitOutputStream implements BitOutputStream {
-	
+
 	public final static NullBitOutputStream INSTANCE = new NullBitOutputStream();
 
 	@Override
@@ -55,7 +57,7 @@ public class NullBitOutputStream implements BitOutputStream {
 
 	@Override
 	public int alignToByte() throws IOException {
-		return 0 ;
+		return 0;
 	}
 
 	@Override

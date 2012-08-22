@@ -29,22 +29,21 @@ public class LocalReorderingSAMRecordQueue {
 
 	public LocalReorderingSAMRecordQueue(int minAlignmentDelay) {
 		this.minAlignmentDelay = minAlignmentDelay;
-		delegateQueue = new PriorityQueue<SAMRecord>(1000,
-				alignmentStartComparator);
+		delegateQueue = new PriorityQueue<SAMRecord>(1000, alignmentStartComparator);
 	}
 
 	public void add(SAMRecord record) {
 		record.setAttribute("X~", counter++);
 		delegateQueue.add(record);
-		maxAlignmentStart = Math.max(maxAlignmentStart,
-				record.getAlignmentStart());
+		maxAlignmentStart = Math.max(maxAlignmentStart, record.getAlignmentStart());
 	}
-	
+
 	private SAMRecord doPoll() {
-		SAMRecord record = delegateQueue.poll() ;
-		if (record == null) return null ;
-		record.setAttribute("X~", null) ;
-		return record ;
+		SAMRecord record = delegateQueue.poll();
+		if (record == null)
+			return null;
+		record.setAttribute("X~", null);
+		return record;
 	}
 
 	public SAMRecord poll() {

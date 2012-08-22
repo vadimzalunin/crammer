@@ -50,16 +50,16 @@ public class HuffmanByteArrayBitCodec implements ByteArrayBitCodec {
 
 	@Override
 	public long write(BitOutputStream bos, byte[] bytes) throws IOException {
-		stats.arraysWritten++ ;
-		stats.bytesWritten += bytes.length ;
+		stats.arraysWritten++;
+		stats.bytesWritten += bytes.length;
 
 		long len = 0;
 		for (byte b : bytes)
 			len += byteCodec.write(bos, b);
-		
-		stats.nofBis += len ;
-		stats.arraysWritten ++ ;
-		stats.bytesWritten += bytes.length ;
+
+		stats.nofBis += len;
+		stats.arraysWritten++;
+		stats.bytesWritten += bytes.length;
 
 		return len;
 	}
@@ -86,12 +86,11 @@ public class HuffmanByteArrayBitCodec implements ByteArrayBitCodec {
 	public void setName(String name) {
 		this.name = name;
 	}
-	
+
 	@Override
 	public String toString() {
-		return String
-				.format("%s: written objects=%d; written bits=%d; written bits per object=%.2f",
-						name, stats.bytesWritten, stats.nofBis, (double) stats.nofBis/stats.bytesWritten);
+		return String.format("%s: written objects=%d; written bits=%d; written bits per object=%.2f", name,
+				stats.bytesWritten, stats.nofBis, (double) stats.nofBis / stats.bytesWritten);
 	}
-	
+
 }

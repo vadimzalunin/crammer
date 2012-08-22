@@ -52,8 +52,7 @@ public class BaseChangeCodecTest {
 
 		bitOutputStream.flush();
 
-		BitInputStream bitInputStream = new DefaultBitInputStream(
-				new ByteArrayInputStream(baos.toByteArray()));
+		BitInputStream bitInputStream = new DefaultBitInputStream(new ByteArrayInputStream(baos.toByteArray()));
 		BaseChange change2 = codec.read(bitInputStream);
 
 		assertThat(change2, equalTo(change1));
@@ -70,20 +69,17 @@ public class BaseChangeCodecTest {
 		byte[] readBaseArray = "CGTNAGTNACTNACGNACGT".getBytes();
 
 		for (int i = 0; i < refBaseArray.length; i++) {
-			BaseChange change = new BaseChange(refBaseArray[i],
-					readBaseArray[i]);
+			BaseChange change = new BaseChange(refBaseArray[i], readBaseArray[i]);
 			codec.write(bitOutputStream, change);
-//			System.out.printf("%c\t%c\t%d\n", (char) refBaseArray[i],
-//					(char) readBaseArray[i], change.getChange());
+			// System.out.printf("%c\t%c\t%d\n", (char) refBaseArray[i],
+			// (char) readBaseArray[i], change.getChange());
 		}
 		bitOutputStream.flush();
 
-		BitInputStream bitInputStream = new DefaultBitInputStream(
-				new ByteArrayInputStream(baos.toByteArray()));
+		BitInputStream bitInputStream = new DefaultBitInputStream(new ByteArrayInputStream(baos.toByteArray()));
 
 		for (int i = 0; i < refBaseArray.length; i++) {
-			BaseChange change1 = new BaseChange(refBaseArray[i],
-					readBaseArray[i]);
+			BaseChange change1 = new BaseChange(refBaseArray[i], readBaseArray[i]);
 			BaseChange change2 = codec.read(bitInputStream);
 			assertThat(change2, equalTo(change1));
 		}

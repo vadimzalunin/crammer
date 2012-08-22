@@ -49,8 +49,7 @@ class SingleSAMSpot implements SAMSpot {
 	@Override
 	public void addRecord(SAMRecordHolder record) {
 		if (this.record != null)
-			throw new IllegalAccessError(
-					"Record already set in single-layout spot.");
+			throw new IllegalAccessError("Record already set in single-layout spot.");
 
 		this.record = record;
 	}

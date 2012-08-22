@@ -31,8 +31,8 @@ public class RestoreQualityScores {
 
 	public byte[] restoreQualityScores(CramRecord record) throws IOException {
 		if (record.getQualityScores() != null)
-			return record.getQualityScores() ;
-		
+			return record.getQualityScores();
+
 		byte[] scores = new byte[(int) record.getReadLength()];
 		Arrays.fill(scores, defaultQualityScore);
 

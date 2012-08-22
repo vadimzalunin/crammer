@@ -52,7 +52,7 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 	/**
 	 * Reserved for later use.
 	 */
-	private TREAT_TYPE treatSoftClipsAs = TREAT_TYPE.IGNORE;
+	private TREAT_TYPE treatSoftClipsAs = TREAT_TYPE.INSERTION;
 
 	public final static byte QS_asciiOffset = 33;
 	public final static byte unsetQualityScore = 32;
@@ -80,7 +80,7 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 	private boolean captureFlankingDeletionScores = false;
 	private int uncategorisedQualityScoreCutoff = 0;
 	public boolean captureAllTags = false;
-	public boolean preserveReadNames = false ;
+	public boolean preserveReadNames = false;
 	public Set<String> ignoreTags = new TreeSet<String>();
 	{
 		ignoreTags.add(SAMTag.NM.name());
@@ -177,8 +177,9 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 		}
 
 		cramRecord.vendorFiltered = record.getReadFailsVendorQualityCheckFlag();
-		
-		if (preserveReadNames) cramRecord.setReadName(record.getReadName()) ;
+
+		if (preserveReadNames)
+			cramRecord.setReadName(record.getReadName());
 
 		return cramRecord;
 	}
@@ -290,11 +291,12 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 	private void addSubstitutionsAndMaskedBases(CramRecord cramRecord, List<ReadFeature> features, int fromPosInRead,
 			int alignmentStartOffset, int nofReadBases, byte[] bases, byte[] qualityScore) {
 		int oneBasedPositionInRead;
+		boolean noQS = (qualityScore.length == 0);
 
 		int i = 0;
 		boolean qualityAdded = false;
 		boolean qualityMasked = false;
-		byte refBase ;
+		byte refBase;
 		for (i = 0; i < nofReadBases; i++) {
 			oneBasedPositionInRead = i + fromPosInRead + 1;
 			int refCoord = (int) (cramRecord.getAlignmentStart() + i + alignmentStartOffset) - 1;
@@ -313,7 +315,7 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 
 				features.add(sv);
 
-				if (losslessQS)
+				if (losslessQS || noQS)
 					continue;
 
 				if (captureSubtitutionScores) {
@@ -322,6 +324,10 @@ public class Sam2CramRecordFactory implements CramRecordFactory<SAMRecord> {
 					qualityAdded = true;
 				}
 			}
+
+			if (noQS)
+				continue;
+
 			if (!qualityAdded && refSNPs != null) {
 				byte snpOrNot = refSNPs[refCoord];
 				if (snpOrNot != 0) {

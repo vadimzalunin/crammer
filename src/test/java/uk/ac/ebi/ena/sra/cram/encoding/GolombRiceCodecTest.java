@@ -62,9 +62,8 @@ public class GolombRiceCodecTest {
 			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
 			BitInputStream bis = new DefaultBitInputStream(bais);
 			long number = codec.read(bis);
-			System.out.printf("%d: %d\t%s\t%d\t%s\n", i, number, Utils
-					.toBitString(buf).subSequence(0, len), len, Utils
-					.toBitString(buf));
+			System.out.printf("%d: %d\t%s\t%d\t%s\n", i, number, Utils.toBitString(buf).subSequence(0, len), len,
+					Utils.toBitString(buf));
 		}
 	}
 
@@ -170,14 +169,10 @@ public class GolombRiceCodecTest {
 		assertThat(number, is(value));
 
 		String bitsString = Utils.toBitString(buf);
-		assertThat(
-				bitsString,
-				equalTo("000000000000000000000000000000000000000000000000000000000000000111000000"));
+		assertThat(bitsString, equalTo("000000000000000000000000000000000000000000000000000000000000000111000000"));
 
 		String cutBitsString = bitsString.substring(0, (int) len);
-		assertThat(
-				cutBitsString,
-				equalTo("000000000000000000000000000000000000000000000000000000000000000111"));
+		assertThat(cutBitsString, equalTo("000000000000000000000000000000000000000000000000000000000000000111"));
 	}
 
 	@Test(timeout = 3000)
@@ -199,8 +194,7 @@ public class GolombRiceCodecTest {
 			assertThat(buf.length > 300000, is(true));
 			assertThat(buf.length < 900000, is(true));
 
-			ArrayCompressionReport report = new ArrayCompressionReport(
-					"compressability");
+			ArrayCompressionReport report = new ArrayCompressionReport("compressability");
 			report.run(buf);
 
 			float ratioToBzip = (float) buf.length / report.getBzip2Size();
@@ -226,8 +220,7 @@ public class GolombRiceCodecTest {
 		for (int log2m = 1; log2m < 6; log2m++) {
 			int golombParameter = 1 << log2m;
 			GolombRiceCodec codec = new GolombRiceCodec(log2m);
-			ExponentialDistributionImpl expDistr = new ExponentialDistributionImpl(
-					golombParameter);
+			ExponentialDistributionImpl expDistr = new ExponentialDistributionImpl(golombParameter);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			BitOutputStream bos = new DefaultBitOutputStream(baos);
 
@@ -239,8 +232,7 @@ public class GolombRiceCodecTest {
 			assertThat(buf.length > 300000, is(true));
 			assertThat(buf.length < 900000, is(true));
 
-			ArrayCompressionReport report = new ArrayCompressionReport(
-					"compressability");
+			ArrayCompressionReport report = new ArrayCompressionReport("compressability");
 			report.run(buf);
 
 			float ratioToBzip = (float) buf.length / report.getBzip2Size();
@@ -263,8 +255,7 @@ public class GolombRiceCodecTest {
 			GolombRiceCodec codec = new GolombRiceCodec(log2m);
 			double mean = golombParameter * 10;
 			double sd = golombParameter * 5;
-			NormalDistributionImpl expDistr = new NormalDistributionImpl(mean,
-					sd);
+			NormalDistributionImpl expDistr = new NormalDistributionImpl(mean, sd);
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			BitOutputStream bos = new DefaultBitOutputStream(baos);
 
@@ -280,8 +271,7 @@ public class GolombRiceCodecTest {
 			assertThat(buf.length > 300000, is(true));
 			assertThat(buf.length < 2000000, is(true));
 
-			ArrayCompressionReport report = new ArrayCompressionReport(
-					"compressability");
+			ArrayCompressionReport report = new ArrayCompressionReport("compressability");
 			report.run(baos.toByteArray());
 
 			// System.out

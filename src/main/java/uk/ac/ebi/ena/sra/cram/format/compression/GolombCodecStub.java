@@ -20,7 +20,7 @@ import uk.ac.ebi.ena.sra.cram.encoding.GolombCodec;
 class GolombCodecStub extends GolombCodec implements NumberCodecStub {
 
 	public GolombCodecStub() {
-		super (2) ;
+		super(2);
 	}
 
 	@Override
@@ -30,8 +30,7 @@ class GolombCodecStub extends GolombCodec implements NumberCodecStub {
 
 	@Override
 	public String getStringRepresentation() {
-		return String.format("%d,%d,%d", getM(), getOffset(),
-				isQuotientBit() ? 1 : 0);
+		return String.format("%d,%d,%d", getM(), getOffset(), isQuotientBit() ? 1 : 0);
 	}
 
 	@Override
@@ -41,7 +40,7 @@ class GolombCodecStub extends GolombCodec implements NumberCodecStub {
 		case 1:
 			int m = StringRepresentation.toInt(params[0]);
 			setM(m);
-			break ;
+			break;
 		case 3:
 			m = StringRepresentation.toInt(params[0]);
 			setM(m);
@@ -49,18 +48,17 @@ class GolombCodecStub extends GolombCodec implements NumberCodecStub {
 			setOffset(offset);
 			boolean quotientBit = StringRepresentation.toBoolean(params[2]);
 			setQuotientBit(quotientBit);
-			break ;
+			break;
 		default:
-			throw new CramCompressionException(
-					"Not supported number of parameters to golomb codec: "
-							+ params.length);
+			throw new CramCompressionException("Not supported number of parameters to golomb codec: " + params.length);
 		}
 	}
-	
+
 	@Override
 	public Object[] getParameters() {
-		return new Object[]{getM(), getOffset(), isQuotientBit()};
+		return new Object[] { getM(), getOffset(), isQuotientBit() };
 	}
+
 	@Override
 	public void setParameters(Object[] params) {
 		setM((Long) params[0]);

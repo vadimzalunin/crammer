@@ -44,7 +44,7 @@ public class SequentialCramReader {
 
 	private RestoreBases restoreBases;
 	private final CramHeader header;
-	
+
 	public SequentialCramReader(DataInputStream dis, SequenceBaseProvider referenceBaseProvider, CramHeader header) {
 		this.dis = dis;
 		this.referenceBaseProvider = referenceBaseProvider;
@@ -101,7 +101,7 @@ public class SequentialCramReader {
 				restoreBases.restoreReadBases(record);
 			} catch (Exception e) {
 				System.out.println(record);
-				throw new RuntimeException(e); 
+				throw new RuntimeException(e);
 			}
 		awaitingRecords--;
 		return record;

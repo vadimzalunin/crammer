@@ -38,7 +38,7 @@ public class IntegerListMaskFactoryTest {
 		IntegerListMaskFactory factory = new IntegerListMaskFactory();
 		factory.createMask(line);
 	}
-	
+
 	@Test
 	public void test_1() throws ReadMaskFormatException {
 		String line = "1";
@@ -46,23 +46,23 @@ public class IntegerListMaskFactoryTest {
 		PositionMask mask = factory.createMask(line);
 
 		assertThat(mask, notNullValue());
-		assertThat(mask.getMaskedPositions(), equalTo(new int[] {1}));
+		assertThat(mask.getMaskedPositions(), equalTo(new int[] { 1 }));
 	}
-	
+
 	@Test(expected = ReadMaskFormatException.class)
 	public void fail_1n() throws ReadMaskFormatException {
 		String line = "1\n";
 		IntegerListMaskFactory factory = new IntegerListMaskFactory();
 		factory.createMask(line);
 	}
-	
+
 	@Test(expected = ReadMaskFormatException.class)
 	public void fail_non_digit() throws ReadMaskFormatException {
 		String line = "A";
 		IntegerListMaskFactory factory = new IntegerListMaskFactory();
 		factory.createMask(line);
 	}
-	
+
 	@Test
 	public void test_1_2() throws ReadMaskFormatException {
 		String line = "1 2";
@@ -70,9 +70,9 @@ public class IntegerListMaskFactoryTest {
 		PositionMask mask = factory.createMask(line);
 
 		assertThat(mask, notNullValue());
-		assertThat(mask.getMaskedPositions(), equalTo(new int[] {1, 2}));
+		assertThat(mask.getMaskedPositions(), equalTo(new int[] { 1, 2 }));
 	}
-	
+
 	@Test
 	public void test_1_3_15() throws ReadMaskFormatException {
 		String line = "1 3 15";
@@ -80,7 +80,7 @@ public class IntegerListMaskFactoryTest {
 		PositionMask mask = factory.createMask(line);
 
 		assertThat(mask, notNullValue());
-		assertThat(mask.getMaskedPositions(), equalTo(new int[] {1, 3, 15}));
+		assertThat(mask.getMaskedPositions(), equalTo(new int[] { 1, 3, 15 }));
 	}
 
 }

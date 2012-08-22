@@ -17,8 +17,7 @@ package net.sf.samtools;
 
 import net.sf.samtools.util.CloseableIterator;
 
-public class PreemptiveSAMRecordIterator implements
-		CloseableIterator<SAMRecord> {
+public class PreemptiveSAMRecordIterator implements CloseableIterator<SAMRecord> {
 	CloseableIterator<SAMRecord> delegate;
 	SAMRecord nextRecord;
 	boolean eof = false;
@@ -30,13 +29,11 @@ public class PreemptiveSAMRecordIterator implements
 		this(delegate, 0, Long.MAX_VALUE, false);
 	}
 
-	public PreemptiveSAMRecordIterator(CloseableIterator<SAMRecord> delegate,
-			long start) {
-		this (delegate, start, Long.MAX_VALUE, false); 
+	public PreemptiveSAMRecordIterator(CloseableIterator<SAMRecord> delegate, long start) {
+		this(delegate, start, Long.MAX_VALUE, false);
 	}
 
-	public PreemptiveSAMRecordIterator(CloseableIterator<SAMRecord> delegate,
-			long start, long end, boolean contained) {
+	public PreemptiveSAMRecordIterator(CloseableIterator<SAMRecord> delegate, long start, long end, boolean contained) {
 		this.delegate = delegate;
 		this.start = start;
 		this.end = end;
@@ -50,7 +47,7 @@ public class PreemptiveSAMRecordIterator implements
 
 		if (nextRecord == null) {
 			// gettting first record:
-			advance() ;
+			advance();
 		}
 		return !eof;
 	}
@@ -74,11 +71,9 @@ public class PreemptiveSAMRecordIterator implements
 		do {
 			nextRecord = delegate.next();
 		} while ((contained && nextRecord.getAlignmentStart() < start)
-				|| (!contained && nextRecord.getAlignmentStart()
-						+ nextRecord.getReadLength() < start));
+				|| (!contained && nextRecord.getAlignmentStart() + nextRecord.getReadLength() < start));
 
-		if ((!contained && nextRecord.getAlignmentStart() > end)
-				|| (contained && nextRecord.getAlignmentEnd() > end))
+		if ((!contained && nextRecord.getAlignmentStart() > end) || (contained && nextRecord.getAlignmentEnd() > end))
 			eof = true;
 
 		return nextRecord;

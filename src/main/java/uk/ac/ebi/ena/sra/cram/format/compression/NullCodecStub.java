@@ -32,8 +32,7 @@ class NullCodecStub extends BetaCodec implements NumberCodecStub {
 	@Override
 	public void initFromString(String spec) throws CramCompressionException {
 		if (spec != null && spec.length() > 1)
-			throw new CramCompressionException(
-					"Null codec does not expect any parameteres: " + spec);
+			throw new CramCompressionException("Null codec does not expect any parameteres: " + spec);
 	}
 
 	@Override

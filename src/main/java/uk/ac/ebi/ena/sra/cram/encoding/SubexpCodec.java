@@ -60,8 +60,7 @@ public class SubexpCodec implements BitCodec<Long> {
 	@Override
 	public final long write(BitOutputStream bos, Long value) throws IOException {
 		if (value + offset < 0)
-			throw new IllegalArgumentException("Value is less then offset: "
-					+ value);
+			throw new IllegalArgumentException("Value is less then offset: " + value);
 
 		long newValue = value + offset;
 		long b = 0;

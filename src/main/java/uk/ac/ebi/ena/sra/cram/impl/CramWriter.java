@@ -215,7 +215,7 @@ public class CramWriter {
 		this.block.setUnmappedReadQualityScoresIncluded(captureUnammpedQualityScortes);
 		this.block.setSubstitutionQualityScoresIncluded(captureSubstituionQualityScore);
 		this.block.setMaskedQualityScoresIncluded(captureMaskedQualityScores);
-		this.block.preserveReadNames = preserveReadNames ;
+		this.block.preserveReadNames = preserveReadNames;
 		if (this.block.getCompression() == null)
 			this.block.setCompression(new CramCompression());
 		this.block.losslessQualityScores = captureAllQS;
@@ -253,7 +253,7 @@ public class CramWriter {
 	}
 
 	public CodecStats getCodecStats() {
-		return codecStats ;
+		return codecStats;
 	}
 
 	public boolean isAutodump() {

@@ -72,18 +72,18 @@ public class TestLongJumps {
 		SAMRecordIterator iterator = reader.iterator();
 		while (iterator.hasNext()) {
 			SAMRecord record = iterator.next();
-//			 System.out.print(record.getSAMString()) ;
+			// System.out.print(record.getSAMString()) ;
 			sourceRecords.add(record);
 
 		}
-//		System.out.println();
+		// System.out.println();
 
 		reader = new SAMFileReader(bamFile);
 		reader.setValidationStringency(ValidationStringency.LENIENT);
 		iterator = reader.iterator();
 		while (iterator.hasNext()) {
 			SAMRecord record = iterator.next();
-//			 System.out.print(record.getSAMString()) ;
+			// System.out.print(record.getSAMString()) ;
 			restoredRecords.add(record);
 		}
 	}
@@ -103,7 +103,7 @@ public class TestLongJumps {
 	public void testRestoredSize() {
 		assertThat(restoredRecords.size(), is(expectedNumberOfRecords));
 	}
-	
+
 	@Test
 	public void testBases() {
 		for (int i = 0; i < expectedNumberOfRecords; i++) {
@@ -113,7 +113,7 @@ public class TestLongJumps {
 			assertThat(sourceRecord.getReadBases(), equalTo(restoredRecord.getReadBases()));
 		}
 	}
-	
+
 	@Test
 	public void testQualityScores() {
 		for (int i = 0; i < expectedNumberOfRecords; i++) {
@@ -196,9 +196,10 @@ public class TestLongJumps {
 				assertThat(sourceRecord.getMateUnmappedFlag(), equalTo(restoredRecord.getMateUnmappedFlag()));
 		}
 	}
-	
+
 	@Test
-	@Ignore // because it fails, insert sizes are not restored for long jumps.
+	@Ignore
+	// because it fails, insert sizes are not restored for long jumps.
 	public void testInsertSize() {
 		for (int i = 0; i < expectedNumberOfRecords; i++) {
 			SAMRecord sourceRecord = sourceRecords.get(i);

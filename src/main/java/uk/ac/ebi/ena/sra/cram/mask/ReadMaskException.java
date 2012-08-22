@@ -17,7 +17,7 @@ package uk.ac.ebi.ena.sra.cram.mask;
 
 import uk.ac.ebi.ena.sra.cram.CramException;
 
-public class ReadMaskException extends CramException{
+public class ReadMaskException extends CramException {
 
 	public ReadMaskException() {
 		super();

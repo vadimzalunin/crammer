@@ -61,9 +61,7 @@ class BaseRaisedCodec implements BitCodec<Byte> {
 
 	public BaseRaisedCodec(byte[] order) {
 		if (order.length != 5)
-			throw new IllegalArgumentException(
-					"Expecting 5 bases order only but got: "
-							+ new String(order));
+			throw new IllegalArgumentException("Expecting 5 bases order only but got: " + new String(order));
 
 		this.order = order;
 		this.base2indexArray = new int[255];

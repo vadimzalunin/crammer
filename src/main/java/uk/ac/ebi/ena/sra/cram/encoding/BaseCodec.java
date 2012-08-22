@@ -40,8 +40,7 @@ public class BaseCodec implements BitCodec<Byte> {
 			break;
 
 		default:
-			throw new IllegalArgumentException("Unknown base codec type: "
-					+ type);
+			throw new IllegalArgumentException("Unknown base codec type: " + type);
 		}
 	}
 

@@ -77,23 +77,24 @@ public class TestCramPicardIntegration {
 			}
 
 			SAMRecord cramRecord = iterator2.next();
-			
+
 			if (bamRecord.getAlignmentStart() != cramRecord.getAlignmentStart()) {
-				System.err.println("Broken at record "+counter);
+				System.err.println("Broken at record " + counter);
 				System.err.println(bamRecord.getSAMString());
 				System.err.println(cramRecord.getSAMString());
 				throw new RuntimeException("Alignment start does not match.");
 			}
-			
+
 			if (!Arrays.equals(bamRecord.getReadBases(), cramRecord.getReadBases())) {
-				System.err.println("Broken at record "+counter);
+				System.err.println("Broken at record " + counter);
 				System.err.println(bamRecord.getSAMString());
 				System.err.println(cramRecord.getSAMString());
 				throw new RuntimeException("Bases don't match.");
 			}
-			
+
 			counter++;
-//			System.err.printf("%d\t%s\n", bamRecord.getAlignmentStart(), new String (bamRecord.getReadBases()));
+			// System.err.printf("%d\t%s\n", bamRecord.getAlignmentStart(), new
+			// String (bamRecord.getReadBases()));
 		}
 		if (iterator2.hasNext())
 			throw new RuntimeException("Extra records in iterator 2.");

@@ -32,9 +32,9 @@ public class MeasuringCodec<T> implements BitCodec<T> {
 		this.delegate = delegate;
 		this.name = name;
 	}
-	
-	public BitCodec<T> getDelegate () {
-		return delegate ;
+
+	public BitCodec<T> getDelegate() {
+		return delegate;
 	}
 
 	@Override
@@ -77,11 +77,8 @@ public class MeasuringCodec<T> implements BitCodec<T> {
 
 	@Override
 	public String toString() {
-		return String
-				.format("%s: written objects=%d; written bits=%d; written bits per object=%.2f",
-						name, getWrittenObjects(),
-						getWrittenBits(), (double) getWrittenBits()
-								/ getWrittenObjects());
+		return String.format("%s: written objects=%d; written bits=%d; written bits per object=%.2f", name,
+				getWrittenObjects(), getWrittenBits(), (double) getWrittenBits() / getWrittenObjects());
 	}
 
 	public String getName() {

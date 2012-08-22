@@ -40,8 +40,7 @@ public class FastaByteArrayMaskFactoryTest {
 
 	@Test
 	public void test_1() throws ReadMaskFormatException {
-		String line = new String(
-				new byte[] { FastaByteArrayMaskFactory.DEFAULT_MASK_BYTE });
+		String line = new String(new byte[] { FastaByteArrayMaskFactory.DEFAULT_MASK_BYTE });
 		PositionMask mask = factory.createMask(line);
 
 		assertThat(mask, notNullValue());
@@ -50,14 +49,13 @@ public class FastaByteArrayMaskFactoryTest {
 
 	@Test(expected = ReadMaskFormatException.class)
 	public void fail_1n() throws ReadMaskFormatException {
-		String line = new String(
-				new byte[] { FastaByteArrayMaskFactory.DEFAULT_MASK_BYTE, '\n' });
+		String line = new String(new byte[] { FastaByteArrayMaskFactory.DEFAULT_MASK_BYTE, '\n' });
 		factory.createMask(line);
 	}
 
 	@Test
 	public void test_xyxxyyx() throws ReadMaskFormatException {
-		String line = "xyxxyyx" ;
+		String line = "xyxxyyx";
 		PositionMask mask = factory.createMask(line);
 
 		assertThat(mask, notNullValue());

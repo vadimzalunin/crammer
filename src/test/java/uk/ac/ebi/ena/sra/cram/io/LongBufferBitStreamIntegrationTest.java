@@ -52,8 +52,7 @@ public class LongBufferBitStreamIntegrationTest {
 			bos.write(value, 8);
 			bos.flush();
 
-			ByteArrayInputStream bais = new ByteArrayInputStream(
-					baos.toByteArray());
+			ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 			LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 			int readBits = bis.readBits(8);
 
@@ -70,8 +69,7 @@ public class LongBufferBitStreamIntegrationTest {
 			bos.write(value, bit);
 			bos.flush();
 
-			ByteArrayInputStream bais = new ByteArrayInputStream(
-					baos.toByteArray());
+			ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 			LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 			int readBits = bis.readBits(bit);
 
@@ -147,7 +145,7 @@ public class LongBufferBitStreamIntegrationTest {
 		assertThat(readBits, is(value));
 	}
 
-	@Test (timeout=1000)
+	@Test(timeout = 1000)
 	public void testWriteReadBenchmark() throws IOException {
 		int maxValues = 1000000;
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -159,7 +157,7 @@ public class LongBufferBitStreamIntegrationTest {
 		bos.flush();
 
 		byte[] buf = baos.toByteArray();
-		assertThat(buf.length, is(maxValues*4)) ;
+		assertThat(buf.length, is(maxValues * 4));
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
 		LongBufferBitInputStream bis = new LongBufferBitInputStream(bais);
 

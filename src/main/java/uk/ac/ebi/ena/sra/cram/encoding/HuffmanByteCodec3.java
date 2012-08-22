@@ -161,7 +161,7 @@ public class HuffmanByteCodec3 implements BitCodec<Byte> {
 		int maxChildIndex = 0;
 
 		for (HuffmanBitCode code : codes) {
-			int index = (code.bitCode >>> (code.bitLentgh-len)) & (~(-1 << (len-prevLen)));
+			int index = (code.bitCode >>> (code.bitLentgh - len)) & (~(-1 << (len - prevLen)));
 
 			if (code.bitLentgh == len)
 				maxLeafIndex = maxLeafIndex > index ? maxLeafIndex : index;
@@ -171,15 +171,15 @@ public class HuffmanByteCodec3 implements BitCodec<Byte> {
 
 		node.leaf = new HuffmanBitCode[maxLeafIndex + 1];
 		for (HuffmanBitCode code : codes) {
-//			int index = code.bitCode & (~(-1 << (len-prevLen)));
-			int index = (code.bitCode >>> (code.bitLentgh-len)) & (~(-1 << (len-prevLen)));
+			// int index = code.bitCode & (~(-1 << (len-prevLen)));
+			int index = (code.bitCode >>> (code.bitLentgh - len)) & (~(-1 << (len - prevLen)));
 
 			if (code.bitLentgh == len) {
 				node.leaf[index] = code;
-//				System.out.println("Leaf");
+				// System.out.println("Leaf");
 			}
 			if (code.bitLentgh > len) {
-//				System.out.println("Node");
+				// System.out.println("Node");
 				List<HuffmanBitCode> list = map.get(index);
 				if (list == null) {
 					list = new ArrayList<HuffmanBitCode>();
@@ -187,8 +187,9 @@ public class HuffmanByteCodec3 implements BitCodec<Byte> {
 				}
 				list.add(code);
 			}
-//			System.out.printf("%d\t%d\t%d\n", code.bitCode, code.bitLentgh, code.value);
-//			System.out.printf("\t%d\t%d\t%d\n", prevLen, len, index);
+			// System.out.printf("%d\t%d\t%d\n", code.bitCode, code.bitLentgh,
+			// code.value);
+			// System.out.printf("\t%d\t%d\t%d\n", prevLen, len, index);
 		}
 
 		node.children = new Node[maxChildIndex + 1];

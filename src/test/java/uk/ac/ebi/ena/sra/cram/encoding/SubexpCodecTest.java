@@ -39,7 +39,7 @@ public class SubexpCodecTest {
 		codec = new SubexpCodec(3);
 		assertThat(codec.numberOfBits(14L), is(5L));
 	}
-	
+
 	@Test
 	public void test_write_0_3() throws IOException {
 		SubexpCodec codec = new SubexpCodec(3);
@@ -54,7 +54,7 @@ public class SubexpCodecTest {
 		assertThat(Utils.toBitString(buf).substring(0, len), equalTo("0000"));
 		assertThat(Utils.toBitString(buf), equalTo("00000000"));
 	}
-	
+
 	@Test
 	public void test_write_1_3() throws IOException {
 		SubexpCodec codec = new SubexpCodec(3);
@@ -69,7 +69,7 @@ public class SubexpCodecTest {
 		assertThat(Utils.toBitString(buf).substring(0, len), equalTo("0001"));
 		assertThat(Utils.toBitString(buf), equalTo("00010000"));
 	}
-	
+
 	@Test
 	public void test_write_14_3() throws IOException {
 		SubexpCodec codec = new SubexpCodec(3);
@@ -84,23 +84,22 @@ public class SubexpCodecTest {
 		assertThat(Utils.toBitString(buf).substring(0, len), equalTo("10110"));
 		assertThat(Utils.toBitString(buf), equalTo("10110000"));
 	}
-	
+
 	@Test
 	public void test_read_14_3() throws IOException {
 		int m = 3;
 		long value = 14L;
 		// 10110:
-		byte[] buf = new byte[]{(byte) (22<<3)} ;
-		
+		byte[] buf = new byte[] { (byte) (22 << 3) };
+
 		SubexpCodec codec = new SubexpCodec(m);
-		ByteArrayInputStream bais = new ByteArrayInputStream(buf) ;
-		BitInputStream bis = new DefaultBitInputStream(bais) ;
-		
-		
+		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+		BitInputStream bis = new DefaultBitInputStream(bais);
+
 		Long readValue = codec.read(bis);
 		assertThat(readValue, is(value));
 	}
-	
+
 	@Test
 	public void test_write_14_4() throws IOException {
 		SubexpCodec codec = new SubexpCodec(4);
@@ -115,19 +114,18 @@ public class SubexpCodecTest {
 		assertThat(Utils.toBitString(buf).substring(0, len), equalTo("01110"));
 		assertThat(Utils.toBitString(buf), equalTo("01110000"));
 	}
-	
+
 	@Test
 	public void test_read_14_4() throws IOException {
 		int m = 4;
 		long value = 14L;
 		// 01110:
-		byte[] buf = new byte[]{(byte) (14<<3)} ;
-		
+		byte[] buf = new byte[] { (byte) (14 << 3) };
+
 		SubexpCodec codec = new SubexpCodec(m);
-		ByteArrayInputStream bais = new ByteArrayInputStream(buf) ;
-		BitInputStream bis = new DefaultBitInputStream(bais) ;
-		
-		
+		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+		BitInputStream bis = new DefaultBitInputStream(bais);
+
 		Long readValue = codec.read(bis);
 		assertThat(readValue, is(value));
 	}

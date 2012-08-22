@@ -23,15 +23,13 @@ public class SingleLineMaskReader implements Closeable, ReadMaskReader {
 	private final BufferedReader reader;
 	private final ReadMaskFactory<String> readMaskFactory;
 
-	public SingleLineMaskReader(BufferedReader reader,
-			ReadMaskFactory<String> readMaskFactory) {
+	public SingleLineMaskReader(BufferedReader reader, ReadMaskFactory<String> readMaskFactory) {
 		this.reader = reader;
 		this.readMaskFactory = readMaskFactory;
 	}
 
 	@Override
-	public PositionMask readNextMask() throws IOException,
-			ReadMaskFormatException {
+	public PositionMask readNextMask() throws IOException, ReadMaskFormatException {
 		String line = reader.readLine();
 		if (line == null)
 			return null;

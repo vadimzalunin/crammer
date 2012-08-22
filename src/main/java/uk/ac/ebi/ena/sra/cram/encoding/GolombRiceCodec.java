@@ -29,13 +29,13 @@ public class GolombRiceCodec implements BitCodec<Long> {
 	public GolombRiceCodec(int log2m, boolean quotientBit, long offset) {
 		super();
 		this.log2m = log2m;
-		m = 1<< log2m ;
+		m = 1 << log2m;
 		this.quotientBit = quotientBit;
 		this.offset = offset;
 	}
 
 	public GolombRiceCodec(int log2m) {
-		this(log2m, false, 0L) ;
+		this(log2m, false, 0L);
 	}
 
 	public final Long read(final BitInputStream bis) throws IOException {
@@ -51,8 +51,7 @@ public class GolombRiceCodec implements BitCodec<Long> {
 	}
 
 	@Override
-	public final long write(final BitOutputStream bos, final Long value)
-			throws IOException {
+	public final long write(final BitOutputStream bos, final Long value) throws IOException {
 		long newValue = value + offset;
 		long quotient = newValue / m;
 		if (quotient > 0x7fffffffL)
@@ -78,7 +77,7 @@ public class GolombRiceCodec implements BitCodec<Long> {
 
 	@Override
 	public final long numberOfBits(Long value) {
-		return (value+offset) / m + 1 + log2m;
+		return (value + offset) / m + 1 + log2m;
 	}
 
 	public int getLog2m() {
@@ -87,7 +86,7 @@ public class GolombRiceCodec implements BitCodec<Long> {
 
 	public void setLog2m(int log2m) {
 		this.log2m = log2m;
-		m = 1<< log2m ;
+		m = 1 << log2m;
 	}
 
 	public boolean isQuotientBit() {

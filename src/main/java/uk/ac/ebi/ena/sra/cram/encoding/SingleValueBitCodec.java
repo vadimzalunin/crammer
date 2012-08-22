@@ -22,7 +22,7 @@ import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 
 public class SingleValueBitCodec<T> implements BitCodec<T> {
 	private T value;
-	
+
 	public SingleValueBitCodec() {
 	}
 

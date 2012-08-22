@@ -57,8 +57,7 @@ public class NumberCodecOptimiser {
 		stub.initFromString("0,1");
 		list.add(stub);
 
-		stubs = (NumberCodecStub[]) list.toArray(new NumberCodecStub[list
-				.size()]);
+		stubs = (NumberCodecStub[]) list.toArray(new NumberCodecStub[list.size()]);
 		lengths = new long[stubs.length];
 	}
 

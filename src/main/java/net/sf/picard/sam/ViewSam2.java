@@ -97,7 +97,7 @@ public class ViewSam2 extends CommandLineProgram {
 	public static void main(final String[] args) {
 		// hack to avoid 'java.io.IOException: Not enough storage is available
 		// to process this command':
-//		Defaults.BUFFER_SIZE = 1024 * 32;
+		// Defaults.BUFFER_SIZE = 1024 * 32;
 		System.setProperty("samjdk.buffer_size", String.valueOf(1024 * 32));
 		new ViewSam2().instanceMain(args);
 	}
@@ -160,5 +160,4 @@ public class ViewSam2 extends CommandLineProgram {
 		return 0;
 	}
 
-	
 }

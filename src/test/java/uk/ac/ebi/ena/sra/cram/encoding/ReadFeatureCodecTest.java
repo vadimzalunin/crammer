@@ -46,16 +46,14 @@ public class ReadFeatureCodecTest {
 
 		SubstitutionVariationCodec codec = new SubstitutionVariationCodec();
 		codec.baseChangeCodec = new BaseChangeCodec();
-		HuffmanTree<Byte> qualityScoreTree = HuffmanCode.buildTree(new int[] {
-				100, 90, 80 }, new Byte[] { 33, 34, 35 });
-		HuffmanCodec<Byte> qualityScoreCodec = new HuffmanCodec<Byte>(
-				qualityScoreTree);
+		HuffmanTree<Byte> qualityScoreTree = HuffmanCode
+				.buildTree(new int[] { 100, 90, 80 }, new Byte[] { 33, 34, 35 });
+		HuffmanCodec<Byte> qualityScoreCodec = new HuffmanCodec<Byte>(qualityScoreTree);
 
 		ReadFeatureCodec featuresCodec = new ReadFeatureCodec();
 		featuresCodec.substitutionCodec = codec;
-		featuresCodec.featureOperationCodec = new ReadFeatureOperatorCodec(
-				new int[] { 100, 90, 10, 10, 1 }, Utils.autobox("S$IDN"
-						.getBytes()));
+		featuresCodec.featureOperationCodec = new ReadFeatureOperatorCodec(new int[] { 100, 90, 10, 10, 1 },
+				Utils.autobox("S$IDN".getBytes()));
 		featuresCodec.inReadPosCodec = new GolombRiceCodec(1);
 
 		SubstitutionVariation v = new SubstitutionVariation();
@@ -69,11 +67,11 @@ public class ReadFeatureCodecTest {
 		features.add(v);
 		features.add(v2);
 		featuresCodec.write(bos, features);
-		bos.write(true, 10) ;
-		bos.write(false, 10) ;
+		bos.write(true, 10);
+		bos.write(false, 10);
 
 		bos.flush();
-//		System.out.println(Utils.toBitString(baos.toByteArray()));
+		// System.out.println(Utils.toBitString(baos.toByteArray()));
 
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		BitInputStream bis = new DefaultBitInputStream(bais);
@@ -82,8 +80,7 @@ public class ReadFeatureCodecTest {
 		assertThat(features2, notNullValue());
 		assertThat(features2.isEmpty(), is(false));
 		assertThat(features2.size(), is(2));
-		assertThat(features2.iterator().next(),
-				instanceOf(SubstitutionVariation.class));
+		assertThat(features2.iterator().next(), instanceOf(SubstitutionVariation.class));
 
 		Iterator<ReadFeature> iterator = features2.iterator();
 		SubstitutionVariation v3 = (SubstitutionVariation) iterator.next();
@@ -91,13 +88,13 @@ public class ReadFeatureCodecTest {
 		assertThat(v3, equalTo(v));
 
 		SubstitutionVariation v4 = (SubstitutionVariation) iterator.next();
-		
-		for (int i=0; i<10; i++)
-			 if (!bis.readBit()) 
-				 throw new RuntimeException("No magick") ;
-			for (int i=0; i<10; i++)
-				if (bis.readBit()) 
-					throw new RuntimeException("No magick") ;
+
+		for (int i = 0; i < 10; i++)
+			if (!bis.readBit())
+				throw new RuntimeException("No magick");
+		for (int i = 0; i < 10; i++)
+			if (bis.readBit())
+				throw new RuntimeException("No magick");
 
 		assertThat(v4, equalTo(v2));
 

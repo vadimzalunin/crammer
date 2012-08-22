@@ -46,9 +46,7 @@ class GammaCodecStub extends GammaCodec implements NumberCodecStub {
 			setLenCodingBit(lenCodingBit);
 			break;
 		default:
-			throw new CramCompressionException(
-					"Not supported number of parameters to unary codec: "
-							+ params.length);
+			throw new CramCompressionException("Not supported number of parameters to unary codec: " + params.length);
 		}
 	}
 

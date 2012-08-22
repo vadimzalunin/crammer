@@ -15,8 +15,7 @@
  ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.index;
 
-public class RecordPointer extends BitPointer implements
-		Comparable<RecordPointer> {
+public class RecordPointer extends BitPointer implements Comparable<RecordPointer> {
 	private long blockStart;
 	private long alignmentStart;
 	private long recordNumber;
@@ -52,6 +51,6 @@ public class RecordPointer extends BitPointer implements
 
 	@Override
 	public String toString() {
-		return blockStart + ">" +recordNumber + ":"+ super.toString() + "@" + alignmentStart;
+		return blockStart + ">" + recordNumber + ":" + super.toString() + "@" + alignmentStart;
 	}
 }

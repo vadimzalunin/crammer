@@ -39,31 +39,34 @@ public class HuffmanByteCodec2 implements BitCodec<Byte> {
 	// assuming code length cannot be more than 1024:
 	private Integer[] codeLentghSorted;
 	private Map<Integer, Map<Long, Byte>> codeCache = new HashMap<Integer, Map<Long, Byte>>();
-	private Map<Long, Byte>[] codeMaps ;
-	
-	private static long readCounter = 0 ;
-	private static long readTime = 0 ;
-	
-	private static long readLongCounter = 0 ;
-	private static long readLongTime = 0 ;
-	
-	public static void dump (){
-//		System.out.println("HuffmanByteCodec2 read stats: count=" + readCounter + "; millis=" + readTime);
-//		System.out.println("HuffmanByteCodec2 read long bits stats: count=" + readLongCounter + "; millis=" + readLongTime);
+	private Map<Long, Byte>[] codeMaps;
+
+	private static long readCounter = 0;
+	private static long readTime = 0;
+
+	private static long readLongCounter = 0;
+	private static long readLongTime = 0;
+
+	public static void dump() {
+		// System.out.println("HuffmanByteCodec2 read stats: count=" +
+		// readCounter + "; millis=" + readTime);
+		// System.out.println("HuffmanByteCodec2 read long bits stats: count=" +
+		// readLongCounter + "; millis=" + readLongTime);
 	}
 
 	public static HuffmanByteCodec2 build(ByteFrequencies bf) {
 		HuffmanTree<Byte> tree = HuffmanCode.buildTree(bf.getFrequencies(), Utils.autobox(bf.getValues()));
 		return new HuffmanByteCodec2(tree);
 	}
-	
+
 	public HuffmanByteCodec2(HuffmanTree<Byte> tree) {
 		super();
 		this.tree = tree;
 		codes = new TreeMap<Byte, HuffmanBitCode>();
 		getBitCode(tree, new HuffmanBitCode(), codes);
-		
-		if (codes.isEmpty()) return ;
+
+		if (codes.isEmpty())
+			return;
 
 		for (Map.Entry<Byte, HuffmanBitCode> entry : codes.entrySet())
 			bitCodes[entry.getKey() & 0xFF] = entry.getValue();
@@ -85,38 +88,37 @@ public class HuffmanByteCodec2 implements BitCodec<Byte> {
 		codeLentghSorted = new Integer[lenMap.size()];
 		lenMap.toArray(codeLentghSorted);
 		Arrays.sort(codeLentghSorted);
-		
-		codeMaps = new Map[codeLentghSorted[codeLentghSorted.length-1]+1] ;
-		for (int len:codeLentghSorted) {
-			codeMaps[len] = codeCache.get(len) ;
+
+		codeMaps = new Map[codeLentghSorted[codeLentghSorted.length - 1] + 1];
+		for (int len : codeLentghSorted) {
+			codeMaps[len] = codeCache.get(len);
 		}
 	}
 
 	@Override
 	public Byte read(BitInputStream bis) throws IOException {
-//		long time = System.currentTimeMillis() ;
+		// long time = System.currentTimeMillis() ;
 		long buf = 0;
 		int bitsRead = 0;
 		for (int len : codeLentghSorted) {
 			buf = buf << (len - bitsRead);
-			
-//			readLongCounter ++ ;
-//			long rlTime = System.currentTimeMillis() ;
-			long readLongBits = bis.readLongBits(len - bitsRead) ;
-//			readLongTime += System.currentTimeMillis() -rlTime ;
-			
+
+			// readLongCounter ++ ;
+			// long rlTime = System.currentTimeMillis() ;
+			long readLongBits = bis.readLongBits(len - bitsRead);
+			// readLongTime += System.currentTimeMillis() -rlTime ;
+
 			buf = buf | readLongBits;
-			
-			
+
 			bitsRead = len;
 			Map<Long, Byte> codeMap = codeMaps[len];
-//			if (codeMap == null)
-//				continue;
+			// if (codeMap == null)
+			// continue;
 			Byte result = codeMap.get(buf);
 			if (result != null) {
-//				readTime += System.currentTimeMillis() - time ;
-//				readCounter++ ;
-				return result ;
+				// readTime += System.currentTimeMillis() - time ;
+				// readCounter++ ;
+				return result;
 			}
 		}
 		throw new RuntimeException("Bit code not found. Current state: " + bitsRead + " bits read, buf=" + buf);

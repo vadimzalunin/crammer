@@ -50,8 +50,9 @@ public class DebuggingBitOuputStream implements BitOutputStream {
 		for (int i = 0; i < nbits; i++)
 			append(((b >> i) & 1) == 1);
 		os.write(opSeparator);
-		
-		if (delegate != null) delegate.write(b, nbits) ;
+
+		if (delegate != null)
+			delegate.write(b, nbits);
 	}
 
 	@Override
@@ -59,8 +60,9 @@ public class DebuggingBitOuputStream implements BitOutputStream {
 		for (int i = 0; i < nbits; i++)
 			append(((b >> i) & 1) == 1);
 		os.write(opSeparator);
-		
-		if (delegate != null) delegate.write(b, nbits) ;
+
+		if (delegate != null)
+			delegate.write(b, nbits);
 	}
 
 	@Override
@@ -68,16 +70,18 @@ public class DebuggingBitOuputStream implements BitOutputStream {
 		for (int i = 0; i < nbits; i++)
 			append(((b >> i) & 1) == 1);
 		os.write(opSeparator);
-		
-		if (delegate != null) delegate.write(b, nbits) ;
+
+		if (delegate != null)
+			delegate.write(b, nbits);
 	}
 
 	@Override
 	public void write(boolean bit) throws IOException {
 		append(bit);
 		os.write(opSeparator);
-		
-		if (delegate != null) delegate.write(bit) ;
+
+		if (delegate != null)
+			delegate.write(bit);
 	}
 
 	@Override
@@ -85,47 +89,53 @@ public class DebuggingBitOuputStream implements BitOutputStream {
 		for (int i = 0; i < repeat; i++)
 			append(bit);
 		os.write(opSeparator);
-		
-		if (delegate != null) delegate.write(bit, repeat) ;
+
+		if (delegate != null)
+			delegate.write(bit, repeat);
 	}
 
 	@Override
 	public void flush() throws IOException {
 		os.flush();
-		
-		if (delegate != null) delegate.flush() ;
+
+		if (delegate != null)
+			delegate.flush();
 	}
 
 	@Override
 	public void close() throws IOException {
 		os.close();
-		if (delegate != null) delegate.close() ;
+		if (delegate != null)
+			delegate.close();
 	}
 
 	private void append(boolean bit) throws IOException {
 		os.write(bit ? '1' : '0');
-		
+
 	}
 
 	@Override
 	public int alignToByte() throws IOException {
-		os.write("align".getBytes()) ;
+		os.write("align".getBytes());
 		os.write(opSeparator);
-		if (delegate != null) return delegate.alignToByte() ;
+		if (delegate != null)
+			return delegate.alignToByte();
 		return 0;
 	}
 
 	@Override
 	public void write(byte[] data) throws IOException {
-		os.write(data) ;
+		os.write(data);
 		os.write(opSeparator);
-		if (delegate != null) delegate.write(data) ;
+		if (delegate != null)
+			delegate.write(data);
 	}
 
 	@Override
 	public void write(byte b) throws IOException {
-		os.write(b) ;
+		os.write(b);
 		os.write(opSeparator);
-		if (delegate != null) delegate.write(b) ;
+		if (delegate != null)
+			delegate.write(b);
 	}
 }

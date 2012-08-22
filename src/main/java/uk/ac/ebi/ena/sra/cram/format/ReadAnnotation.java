@@ -20,7 +20,7 @@ public class ReadAnnotation implements Comparable<ReadAnnotation> {
 	private String key;
 
 	public ReadAnnotation(String key) {
-		this.key = key ;
+		this.key = key;
 	}
 
 	public String getKey() {
@@ -38,7 +38,7 @@ public class ReadAnnotation implements Comparable<ReadAnnotation> {
 			return false;
 
 		ReadAnnotation foe = (ReadAnnotation) obj;
-		return key.equals(foe.key) ;
+		return key.equals(foe.key);
 	}
 
 	@Override

@@ -39,8 +39,7 @@ public class DeletionVariationCodec implements BitCodec<DeletionVariation> {
 	}
 
 	@Override
-	public long write(BitOutputStream bos, DeletionVariation v)
-			throws IOException {
+	public long write(BitOutputStream bos, DeletionVariation v) throws IOException {
 		long len = 0L;
 
 		len += dellengthPosCodec.write(bos, (long) v.getLength());

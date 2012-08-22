@@ -29,16 +29,14 @@ import org.apache.commons.math.stat.HashMapFrequency;
 class TestPairedTemplateAssembler {
 
 	public static void main(String[] args) {
-		SAMFileReader
-				.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SAMFileReader reader = new SAMFileReader(new File(
-				"y:/Data/SangerExample/paired/5120_1.bam"));
+		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SAMFileReader reader = new SAMFileReader(new File("y:/Data/SangerExample/paired/5120_1.bam"));
 
-		PairedTemplateAssembler ta = new PairedTemplateAssembler(1000000,
-				100000);
+		PairedTemplateAssembler ta = new PairedTemplateAssembler(1000000, 100000);
 
 		int maxRecords = 1000000000;
-		SAMRecordIterator iterator = reader.query(reader.getFileHeader().getSequence(0).getSequenceName(), -1, -1, true) ;
+		SAMRecordIterator iterator = reader
+				.query(reader.getFileHeader().getSequence(0).getSequenceName(), -1, -1, true);
 		HashMapFrequency frequency = new HashMapFrequency();
 		HashMapFrequency insertSizeFrequency = new HashMapFrequency();
 		while (iterator.hasNext()) {
@@ -47,15 +45,13 @@ class TestPairedTemplateAssembler {
 			// (!"IL24_5120:1:29:15064:14308#0".equals(samRecord.getReadName()))
 			// continue;
 
-			if (!samRecord.getProperPairFlag()
-					|| samRecord.getReadUnmappedFlag()
-					|| samRecord.getMateUnmappedFlag())
+			if (!samRecord.getProperPairFlag() || samRecord.getReadUnmappedFlag() || samRecord.getMateUnmappedFlag())
 				continue;
 
 			int insertSize = samRecord.getInferredInsertSize();
 			if (insertSize > -1)
 				insertSizeFrequency.addValue(insertSize);
-			
+
 			ta.addSAMRecord(samRecord);
 
 			while ((samRecord = ta.nextSAMRecord()) != null) {

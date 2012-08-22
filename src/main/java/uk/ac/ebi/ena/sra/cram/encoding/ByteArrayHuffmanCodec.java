@@ -31,8 +31,7 @@ public class ByteArrayHuffmanCodec implements BitCodec<byte[]> {
 
 	public ByteArrayHuffmanCodec(byte[] alphabet, int[] freqs, byte stopByte) {
 		this.stopByte = stopByte;
-		HuffmanTree<Byte> tree = HuffmanCode.buildTree(freqs,
-				Utils.autobox(alphabet));
+		HuffmanTree<Byte> tree = HuffmanCode.buildTree(freqs, Utils.autobox(alphabet));
 		byteCodec = new HuffmanByteCodec2(tree);
 	}
 
@@ -44,7 +43,7 @@ public class ByteArrayHuffmanCodec implements BitCodec<byte[]> {
 			buf.put(b);
 
 		byte[] sequence = new byte[buf.position()];
-		buf.flip() ;
+		buf.flip();
 		buf.get(sequence);
 		return sequence;
 	}

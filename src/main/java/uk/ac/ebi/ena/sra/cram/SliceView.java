@@ -272,7 +272,7 @@ public class SliceView {
 				header.addComment(comment);
 
 			for (SAMReadGroupRecord rg : h.getReadGroups()) {
-				if (header.getReadGroup(rg.getReadGroupId()) == null) 
+				if (header.getReadGroup(rg.getReadGroupId()) == null)
 					header.addReadGroup(rg);
 			}
 

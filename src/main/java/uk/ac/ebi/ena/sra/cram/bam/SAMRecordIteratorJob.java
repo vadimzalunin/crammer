@@ -51,20 +51,20 @@ public class SAMRecordIteratorJob implements Runnable {
 				tries = 0;
 				while (!abort.get() && !queue.offer(record)) {
 					Thread.sleep(sleepTime);
-					tries++ ;
+					tries++;
 				}
 			}
 
 			tries = 0;
-			while (!abort.get() && !queue.offer(STOP_SAMRECORD)) 
+			while (!abort.get() && !queue.offer(STOP_SAMRECORD))
 				Thread.sleep(sleepTime);
-			
+
 		} catch (Throwable e) {
 			e.printStackTrace();
 			exception = e;
 		} finally {
 			finished.set(true);
-//			System.out.println("SAMRecordIteratorJob: tries=" + tries);
+			// System.out.println("SAMRecordIteratorJob: tries=" + tries);
 		}
 	}
 

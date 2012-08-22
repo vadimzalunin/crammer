@@ -94,11 +94,7 @@ public class HuffmanCodecTest {
 		byte[] buf = baos.toByteArray();
 
 		// 1101111000000000:
-		assertThat(
-				buf,
-				equalTo(new byte[] {
-						(byte) (1 << 7 | 1 << 6 | 1 << 4 | 1 << 3 | 1 << 2 | 1 << 1),
-						0 }));
+		assertThat(buf, equalTo(new byte[] { (byte) (1 << 7 | 1 << 6 | 1 << 4 | 1 << 3 | 1 << 2 | 1 << 1), 0 }));
 	}
 
 	@Test
@@ -134,8 +130,8 @@ public class HuffmanCodecTest {
 			assertThat(codec.read(bis), equalTo(values[i]));
 
 	}
-	
-	@Test (timeout=450)
+
+	@Test(timeout = 450)
 	public void benchmark_write_read_random() throws IOException {
 		int maxTests = 1000000;
 		Random random = new Random();

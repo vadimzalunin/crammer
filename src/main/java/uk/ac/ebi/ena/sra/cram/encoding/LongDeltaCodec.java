@@ -49,7 +49,7 @@ public class LongDeltaCodec implements BitCodec<Long> {
 	}
 
 	public void reset() {
-		previousValue = 0L ;
+		previousValue = 0L;
 	}
 
 }

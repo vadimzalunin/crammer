@@ -46,18 +46,18 @@ public class IntegerListMaskFactory implements ReadMaskFactory<String> {
 	public PositionMask createMask(String line) throws ReadMaskFormatException {
 		if (line.length() == 0)
 			return ArrayPositionMask.EMPTY_INSTANCE;
-		
-		buf.clear() ;
+
+		buf.clear();
 		try {
 			for (String chunk : line.split(delimiter))
 				buf.put(Integer.valueOf(chunk));
 		} catch (NumberFormatException e) {
-			throw new ReadMaskFormatException("Expecting integers in "
-					+ line.substring(0, Math.min(10, line.length())), e);
+			throw new ReadMaskFormatException(
+					"Expecting integers in " + line.substring(0, Math.min(10, line.length())), e);
 		}
 		buf.flip();
-		int[] array = new int[buf.limit()] ;
-		buf.get(array) ;
+		int[] array = new int[buf.limit()];
+		buf.get(array);
 		PositionMask mask = new ArrayPositionMask(array);
 
 		return mask;

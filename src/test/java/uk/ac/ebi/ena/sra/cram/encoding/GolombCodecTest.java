@@ -56,23 +56,22 @@ public class GolombCodecTest {
 		byte[] buf = baos.toByteArray();
 		assertThat(Utils.toBitString(buf).substring(0, len), equalTo("1111011"));
 	}
-	
+
 	@Test
 	public void test_read_14_3() throws IOException {
 		int m = 3;
 		long value = 14L;
 		// 1111011:
-		byte[] buf = new byte[]{(byte) (123<<1)} ;
-		
+		byte[] buf = new byte[] { (byte) (123 << 1) };
+
 		GolombCodec codec = new GolombCodec(m);
-		ByteArrayInputStream bais = new ByteArrayInputStream(buf) ;
-		BitInputStream bis = new DefaultBitInputStream(bais) ;
-		
-		
+		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+		BitInputStream bis = new DefaultBitInputStream(bais);
+
 		Long readValue = codec.read(bis);
 		assertThat(readValue, is(value));
 	}
-	
+
 	@Test
 	public void test_write_14_4() throws IOException {
 		int m = 4;
@@ -87,24 +86,23 @@ public class GolombCodecTest {
 		byte[] buf = baos.toByteArray();
 		assertThat(Utils.toBitString(buf).substring(0, len), equalTo("111010"));
 	}
-	
+
 	@Test
 	public void test_read_14_43() throws IOException {
 		int m = 4;
 		long value = 14L;
 		// 111010:
-		byte[] buf = new byte[]{(byte) (58<<2)} ;
-		
+		byte[] buf = new byte[] { (byte) (58 << 2) };
+
 		GolombCodec codec = new GolombCodec(m);
-		ByteArrayInputStream bais = new ByteArrayInputStream(buf) ;
-		BitInputStream bis = new DefaultBitInputStream(bais) ;
-		
-		
+		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
+		BitInputStream bis = new DefaultBitInputStream(bais);
+
 		Long readValue = codec.read(bis);
 		assertThat(readValue, is(value));
 	}
-	
-	@Test (expected=IllegalArgumentException.class)
+
+	@Test(expected = IllegalArgumentException.class)
 	public void test_write_read_1() throws IOException {
 		new GolombCodec(1);
 	}
@@ -125,9 +123,8 @@ public class GolombCodecTest {
 			ByteArrayInputStream bais = new ByteArrayInputStream(buf);
 			BitInputStream bis = new DefaultBitInputStream(bais);
 			long number = codec.read(bis);
-			System.out.printf("%d: %d\t%s\t%d\t%s\n", i, number, Utils
-					.toBitString(buf).subSequence(0, len), len, Utils
-					.toBitString(buf));
+			System.out.printf("%d: %d\t%s\t%d\t%s\n", i, number, Utils.toBitString(buf).subSequence(0, len), len,
+					Utils.toBitString(buf));
 		}
 	}
 }

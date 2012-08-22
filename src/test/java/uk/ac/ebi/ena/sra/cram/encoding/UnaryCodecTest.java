@@ -55,8 +55,7 @@ public class UnaryCodecTest {
 
 		assertThat(bitString, equalTo("00000000"));
 
-		BitInputStream bis = new DefaultBitInputStream(
-				new ByteArrayInputStream(buf));
+		BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
 		assertThat(readValue, equalTo(value));
 	}
@@ -77,8 +76,7 @@ public class UnaryCodecTest {
 
 		assertThat(bitString, equalTo("111111111111111111110000"));
 
-		BitInputStream bis = new DefaultBitInputStream(
-				new ByteArrayInputStream(buf));
+		BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
 		assertThat(readValue, equalTo(value));
 	}
@@ -95,11 +93,10 @@ public class UnaryCodecTest {
 
 			bos.flush();
 			byte[] buf = baos.toByteArray();
-			assertThat("i=" + i + "; " + "buf len=" + buf.length + "; len="
-					+ len, (long) buf.length, is(1 + (len - 1 >> 3)));
+			assertThat("i=" + i + "; " + "buf len=" + buf.length + "; len=" + len, (long) buf.length,
+					is(1 + (len - 1 >> 3)));
 
-			BitInputStream bis = new DefaultBitInputStream(
-					new ByteArrayInputStream(buf));
+			BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 			Long readValue = codec.read(bis);
 			assertThat(readValue, equalTo(i));
 		}
@@ -119,8 +116,7 @@ public class UnaryCodecTest {
 		bos.flush();
 		byte[] buf = baos.toByteArray();
 
-		BitInputStream bis = new DefaultBitInputStream(
-				new ByteArrayInputStream(buf));
+		BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 
 		for (long i = 0; i < maxValues; i++) {
 			codec.read(bis);

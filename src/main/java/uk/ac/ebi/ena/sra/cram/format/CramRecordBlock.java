@@ -32,10 +32,10 @@ public class CramRecordBlock implements Serializable {
 	private boolean unmappedReadQualityScoresIncluded = false;
 	private boolean substitutionQualityScoresIncluded = true;
 	private boolean maskedQualityScoresIncluded = true;
-	
+
 	public boolean losslessQualityScores = false;
-	public boolean preserveReadNames = false ;
-	
+	public boolean preserveReadNames = false;
+
 	public String getSequenceName() {
 		return sequenceName;
 	}
@@ -130,16 +130,12 @@ public class CramRecordBlock implements Serializable {
 		sb.append(getClass().getSimpleName()).append(" [\n");
 		sb.append("sequenceName=").append(sequenceName).append("\n");
 		sb.append("sequenceLength=").append(sequenceLength).append("\n");
-		sb.append("firstRecordPosition=").append(firstRecordPosition)
-				.append("\n");
+		sb.append("firstRecordPosition=").append(firstRecordPosition).append("\n");
 		sb.append("recordCount=").append(recordCount).append("\n");
 		sb.append("readLength=").append(readLength).append("\n");
-		sb.append("unmappedReadQualityScoresIncluded=")
-				.append(unmappedReadQualityScoresIncluded).append("\n");
-		sb.append("substitutionQualityScoresIncluded=")
-				.append(substitutionQualityScoresIncluded).append("\n");
-		sb.append("maskedQualityScoresIncluded=")
-				.append(maskedQualityScoresIncluded).append("\n");
+		sb.append("unmappedReadQualityScoresIncluded=").append(unmappedReadQualityScoresIncluded).append("\n");
+		sb.append("substitutionQualityScoresIncluded=").append(substitutionQualityScoresIncluded).append("\n");
+		sb.append("maskedQualityScoresIncluded=").append(maskedQualityScoresIncluded).append("\n");
 		sb.append("compression=").append(compression).append("]");
 		return sb.toString();
 	}
@@ -148,8 +144,7 @@ public class CramRecordBlock implements Serializable {
 		return positiveStrandBasePositionReversed;
 	}
 
-	public void setPositiveStrandBasePositionReversed(
-			boolean positiveStrandBasePositionReversed) {
+	public void setPositiveStrandBasePositionReversed(boolean positiveStrandBasePositionReversed) {
 		this.positiveStrandBasePositionReversed = positiveStrandBasePositionReversed;
 	}
 
@@ -157,8 +152,7 @@ public class CramRecordBlock implements Serializable {
 		return negativeStrandBasePositionReversed;
 	}
 
-	public void setNegativeStrandBasePositionReversed(
-			boolean negativeStrandBasePositionReversed) {
+	public void setNegativeStrandBasePositionReversed(boolean negativeStrandBasePositionReversed) {
 		this.negativeStrandBasePositionReversed = negativeStrandBasePositionReversed;
 	}
 
@@ -174,8 +168,7 @@ public class CramRecordBlock implements Serializable {
 		return unmappedReadQualityScoresIncluded;
 	}
 
-	public void setUnmappedReadQualityScoresIncluded(
-			boolean unmappedReadQualityScoresIncluded) {
+	public void setUnmappedReadQualityScoresIncluded(boolean unmappedReadQualityScoresIncluded) {
 		this.unmappedReadQualityScoresIncluded = unmappedReadQualityScoresIncluded;
 	}
 
@@ -183,8 +176,7 @@ public class CramRecordBlock implements Serializable {
 		return substitutionQualityScoresIncluded;
 	}
 
-	public void setSubstitutionQualityScoresIncluded(
-			boolean substitutionQualityScoresIncluded) {
+	public void setSubstitutionQualityScoresIncluded(boolean substitutionQualityScoresIncluded) {
 		this.substitutionQualityScoresIncluded = substitutionQualityScoresIncluded;
 	}
 
@@ -192,8 +184,7 @@ public class CramRecordBlock implements Serializable {
 		return maskedQualityScoresIncluded;
 	}
 
-	public void setMaskedQualityScoresIncluded(
-			boolean maskedQualityScoresIncluded) {
+	public void setMaskedQualityScoresIncluded(boolean maskedQualityScoresIncluded) {
 		this.maskedQualityScoresIncluded = maskedQualityScoresIncluded;
 	}
 

@@ -55,7 +55,6 @@ public class HuffmanByteCodecBenchmark {
 
 		HuffmanTree<Byte> tree = HuffmanCode.buildTree(bf.getFrequencies(), Utils.autobox(bf.getValues()));
 		codec = new HuffmanByteCodec2(tree);
-		
 
 		Scanner scanner = new Scanner(qsFile);
 
@@ -88,14 +87,14 @@ public class HuffmanByteCodecBenchmark {
 	public void test2() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
-		
-		for (String line:lines) {
+
+		for (String line : lines) {
 			for (byte b : line.getBytes())
 				codec.write(bos, b);
 		}
 
 		bos.close();
-		byte[] buf = baos.toByteArray() ;
+		byte[] buf = baos.toByteArray();
 
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
 		BitInputStream bis = new DefaultBitInputStream(bais);

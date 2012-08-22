@@ -37,7 +37,7 @@ import uk.ac.ebi.ena.sra.cram.io.DefaultBitOutputStream;
 public class HuffmanByteCodec2Test {
 
 	@Test
-//	@Ignore
+	// @Ignore
 	public void test_write_1() throws IOException {
 		Byte[] values = new Byte[] { 1, 2 };
 		int[] charFreqs = new int[] { 1, 2 };
@@ -55,7 +55,7 @@ public class HuffmanByteCodec2Test {
 	}
 
 	@Test
-//	@Ignore
+	// @Ignore
 	public void test_write_2() throws IOException {
 		Byte[] values = new Byte[] { 1, 2 };
 		int[] charFreqs = new int[] { 1, 2 };
@@ -73,7 +73,7 @@ public class HuffmanByteCodec2Test {
 	}
 
 	@Test
-//	@Ignore
+	// @Ignore
 	public void test_write_1_2_3_4() throws IOException {
 		Byte[] values = new Byte[] { 1, 2, 3, 4 };
 		int[] charFreqs = new int[] { 1, 2, 3, 4 };
@@ -103,7 +103,7 @@ public class HuffmanByteCodec2Test {
 	}
 
 	@Test
-//	@Ignore
+	// @Ignore
 	public void test_write_read_random() throws IOException {
 		int maxTests = 1000;
 		Random random = new Random();
@@ -142,7 +142,8 @@ public class HuffmanByteCodec2Test {
 
 	}
 
-	@Test//(timeout = 650)
+	@Test
+	// (timeout = 650)
 	public void benchmark_write_read_random() throws IOException {
 		int maxTests = 1000000;
 		Random random = new Random();
@@ -161,7 +162,8 @@ public class HuffmanByteCodec2Test {
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
-//		BitOutputStream bos = new DebuggingBitOuputStream(System.out, '\n', new DefaultBitOutputStream(baos));
+		// BitOutputStream bos = new DebuggingBitOuputStream(System.out, '\n',
+		// new DefaultBitOutputStream(baos));
 
 		for (int i = 0; i < maxTests; i++)
 			codec.write(bos, values[i]);

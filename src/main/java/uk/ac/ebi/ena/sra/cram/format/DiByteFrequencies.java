@@ -92,7 +92,7 @@ public class DiByteFrequencies {
 			if (i < values.length - 1)
 				sb.append(", ");
 		}
-		sb.append("]\n") ;
+		sb.append("]\n");
 		sb.append(Arrays.toString(getFrequencies()));
 		return sb.toString();
 	}

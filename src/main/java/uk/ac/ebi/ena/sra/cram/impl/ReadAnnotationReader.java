@@ -36,25 +36,20 @@ public class ReadAnnotationReader {
 	private BufferedReader bufferedReader;
 	private Map<String, ReadAnnotation> key2ReadAnnotationMap = new HashMap<String, ReadAnnotation>();
 
-	public ReadAnnotationReader(BufferedReader bufferedReader)
-			throws IOException {
+	public ReadAnnotationReader(BufferedReader bufferedReader) throws IOException {
 		this.bufferedReader = bufferedReader;
 		String dictionaryLine = bufferedReader.readLine();
 		for (String key : dictionaryLine.split(DLM))
 			key2ReadAnnotationMap.put(key, new ReadAnnotation(key));
 
-		this.annnotations = Collections
-				.unmodifiableSet(new TreeSet<ReadAnnotation>(
-						key2ReadAnnotationMap.values()));
+		this.annnotations = Collections.unmodifiableSet(new TreeSet<ReadAnnotation>(key2ReadAnnotationMap.values()));
 	}
 
 	public List<ReadAnnotation> listUniqAnnotations() {
-		return Collections.unmodifiableList(new ArrayList<ReadAnnotation>(
-				key2ReadAnnotationMap.values()));
+		return Collections.unmodifiableList(new ArrayList<ReadAnnotation>(key2ReadAnnotationMap.values()));
 	}
 
-	public Collection<ReadAnnotation> nextReadAnnotations() throws IOException,
-			ReadAnnotationException {
+	public Collection<ReadAnnotation> nextReadAnnotations() throws IOException, ReadAnnotationException {
 		String line = bufferedReader.readLine();
 		if (line == null)
 			return null;
@@ -67,12 +62,10 @@ public class ReadAnnotationReader {
 		return annoList;
 	}
 
-	private ReadAnnotation createReadAnnotation(String chunk)
-			throws ReadAnnotationException {
+	private ReadAnnotation createReadAnnotation(String chunk) throws ReadAnnotationException {
 		ReadAnnotation readAnnotation = key2ReadAnnotationMap.get(chunk);
 		if (readAnnotation == null)
-			throw new ReadAnnotationException(
-					"Annotaion not found in the dictionary: " + chunk);
+			throw new ReadAnnotationException("Annotaion not found in the dictionary: " + chunk);
 
 		return readAnnotation;
 	}

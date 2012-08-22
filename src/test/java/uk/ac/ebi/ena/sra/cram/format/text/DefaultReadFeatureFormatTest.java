@@ -43,8 +43,7 @@ public class DefaultReadFeatureFormatTest {
 
 	@Parameters
 	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] { { "", 0 }, { "M5", 5 },
-				{ "M2wxyzT$M2IAC.M5D2A!C!M13A!C!", 31 },
+		Object[][] data = new Object[][] { { "", 0 }, { "M5", 5 }, { "M2wxyzT$M2IAC.M5D2A!C!M13A!C!", 31 },
 
 		};
 		return Arrays.asList(data);

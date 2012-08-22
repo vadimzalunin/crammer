@@ -43,7 +43,7 @@ public class VariableLengthByteArrayHuffmanCodec implements BitCodec<byte[]> {
 
 	@Override
 	public byte[] read(BitInputStream bis) throws IOException {
-		Integer len = lenCodec.read(bis) ;
+		Integer len = lenCodec.read(bis);
 		byte[] sequence = new byte[len];
 
 		for (int i = 0; i < sequence.length; i++)

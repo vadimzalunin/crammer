@@ -47,27 +47,24 @@ public class TestCramIterators {
 	private static File refFile = new File("data/set5/ref.fa");
 	private static File cramFile;
 	private static File indexFile;
-	private static CramIndex index ;
+	private static CramIndex index;
 	private static RecordPointer pointer;
 
 	@BeforeClass
 	public static void createCramFile() throws Exception {
 		cramFile = File.createTempFile(bamFile.getName(), ".cram");
 		cramFile.deleteOnExit();
-		String command = String
-				.format("-l error cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --max-records 100",
-						bamFile.getAbsolutePath(), refFile.getAbsolutePath(),
-						cramFile.getAbsolutePath());
+		String command = String.format(
+				"-l error cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --max-records 100",
+				bamFile.getAbsolutePath(), refFile.getAbsolutePath(), cramFile.getAbsolutePath());
 		CramTools.main(command.split("\\s+"));
 
 		indexFile = File.createTempFile(cramFile.getName(), ".crai");
 		indexFile.deleteOnExit();
-		command = String
-				.format("--input-cram-file %s --reference-fasta-file %s --index-file %s",
-						cramFile.getAbsolutePath(), refFile.getAbsolutePath(),
-						indexFile.getAbsolutePath());
+		command = String.format("--input-cram-file %s --reference-fasta-file %s --index-file %s",
+				cramFile.getAbsolutePath(), refFile.getAbsolutePath(), indexFile.getAbsolutePath());
 		CramIndexer.main(command.split("\\s+"));
-		
+
 		index = CramIndex.fromFile(indexFile);
 		pointer = index.findRecordPointerAt("20", 0);
 	}
@@ -87,41 +84,32 @@ public class TestCramIterators {
 
 	@Test
 	public void test1() throws FileNotFoundException, IOException, CramFormatException {
-		CloseableIterator<CramRecord> iterator = new CramIterator(
-				new FileInputStream(cramFile),
+		CloseableIterator<CramRecord> iterator = new CramIterator(new FileInputStream(cramFile),
 				ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile));
 
 		doTest(iterator, nofRecords);
 	}
 
 	@Test
-	public void test2() throws FileNotFoundException, IOException,
-			CramException {
-		CloseableIterator<CramRecord> iterator = new CRAMPreemptiveIterator(
-				new FileInputStream(cramFile),
-				ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile),
-				null);
+	public void test2() throws FileNotFoundException, IOException, CramException {
+		CloseableIterator<CramRecord> iterator = new CRAMPreemptiveIterator(new FileInputStream(cramFile),
+				ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile), null);
 
 		doTest(iterator, nofRecords);
 	}
 
 	@Test
-	public void test3() throws FileNotFoundException, IOException,
-			CramFormatException, CramCompressionException {
-		CloseableIterator<CramRecord> iterator = new CramRandomAccessIterator(
-				new SeekableFileStream(cramFile),
-				ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile),
-				pointer);
+	public void test3() throws FileNotFoundException, IOException, CramFormatException, CramCompressionException {
+		CloseableIterator<CramRecord> iterator = new CramRandomAccessIterator(new SeekableFileStream(cramFile),
+				ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile), pointer);
 
 		doTest(iterator, nofRecords);
 	}
-	
+
 	@Test
-	public void test4() throws FileNotFoundException, IOException,
-			CramException {
+	public void test4() throws FileNotFoundException, IOException, CramException {
 		CloseableIterator<CramRecord> iterator = new CramPreemptiveRandomAccessIterator(
-				new SeekableFileStream(cramFile),
-				ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile),
+				new SeekableFileStream(cramFile), ReferenceSequenceFileFactory.getReferenceSequenceFile(refFile),
 				pointer);
 
 		doTest(iterator, nofRecords);

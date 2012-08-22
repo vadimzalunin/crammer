@@ -39,8 +39,7 @@ public class CramRecordTextFormatTest {
 
 	@Parameters
 	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] {
-				{ "1	223022	54	*	POS	M26D1M21y M5g 	*	*" },
+		Object[][] data = new Object[][] { { "1	223022	54	*	POS	M26D1M21y M5g 	*	*" },
 				{ "*	*	54	*	POS	*	AAAAAAAAAAAAAAAA	!!!!!!!!!!!!!!!!" },
 
 		};
@@ -54,14 +53,14 @@ public class CramRecordTextFormatTest {
 		CramRecord record = format.fromString(recordSpec);
 
 		String derivedSpec = format.writeRecord(record);
-		
+
 		System.out.println(record.toString());
 		System.out.println(derivedSpec);
 
 		assertThat(derivedSpec, equalTo(recordSpec));
-		
-		CramRecord derivedRecord = format.fromString(derivedSpec) ;
-		assertThat(derivedRecord, equalTo(record)) ;
+
+		CramRecord derivedRecord = format.fromString(derivedSpec);
+		assertThat(derivedRecord, equalTo(record));
 	}
 
 }

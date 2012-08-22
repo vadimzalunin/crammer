@@ -16,7 +16,7 @@
 package uk.ac.ebi.ena.sra.cram.format;
 
 public interface ReadFeature {
-	public static final byte STOP_OPERATOR = '$' ;
+	public static final byte STOP_OPERATOR = '$';
 
 	/**
 	 * @return zero-based position in the read

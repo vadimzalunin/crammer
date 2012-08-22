@@ -19,7 +19,7 @@ import java.io.Serializable;
 
 import uk.ac.ebi.ena.sra.cram.format.compression.EncodingAlgorithm;
 
-public class Encoding implements Serializable{
+public class Encoding implements Serializable {
 	private EncodingAlgorithm algorithm;
 	private String parameters;
 
@@ -36,12 +36,11 @@ public class Encoding implements Serializable{
 	public boolean equals(Object obj) {
 		if (obj instanceof Encoding) {
 			Encoding foe = (Encoding) obj;
-			return foe.getAlgorithm() == getAlgorithm()
-					&& foe.getParameters().equals(getParameters());
+			return foe.getAlgorithm() == getAlgorithm() && foe.getParameters().equals(getParameters());
 		} else
 			return false;
 	}
-	
+
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + " [" + getAlgorithm().name() + ", " + getParameters() + "]";

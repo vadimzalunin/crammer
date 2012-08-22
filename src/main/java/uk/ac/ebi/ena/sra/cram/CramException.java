@@ -15,7 +15,7 @@
  ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram;
 
-public class CramException extends Exception{
+public class CramException extends Exception {
 
 	public CramException() {
 		super();

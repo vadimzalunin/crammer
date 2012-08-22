@@ -41,11 +41,11 @@ public class SubstitutionVariationCodecTest {
 
 		SubstitutionVariationCodec codec = new SubstitutionVariationCodec();
 		codec.baseChangeCodec = new BaseChangeCodec();
-		HuffmanTree<Byte> qualityScoreTree = HuffmanCode.buildTree(new int[] {
-				100, 90, 80 }, new Byte[] { 33, 34, 35 });
+		HuffmanTree<Byte> qualityScoreTree = HuffmanCode
+				.buildTree(new int[] { 100, 90, 80 }, new Byte[] { 33, 34, 35 });
 
 		SubstitutionVariation v = new SubstitutionVariation();
-		v.setBaseChange(new BaseChange((byte)'A', (byte)'C')) ;
+		v.setBaseChange(new BaseChange((byte) 'A', (byte) 'C'));
 		v.setPosition(-1);
 		codec.write(bos, v);
 

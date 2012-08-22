@@ -50,9 +50,8 @@ public class FastaByteArrayMaskFactory implements ReadMaskFactory<String> {
 			if (data[i] == maskByte)
 				buf.put(i + 1);
 			else if (data[i] == '\n')
-				throw new ReadMaskFormatException(
-						"New line not allowed inside of mask line: "
-								+ line.substring(0, Math.min(10, line.length())));
+				throw new ReadMaskFormatException("New line not allowed inside of mask line: "
+						+ line.substring(0, Math.min(10, line.length())));
 
 		buf.flip();
 		int[] array = new int[buf.limit()];

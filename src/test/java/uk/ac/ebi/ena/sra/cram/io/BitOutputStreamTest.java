@@ -41,47 +41,41 @@ public class BitOutputStreamTest {
 		byte[] buf = baos.toByteArray();
 		assertThat(buf.length, is(8));
 		assertThat(buf, equalTo(Utils.toBytes(value)));
-		assertThat(
-				Utils.toBitString(buf),
-				equalTo("1100000000000000000000000000000000000000000000000000000000000001"));
+		assertThat(Utils.toBitString(buf), equalTo("1100000000000000000000000000000000000000000000000000000000000001"));
 	}
-	
+
 	@Test
 	public void test_write_long_128_8_bits() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
 		long value = 128;
-		
-		bos.write(1, 7) ;
+
+		bos.write(1, 7);
 		bos.write(value, 8);
 		bos.flush();
 		byte[] buf = baos.toByteArray();
 		assertThat(buf.length, is(2));
-		assertThat(buf, equalTo(new byte[]{(byte) 3, 0}));
-		assertThat(
-				Utils.toBitString(buf),
-				equalTo("0000001100000000"));
+		assertThat(buf, equalTo(new byte[] { (byte) 3, 0 }));
+		assertThat(Utils.toBitString(buf), equalTo("0000001100000000"));
 	}
-	
+
 	@Test
 	public void test_write_long_10bits() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
 		long value = 0;
 		value = (1L << 9) | (1L << 8);
-//		System.out.println(Utils.toBitString(Utils.toBytes(value)));
+		// System.out.println(Utils.toBitString(Utils.toBytes(value)));
 		value = value | 2;
-//		System.out.println(Utils.toBitString(Utils.toBytes(value)));
+		// System.out.println(Utils.toBitString(Utils.toBytes(value)));
 
 		bos.write(value, 10);
 		bos.flush();
 		byte[] buf = baos.toByteArray();
-//		System.out.println(Utils.toBitString(buf));
+		// System.out.println(Utils.toBitString(buf));
 		assertThat(buf.length, is(2));
-		assertThat(buf, equalTo(new byte[]{-64, -128}));
-		assertThat(
-				Utils.toBitString(buf),
-				equalTo("1100000010000000"));
+		assertThat(buf, equalTo(new byte[] { -64, -128 }));
+		assertThat(Utils.toBitString(buf), equalTo("1100000010000000"));
 	}
 
 	@Test
@@ -95,7 +89,7 @@ public class BitOutputStreamTest {
 		bos.write(value, 2);
 		bos.flush();
 		byte[] buf = baos.toByteArray();
-//		System.out.println(Utils.toBitString(buf));
+		// System.out.println(Utils.toBitString(buf));
 		assertThat(buf.length, is(1));
 		assertThat(buf, equalTo(new byte[] { 64 }));
 		assertThat(Utils.toBitString(buf), equalTo("01000000"));
@@ -112,7 +106,7 @@ public class BitOutputStreamTest {
 		bos.write(value, 8);
 		bos.flush();
 		byte[] buf = baos.toByteArray();
-//		System.out.println(Utils.toBitString(buf));
+		// System.out.println(Utils.toBitString(buf));
 		assertThat(buf.length, is(1));
 		assertThat(buf, equalTo(new byte[] { 1 }));
 		assertThat(Utils.toBitString(buf), equalTo("00000001"));
@@ -132,7 +126,7 @@ public class BitOutputStreamTest {
 
 		bos.flush();
 	}
-	
+
 	@Test
 	public void test_write_int_32bits() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -146,32 +140,28 @@ public class BitOutputStreamTest {
 		byte[] buf = baos.toByteArray();
 		assertThat(buf.length, is(4));
 		assertThat(buf, equalTo(Utils.toBytes(value)));
-		assertThat(
-				Utils.toBitString(buf),
-				equalTo("11000000000000000000000000000001"));
+		assertThat(Utils.toBitString(buf), equalTo("11000000000000000000000000000001"));
 	}
-	
+
 	@Test
 	public void test_write_int_10bits() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
 		int value = 0;
 		value = (1 << 9) | (1 << 8);
-//		System.out.println(Utils.toBitString(Utils.toBytes(value)));
+		// System.out.println(Utils.toBitString(Utils.toBytes(value)));
 		value = value | 2;
-//		System.out.println(Utils.toBitString(Utils.toBytes(value)));
+		// System.out.println(Utils.toBitString(Utils.toBytes(value)));
 
 		bos.write_int_LSB_0(value, 10);
 		bos.flush();
 		byte[] buf = baos.toByteArray();
-//		System.out.println(Utils.toBitString(buf));
+		// System.out.println(Utils.toBitString(buf));
 		assertThat(buf.length, is(2));
-		assertThat(buf, equalTo(new byte[]{-64, -128}));
-		assertThat(
-				Utils.toBitString(buf),
-				equalTo("1100000010000000"));
+		assertThat(buf, equalTo(new byte[] { -64, -128 }));
+		assertThat(Utils.toBitString(buf), equalTo("1100000010000000"));
 	}
-	
+
 	@Test
 	public void test_write_int_2bits() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -183,12 +173,12 @@ public class BitOutputStreamTest {
 		bos.write_int_LSB_0(value, 2);
 		bos.flush();
 		byte[] buf = baos.toByteArray();
-//		System.out.println(Utils.toBitString(buf));
+		// System.out.println(Utils.toBitString(buf));
 		assertThat(buf.length, is(1));
 		assertThat(buf, equalTo(new byte[] { 64 }));
 		assertThat(Utils.toBitString(buf), equalTo("01000000"));
 	}
-	
+
 	@Test
 	public void test_write_int_8bits() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();

@@ -52,8 +52,7 @@ public class TemplateAssembler {
 	public void addSAMRecord(SAMRecord samRecord) {
 
 		// autofix unmapped out-of-alignment reads:
-		if (samRecord.getReadUnmappedFlag()
-				&& samRecord.getAlignmentStart() < lastAddedAlignmentStart)
+		if (samRecord.getReadUnmappedFlag() && samRecord.getAlignmentStart() < lastAddedAlignmentStart)
 			samRecord.setAlignmentStart(lastAddedAlignmentStart);
 
 		Template template = templatesByName.get(samRecord.getReadName());
@@ -96,13 +95,11 @@ public class TemplateAssembler {
 		if (nextRecordOnAlignment == null)
 			return null;
 
-		if (nextRecordOnAlignment.template == null
-				|| nextRecordOnAlignment.template.isSingle()
+		if (nextRecordOnAlignment.template == null || nextRecordOnAlignment.template.isSingle()
 				|| nextRecordOnAlignment.template.isComplete())
 			return alignmentQueue.poll();
 
-		if ((lastAddedAlignmentStart
-				- nextRecordOnAlignment.samRecord.getAlignmentStart() > alignmentHorizon)
+		if ((lastAddedAlignmentStart - nextRecordOnAlignment.samRecord.getAlignmentStart() > alignmentHorizon)
 				|| (alignmentQueue.size() > recordHorizon))
 			return takeNextRecordWithIncompleteTemplate();
 
@@ -118,8 +115,7 @@ public class TemplateAssembler {
 
 	private void divorceSAMRecord(Record record) {
 		record.samRecord.setReadPairedFlag(false);
-		record.samRecord
-				.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+		record.samRecord.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
 		record.samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
 		record.samRecord.setInferredInsertSize(0);
 
@@ -184,8 +180,7 @@ public class TemplateAssembler {
 		public long getDistanceToNextFragment() {
 			if (nextRecordInTemplate == null)
 				return -1;
-			return nextRecordInTemplate.inStreamRecordPosition
-					- inStreamRecordPosition;
+			return nextRecordInTemplate.inStreamRecordPosition - inStreamRecordPosition;
 		}
 
 		public String getName() {

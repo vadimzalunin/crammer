@@ -46,16 +46,15 @@ public class SingleLineMaskReaderTest {
 
 	@Test
 	public void testIntegerListMaskFactory() throws ReadMaskFormatException, IOException {
-		int[][] data = new int[][] { {}, { 1 }, { 1, 3 },
-				{ 1, 100, 101, 200, 600 }, {}, { 13 } };
+		int[][] data = new int[][] { {}, { 1 }, { 1, 3 }, { 1, 100, 101, 200, 600 }, {}, { 13 } };
 
 		String content = arrayToString(data);
-		ReadMaskReader reader = new SingleLineMaskReader(new BufferedReader(
-				new StringReader(content)), new IntegerListMaskFactory());
+		ReadMaskReader reader = new SingleLineMaskReader(new BufferedReader(new StringReader(content)),
+				new IntegerListMaskFactory());
 
 		int[][] newData = new int[data.length][];
 		int i = 0;
-		PositionMask mask = null ;
+		PositionMask mask = null;
 		while ((mask = reader.readNextMask()) != null) {
 			newData[i++] = mask.getMaskedPositions();
 		}
@@ -68,12 +67,12 @@ public class SingleLineMaskReaderTest {
 
 		for (int[] array : data) {
 			if (array.length > 0) {
-				byte[] bytes = new byte[array[array.length-1]] ;
-				Arrays.fill(bytes, FastaByteArrayMaskFactory.DEFAULT_NON_MASK_BYTE) ;
-				for (int pos:array) {
-					bytes[pos-1] = FastaByteArrayMaskFactory.DEFAULT_MASK_BYTE ;
+				byte[] bytes = new byte[array[array.length - 1]];
+				Arrays.fill(bytes, FastaByteArrayMaskFactory.DEFAULT_NON_MASK_BYTE);
+				for (int pos : array) {
+					bytes[pos - 1] = FastaByteArrayMaskFactory.DEFAULT_MASK_BYTE;
 				}
-				sb.append(new String (bytes)) ;
+				sb.append(new String(bytes));
 			}
 			sb.append("\n");
 		}
@@ -81,18 +80,16 @@ public class SingleLineMaskReaderTest {
 	}
 
 	@Test
-	public void testFastaByteArrayMaskFactory() throws ReadMaskFormatException,
-			IOException {
-		int[][] data = new int[][] { {}, { 1 }, { 1, 3 },
-				{ 1, 100, 101, 200, 600 }, {}, { 13 } };
+	public void testFastaByteArrayMaskFactory() throws ReadMaskFormatException, IOException {
+		int[][] data = new int[][] { {}, { 1 }, { 1, 3 }, { 1, 100, 101, 200, 600 }, {}, { 13 } };
 
 		String content = arrayToFasta(data);
-		ReadMaskReader reader = new SingleLineMaskReader(new BufferedReader(
-				new StringReader(content)), new FastaByteArrayMaskFactory());
+		ReadMaskReader reader = new SingleLineMaskReader(new BufferedReader(new StringReader(content)),
+				new FastaByteArrayMaskFactory());
 
 		int[][] newData = new int[data.length][];
 		int i = 0;
-		PositionMask mask = null ;
+		PositionMask mask = null;
 		while ((mask = reader.readNextMask()) != null) {
 			newData[i++] = mask.getMaskedPositions();
 		}

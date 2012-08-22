@@ -81,7 +81,7 @@ public class ReferenceDiscovery {
 					name = ((SeekableStream) source).getSource();
 
 				if (name == null)
-					continue ;
+					continue;
 
 				referenceSequenceFile = probeLocation(name);
 				if (referenceSequenceFile != null)

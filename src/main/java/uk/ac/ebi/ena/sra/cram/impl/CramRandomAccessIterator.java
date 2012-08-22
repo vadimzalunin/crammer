@@ -61,33 +61,28 @@ public class CramRandomAccessIterator implements CloseableIterator<CramRecord> {
 	private ReferenceSequence referenceSequence;
 
 	public static void main(String[] args) throws CramException, IOException {
-		File cramFile = new File(
-				"c:/temp/HG00096.mapped.illumina.mosaik.GBR.exome.20110411.chr20.cram");
+		File cramFile = new File("c:/temp/HG00096.mapped.illumina.mosaik.GBR.exome.20110411.chr20.cram");
 		File cramIndexFile = new File(cramFile.getAbsolutePath() + ".crai");
 		CramIndex index = CramIndex.fromFile(cramIndexFile);
 
 		File refFile = new File("c:/temp/chr20.fa");
-		ReferenceSequenceFile referenceSequenceFile = Utils
-				.createIndexedFastaSequenceFile(refFile);
+		ReferenceSequenceFile referenceSequenceFile = Utils.createIndexedFastaSequenceFile(refFile);
 
 		byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, "20");
-		ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(
-				refBases);
+		ByteArraySequenceBaseProvider provider = new ByteArraySequenceBaseProvider(refBases);
 
 		Random random = new Random();
 		long time1 = System.currentTimeMillis();
 		for (int i = 0; i < 1000; i++) {
 			long queryStart = random.nextInt(62905065);
-			getRecordsStartingFrom(cramFile, index, referenceSequenceFile,
-					"20", queryStart, 1000);
+			getRecordsStartingFrom(cramFile, index, referenceSequenceFile, "20", queryStart, 1000);
 		}
 		long time2 = System.currentTimeMillis();
 		System.out.println(time2 - time1);
 	}
 
-	private static List<CramRecord> getRecordsStartingFrom(File cramFile,
-			CramIndex index, ReferenceSequenceFile referenceSequenceFile,
-			String seqName, long queryStart, int nofRecords)
+	private static List<CramRecord> getRecordsStartingFrom(File cramFile, CramIndex index,
+			ReferenceSequenceFile referenceSequenceFile, String seqName, long queryStart, int nofRecords)
 			throws CramFormatException, CramCompressionException, IOException {
 
 		SeekableFileStream stream = new SeekableFileStream(cramFile);
@@ -96,8 +91,7 @@ public class CramRandomAccessIterator implements CloseableIterator<CramRecord> {
 
 		RecordPointer pointer = index.findRecordPointerAt(seqName, queryStart);
 		// System.out.println(pointer);
-		CramRandomAccessIterator iterator = new CramRandomAccessIterator(
-				stream, referenceSequenceFile, pointer);
+		CramRandomAccessIterator iterator = new CramRandomAccessIterator(stream, referenceSequenceFile, pointer);
 
 		int counter = 0;
 		while (iterator.hasNext()) {
@@ -112,11 +106,11 @@ public class CramRandomAccessIterator implements CloseableIterator<CramRecord> {
 		return records;
 	}
 
-	public CramRandomAccessIterator(SeekableStream stream,
-			ReferenceSequenceFile referenceSequenceFile, RecordPointer start)
-			throws IOException, CramFormatException, CramCompressionException {
-		if (!Utils.isCRAM(stream)) throw new RuntimeException("Not a valid CRAM format.") ;
-		
+	public CramRandomAccessIterator(SeekableStream stream, ReferenceSequenceFile referenceSequenceFile,
+			RecordPointer start) throws IOException, CramFormatException, CramCompressionException {
+		if (!Utils.isCRAM(stream))
+			throw new RuntimeException("Not a valid CRAM format.");
+
 		this.seekableStream = stream;
 		this.referenceSequenceFile = referenceSequenceFile;
 		this.start = start;
@@ -133,12 +127,11 @@ public class CramRandomAccessIterator implements CloseableIterator<CramRecord> {
 		recordCounter = start.getRecordNumber();
 	}
 
-	private void readHeader() throws IOException, CramFormatException{
+	private void readHeader() throws IOException, CramFormatException {
 		header = CramHeaderIO.read(Utils.getNextChunk(dis));
 	}
 
-	private void readNextBlock() throws CramFormatException, IOException,
-			CramCompressionException {
+	private void readNextBlock() throws CramFormatException, IOException, CramCompressionException {
 		blockDIS = Utils.getNextChunk(this.dis);
 		if (blockDIS == null) {
 			eof = true;
@@ -151,24 +144,18 @@ public class CramRandomAccessIterator implements CloseableIterator<CramRecord> {
 		if (block == null)
 			eof = true;
 		else {
-			if (referenceSequence == null
-					|| !block.getSequenceName().equals(
-							referenceSequence.getName())) {
+			if (referenceSequence == null || !block.getSequenceName().equals(referenceSequence.getName())) {
 				if (referenceSequence == null)
-					referenceSequence = referenceSequenceFile.getSequence(block
-							.getSequenceName());
+					referenceSequence = referenceSequenceFile.getSequence(block.getSequenceName());
 
-				referenceSequence = referenceSequenceFile.getSubsequenceAt(
-						block.getSequenceName(), 1, referenceSequence.length());
-				referenceBaseProvider = new ByteArraySequenceBaseProvider(
-						referenceSequence.getBases());
+				referenceSequence = referenceSequenceFile.getSubsequenceAt(block.getSequenceName(), 1,
+						referenceSequence.length());
+				referenceBaseProvider = new ByteArraySequenceBaseProvider(referenceSequence.getBases());
 
 			}
 
-			recordCodec = recordCodecFactory.createRecordCodec(header, block,
-					referenceBaseProvider);
-			restoreBases = new RestoreBases(referenceBaseProvider,
-					block.getSequenceName());
+			recordCodec = recordCodecFactory.createRecordCodec(header, block, referenceBaseProvider);
+			restoreBases = new RestoreBases(referenceBaseProvider, block.getSequenceName());
 			bis = new DefaultBitInputStream(blockDIS);
 		}
 	}
@@ -203,9 +190,8 @@ public class CramRandomAccessIterator implements CloseableIterator<CramRecord> {
 		CramRecord record;
 		try {
 			record = recordCodec.read(bis);
-			record.setSequenceName(block.getSequenceName()) ;
-			record.setAlignmentStart(record.getAlignmentStart()
-					+ start.getAlignmentStart()
+			record.setSequenceName(block.getSequenceName());
+			record.setAlignmentStart(record.getAlignmentStart() + start.getAlignmentStart()
 					- block.getFirstRecordPosition());
 			recordCounter++;
 		} catch (IOException e) {
@@ -230,7 +216,7 @@ public class CramRandomAccessIterator implements CloseableIterator<CramRecord> {
 	@Override
 	public void close() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

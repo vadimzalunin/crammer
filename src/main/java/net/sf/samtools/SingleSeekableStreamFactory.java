@@ -27,8 +27,7 @@ public class SingleSeekableStreamFactory implements SeekableInputStreamFactory {
 	}
 
 	@Override
-	public SeekableStream createSeekableStream() throws IOException,
-			ExhaustedFactoryException {
+	public SeekableStream createSeekableStream() throws IOException, ExhaustedFactoryException {
 		SeekableStream ss = delegate;
 		delegate = null;
 		return ss;

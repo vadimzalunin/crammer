@@ -42,9 +42,7 @@ class BetaCodecStub extends BetaCodec implements NumberCodecStub {
 			setReadNofBits(readNofBits);
 			break;
 		default:
-			throw new CramCompressionException(
-					"Not supported number of parameters to beta codec: "
-							+ params.length);
+			throw new CramCompressionException("Not supported number of parameters to beta codec: " + params.length);
 		}
 	}
 

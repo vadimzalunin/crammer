@@ -29,9 +29,7 @@ class BaseSequenceFlatCodec implements BitCodec<byte[]> {
 
 	public BaseSequenceFlatCodec(byte[] order) {
 		if (order.length != 6)
-			throw new IllegalArgumentException(
-					"Expecting 5 bases and 1 stop only but got: "
-							+ new String(order));
+			throw new IllegalArgumentException("Expecting 5 bases and 1 stop only but got: " + new String(order));
 
 		this.order = order;
 		this.base2indexArray = new int[255];
@@ -52,15 +50,14 @@ class BaseSequenceFlatCodec implements BitCodec<byte[]> {
 			int threeBits = bis.readBits(3);
 
 			if (threeBits >= order.length)
-				throw new RuntimeException("Unexpected base flat code: "
-						+ threeBits);
+				throw new RuntimeException("Unexpected base flat code: " + threeBits);
 
 			if (order[threeBits] == 'S')
 				break;
 			buffer.put(order[threeBits]);
 		}
 
-		buffer.flip() ;
+		buffer.flip();
 		byte[] seq = new byte[buffer.limit()];
 		buffer.get(seq);
 		return seq;

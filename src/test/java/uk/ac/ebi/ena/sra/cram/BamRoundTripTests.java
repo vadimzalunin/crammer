@@ -23,8 +23,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import net.sf.picard.sam.BuildBamIndex;
 import net.sf.samtools.SAMFileReader;
@@ -41,27 +43,42 @@ public class BamRoundTripTests {
 
 	private String inputBamPath;
 	private String refPath;
+	private String model;
 
-	public BamRoundTripTests(String datasetName) {
+	public BamRoundTripTests(String datasetName, String ref, String model) {
 		this.datasetName = datasetName;
 
-		// let's find the dataset. It could be in 'data/setX' or in
-		// '../data/setX':
-		String prefix = String.format("data/%s/", datasetName);
-		inputBamPath = String.format("%s/input.bam", prefix);
-		if (!new File(inputBamPath).exists()) {
-			prefix = String.format("../data/%s/", datasetName);
+		if (ref == null) {
+			// let's find the dataset. It could be in 'data/setX' or in
+			// '../data/setX':
+			String prefix = String.format("data/%s/", datasetName);
 			inputBamPath = String.format("%s/input.bam", prefix);
-		}
-		refPath = String.format("%s/ref.fa", prefix);
+			if (!new File(inputBamPath).exists()) {
+				prefix = String.format("../data/%s/", datasetName);
+				inputBamPath = String.format("%s/input.bam", prefix);
+			}
+			refPath = String.format("%s/ref.fa", prefix);
+		} else
+			refPath = ref;
+
+		this.model = model;
 	}
 
 	@Parameters
 	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] { { "set2" }, { "set3" },{ "set5" }, 
+		String[] datasets = new String[] { "set1", "set2", "set3", "set4" };
 
-		};
-		return Arrays.asList(data);
+		List<String> modelList = new ArrayList<String>();
+		modelList.add("--capture-substitution-quality-scores --capture-insertion-quality-scores");
+		modelList.add("--capture-all-quality-scores --include-unmapped-reads --preserve-read-names --capture-all-tags");
+
+		List<Object[]> data = new ArrayList<Object[]>();
+
+		for (String dataset : datasets)
+			for (String model : modelList)
+				data.add(new Object[] { dataset, null, model });
+
+		return data;
 	}
 
 	@Test
@@ -69,27 +86,29 @@ public class BamRoundTripTests {
 		File cramFileGeneration1 = File.createTempFile(datasetName, ".cram");
 		cramFileGeneration1.deleteOnExit();
 
-		String cmd1 = String
-				.format("-l INFO cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores --include-unmapped-reads --preserve-read-names --capture-all-tags",
-						inputBamPath, refPath,
-						cramFileGeneration1.getAbsolutePath());
+//		String model = "--capture-all-quality-scores --include-unmapped-reads --preserve-read-names --capture-all-tags";
+		// String model =
+		// "--capture-substitution-quality-scores --capture-insertion-quality-scores"
+		// ;
+
+		String cmd1 = String.format(
+				"-l INFO cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s %s", inputBamPath,
+				refPath, cramFileGeneration1.getAbsolutePath(), model);
 		// System.out.println(cmd1);
 
 		CramTools.main(cmd1.split(" "));
 
 		File bamFile = File.createTempFile(datasetName, ".bam");
 		bamFile.deleteOnExit();
-//		System.out.println(bamFile.getAbsolutePath());
+		// System.out.println(bamFile.getAbsolutePath());
 
-		String cmd2 = String
-				.format("-l INFO bam --input-cram-file %s --reference-fasta-file %s --output-bam-file %s",
-						cramFileGeneration1.getAbsolutePath(), refPath, bamFile);
+		String cmd2 = String.format("-l INFO bam --input-cram-file %s --reference-fasta-file %s --output-bam-file %s",
+				cramFileGeneration1.getAbsolutePath(), refPath, bamFile);
 		// System.out.println(cmd2);
 
 		CramTools.main(cmd2.split(" "));
 
-		File indexFile = new File(bamFile.getParentFile(), bamFile.getName()
-				+ ".bai");
+		File indexFile = new File(bamFile.getParentFile(), bamFile.getName() + ".bai");
 		indexFile.deleteOnExit();
 
 		SAMFileReader reader = new SAMFileReader(bamFile);
@@ -100,21 +119,19 @@ public class BamRoundTripTests {
 		File cramFileGeneration2 = File.createTempFile(datasetName, ".cram");
 		cramFileGeneration2.deleteOnExit();
 
-		String cmd3 = String
-				.format("-l INFO cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s --capture-all-quality-scores --include-unmapped-reads --preserve-read-names --capture-all-tags",
-						bamFile, refPath, cramFileGeneration2.getAbsolutePath());
+		String cmd3 = String.format(
+				"-l INFO cram --input-bam-file %s --reference-fasta-file %s --output-cram-file %s %s", bamFile,
+				refPath, cramFileGeneration2.getAbsolutePath(), model);
 		// System.out.println(cmd3);
 
 		CramTools.main(cmd3.split(" "));
 
 		File bamFileGeneration2 = File.createTempFile(datasetName, ".bam");
 		bamFileGeneration2.deleteOnExit();
-//		System.out.println(bamFileGeneration2.getAbsolutePath());
+		// System.out.println(bamFileGeneration2.getAbsolutePath());
 
-		String cmd4 = String
-				.format("-l ERROR bam --input-cram-file %s --reference-fasta-file %s --output-bam-file %s",
-						cramFileGeneration2.getAbsolutePath(), refPath,
-						bamFileGeneration2);
+		String cmd4 = String.format("-l ERROR bam --input-cram-file %s --reference-fasta-file %s --output-bam-file %s",
+				cramFileGeneration2.getAbsolutePath(), refPath, bamFileGeneration2);
 		// System.out.println(cmd4);
 
 		CramTools.main(cmd4.split(" "));
@@ -122,8 +139,7 @@ public class BamRoundTripTests {
 		assertThat(isContentSame(bamFile, bamFileGeneration2), is(true));
 	}
 
-	private static boolean isContentSame(File... files)
-			throws NoSuchAlgorithmException, IOException {
+	private static boolean isContentSame(File... files) throws NoSuchAlgorithmException, IOException {
 		if (files == null)
 			throw new NullPointerException();
 		if (files.length < 2)
@@ -139,11 +155,9 @@ public class BamRoundTripTests {
 		return true;
 	}
 
-	private static byte[] getHash(File file) throws NoSuchAlgorithmException,
-			IOException {
+	private static byte[] getHash(File file) throws NoSuchAlgorithmException, IOException {
 		if (!file.isFile())
-			throw new IllegalArgumentException("Not a file: "
-					+ file.getAbsolutePath());
+			throw new IllegalArgumentException("Not a file: " + file.getAbsolutePath());
 
 		MessageDigest digest = MessageDigest.getInstance("SHA-1");
 		digest.reset();

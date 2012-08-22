@@ -76,10 +76,10 @@ public class CramTools {
 	}
 
 	@Parameters(commandDescription = "CRAM tools. ")
-	private static class Params  {
+	private static class Params {
 		@Parameter(names = { "-h", "--help" }, description = "Print help and quit")
 		private boolean help = false;
-		
+
 		@Parameter(names = { "-l", "--log-level" }, description = "Change log level", converter = LevelConverter.class)
 		private Level logLevel = null;
 	}

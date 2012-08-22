@@ -17,7 +17,7 @@ package uk.ac.ebi.ena.sra.cram.format;
 
 import java.io.Serializable;
 
-public class DeletionVariation implements Serializable, ReadFeature{
+public class DeletionVariation implements Serializable, ReadFeature {
 
 	private int position;
 	private int length;
@@ -36,7 +36,7 @@ public class DeletionVariation implements Serializable, ReadFeature{
 	public byte getOperator() {
 		return operator;
 	}
-	
+
 	public int getPosition() {
 		return position;
 	}

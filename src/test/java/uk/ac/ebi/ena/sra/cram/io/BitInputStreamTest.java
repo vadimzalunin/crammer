@@ -62,8 +62,7 @@ public class BitInputStreamTest {
 	}
 
 	@Test
-	public void test_ReadBits_31_bits_of_00000000000000000000000000000010()
-			throws IOException {
+	public void test_ReadBits_31_bits_of_00000000000000000000000000000010() throws IOException {
 		// 00000000000000000000000000000010:
 		int value = 1 << 1;
 		byte[] buf = Utils.toBytes(value);

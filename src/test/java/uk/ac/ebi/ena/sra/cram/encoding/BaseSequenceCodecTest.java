@@ -44,8 +44,7 @@ public class BaseSequenceCodecTest {
 	private String sequence;
 	private int expectedLength;
 
-	public BaseSequenceCodecTest(BaseCodecType codecType, String order,
-			String sequence, int expectedLength) {
+	public BaseSequenceCodecTest(BaseCodecType codecType, String order, String sequence, int expectedLength) {
 		this.codec = new BaseSequenceCodec(codecType, order.getBytes());
 		this.sequence = sequence;
 		this.expectedLength = expectedLength;
@@ -53,25 +52,16 @@ public class BaseSequenceCodecTest {
 
 	@Parameters
 	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] {
-				{ BaseCodecType.FLAT, "ACGTNS", "", 3 },
-				{ BaseCodecType.FLAT, "ACGTNS", "A", 6 },
-				{ BaseCodecType.FLAT, "ACGTNS", "AA", 9 },
+		Object[][] data = new Object[][] { { BaseCodecType.FLAT, "ACGTNS", "", 3 },
+				{ BaseCodecType.FLAT, "ACGTNS", "A", 6 }, { BaseCodecType.FLAT, "ACGTNS", "AA", 9 },
 				{ BaseCodecType.FLAT, "ACGTNS", "ACGTN", 5 * 3 + 3 },
-				{ BaseCodecType.FLAT, "ACGTNS", "ACGACTNNCNGACTACNC",
-						"ACGACTNNCNGACTACNC".length() * 3 + 3 },
-				{ BaseCodecType.RAISED, "ACGTNS", "", 4 },
-				{ BaseCodecType.RAISED, "ACGTNS", "A", 6 },
-				{ BaseCodecType.RAISED, "ACGTNS", "C", 6 },
-				{ BaseCodecType.RAISED, "ACGTNS", "G", 6 },
-				{ BaseCodecType.RAISED, "ACGTNS", "T", 7 },
-				{ BaseCodecType.RAISED, "ACGTNS", "N", 8 },
-				{ BaseCodecType.RAISED, "ACGTNS", "ACGACTNNCNGACTACNC", 50 },
-				{ BaseCodecType.STEEP, "ACGTNS", "", 5 },
-				{ BaseCodecType.STEEP, "ACGTNS", "A", 6 },
-				{ BaseCodecType.STEEP, "ACGTNS", "C", 7 },
-				{ BaseCodecType.STEEP, "ACGTNS", "G", 8 },
-				{ BaseCodecType.STEEP, "ACGTNS", "T", 9 },
+				{ BaseCodecType.FLAT, "ACGTNS", "ACGACTNNCNGACTACNC", "ACGACTNNCNGACTACNC".length() * 3 + 3 },
+				{ BaseCodecType.RAISED, "ACGTNS", "", 4 }, { BaseCodecType.RAISED, "ACGTNS", "A", 6 },
+				{ BaseCodecType.RAISED, "ACGTNS", "C", 6 }, { BaseCodecType.RAISED, "ACGTNS", "G", 6 },
+				{ BaseCodecType.RAISED, "ACGTNS", "T", 7 }, { BaseCodecType.RAISED, "ACGTNS", "N", 8 },
+				{ BaseCodecType.RAISED, "ACGTNS", "ACGACTNNCNGACTACNC", 50 }, { BaseCodecType.STEEP, "ACGTNS", "", 5 },
+				{ BaseCodecType.STEEP, "ACGTNS", "A", 6 }, { BaseCodecType.STEEP, "ACGTNS", "C", 7 },
+				{ BaseCodecType.STEEP, "ACGTNS", "G", 8 }, { BaseCodecType.STEEP, "ACGTNS", "T", 9 },
 				{ BaseCodecType.STEEP, "ACGTNS", "N", 10 },
 				{ BaseCodecType.STEEP, "ACGTNS", "ACGACTNNCNGACTACNC", 55 }, };
 		return Arrays.asList(data);
@@ -93,8 +83,7 @@ public class BaseSequenceCodecTest {
 		byte[] buf = baos.toByteArray();
 
 		if (dumpState)
-			System.out.printf("%s\t%s\t%d\t%s\n", sequence,
-					Utils.toBitString(buf).substring(0, (int) len), len,
+			System.out.printf("%s\t%s\t%d\t%s\n", sequence, Utils.toBitString(buf).substring(0, (int) len), len,
 					Utils.toBitString(buf));
 
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
@@ -102,8 +91,7 @@ public class BaseSequenceCodecTest {
 
 		byte[] restoredSequence = codec.read(bis);
 
-		assertThat("Expecting " + sequence + " but got "
-				+ new String(restoredSequence), restoredSequence,
+		assertThat("Expecting " + sequence + " but got " + new String(restoredSequence), restoredSequence,
 				equalTo(bytes));
 	}
 }

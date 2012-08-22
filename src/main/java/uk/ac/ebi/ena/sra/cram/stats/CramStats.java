@@ -291,9 +291,9 @@ public class CramStats {
 					|| keyAndType.startsWith("CQ") || keyAndType.startsWith("Q2"))
 				if (tagLengths.get(keyAndType).getValues().length > 8)
 					tagFreqs.remove(keyAndType);
-			char type = keyAndType.charAt(3) ;
-			if (type == 'B') 
-					tagFreqs.remove(keyAndType);
+			char type = keyAndType.charAt(3);
+			if (type == 'B')
+				tagFreqs.remove(keyAndType);
 		}
 		compression.tagByteFrequencyMap = tagFreqs;
 		compression.tagByteLengthMap = tagLengths;

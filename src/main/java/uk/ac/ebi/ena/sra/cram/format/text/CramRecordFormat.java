@@ -25,8 +25,7 @@ import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 
 public class CramRecordFormat {
 	public static final byte FIELD_SEPARATOR = '\t';
-	public static final String STRING_FIELD_SEPARATOR = new String(
-			new byte[] { FIELD_SEPARATOR });
+	public static final String STRING_FIELD_SEPARATOR = new String(new byte[] { FIELD_SEPARATOR });
 	public static final byte NO_VALUE = '*';
 	private ByteBuffer buf = ByteBuffer.allocate(1024 * 1024);
 	private boolean eolFound = false;
@@ -43,8 +42,7 @@ public class CramRecordFormat {
 		System.out.println(record.toString());
 		System.out.println(format.writeRecord(record));
 
-		record = format
-				.fromString("124	36	POS	M2wwxyzT$M2IAC.M5D2A!C!M13A!C!	*	*");
+		record = format.fromString("124	36	POS	M2wwxyzT$M2IAC.M5D2A!C!M13A!C!	*	*");
 		System.out.println(record.toString());
 		System.out.println(format.writeRecord(record));
 
@@ -91,13 +89,11 @@ public class CramRecordFormat {
 
 		sb.appendCodePoint(FIELD_SEPARATOR);
 
-		if (record.getReadFeatures() == null
-				|| record.getReadFeatures().isEmpty())
+		if (record.getReadFeatures() == null || record.getReadFeatures().isEmpty())
 			sb.appendCodePoint(NO_VALUE);
 		else
 			rfFormat.addFeaturesToStringBuilder(record.getReadFeatures(),
-					record.getReadLength() > 0 ? (int) record.getReadLength()
-							: 0, sb);
+					record.getReadLength() > 0 ? (int) record.getReadLength() : 0, sb);
 
 		sb.appendCodePoint(FIELD_SEPARATOR);
 
@@ -134,7 +130,7 @@ public class CramRecordFormat {
 		if (isNotEmpty(chunk)) {
 			record.setAlignmentStart(toLong(chunk));
 			record.setReadMapped(true);
-		} else{
+		} else {
 			record.setAlignmentStart(1);
 			record.setReadMapped(false);
 		}
@@ -158,10 +154,9 @@ public class CramRecordFormat {
 
 		chunk = chunks[i++];
 		if (isNotEmpty(chunk)) {
-			List<ReadFeature> features = rfFormat.asReadFeatureList(new String(
-					chunk));
+			List<ReadFeature> features = rfFormat.asReadFeatureList(new String(chunk));
 			record.setReadFeatures(features);
-		} 
+		}
 
 		chunk = chunks[i++];
 		if (isNotEmpty(chunk))
@@ -170,6 +165,8 @@ public class CramRecordFormat {
 		chunk = chunks[i++];
 		if (isNotEmpty(chunk))
 			record.setQualityScores(chunk.getBytes());
+
+		record.setFlags(record.getFlags());
 
 		return record;
 	}
@@ -195,8 +192,7 @@ public class CramRecordFormat {
 
 		byte[] superCigar = readLineUntil(is, FIELD_SEPARATOR);
 		if (isNotEmpty(superCigar)) {
-			List<ReadFeature> features = rfFormat.asReadFeatureList(new String(
-					superCigar));
+			List<ReadFeature> features = rfFormat.asReadFeatureList(new String(superCigar));
 			record.setReadFeatures(features);
 		}
 
@@ -227,8 +223,7 @@ public class CramRecordFormat {
 		return Long.valueOf(new String(bytes));
 	}
 
-	private byte[] readLineUntil(InputStream is, byte stopByte)
-			throws IOException {
+	private byte[] readLineUntil(InputStream is, byte stopByte) throws IOException {
 		if (eolFound)
 			throw new RuntimeException("Premature end of line.");
 		if (eofFound)

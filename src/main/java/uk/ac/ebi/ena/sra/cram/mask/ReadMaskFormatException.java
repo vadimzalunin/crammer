@@ -15,7 +15,7 @@
  ******************************************************************************/
 package uk.ac.ebi.ena.sra.cram.mask;
 
-public class ReadMaskFormatException extends ReadMaskException{
+public class ReadMaskFormatException extends ReadMaskException {
 
 	public ReadMaskFormatException() {
 		super();
@@ -36,7 +36,5 @@ public class ReadMaskFormatException extends ReadMaskException{
 		super(cause);
 		// TODO Auto-generated constructor stub
 	}
-
-
 
 }

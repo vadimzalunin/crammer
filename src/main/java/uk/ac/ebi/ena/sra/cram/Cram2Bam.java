@@ -264,7 +264,7 @@ public class Cram2Bam {
 				}
 			}
 			long blockReadEnd = System.currentTimeMillis();
-			log.info(String.format("Block read: sequence %s; records %d; %.3f seconds.\n", readBlock.getSequenceName(),
+			log.info(String.format("Block read: sequence %s; records %d; %.3f seconds.", readBlock.getSequenceName(),
 					readBlock.getRecordCount(), (blockReadEnd - blockReadStart) / 1000f));
 			counter -= records.size();
 
@@ -455,7 +455,7 @@ public class Cram2Bam {
 		}
 	}
 
-//	private static long recordCounter = 0;
+	// private static long recordCounter = 0;
 
 	private static final void writeSAMRecord(SAMRecord samRecord, SAMFileWriter writer) {
 		try {
@@ -472,8 +472,8 @@ public class Cram2Bam {
 			long writerStart = System.nanoTime();
 			writer.addAlignment(samRecord);
 			samWriterNanos += (System.nanoTime() - writerStart);
-//			if (recordCounter++ < 3)
-//				System.out.println(samRecord.getSAMString());
+			// if (recordCounter++ < 3)
+			// System.out.println(samRecord.getSAMString());
 		} catch (IllegalArgumentException e) {
 			log.error("Offensive SAM record: " + samRecord.format());
 			log.error("SAM record al start=" + samRecord.getAlignmentStart());

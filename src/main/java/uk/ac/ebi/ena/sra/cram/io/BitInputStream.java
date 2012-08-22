@@ -24,16 +24,16 @@ public interface BitInputStream {
 	public int readBits(int len) throws IOException;
 
 	public long readLongBits(int len) throws IOException;
-	
-	public boolean endOfStream () throws IOException ;
-	
-	public boolean putBack(long b, int numBits) ;
-	
-	public void alignToByte () throws IOException ;
-	
-	public int readAlignedBytes (byte[] array) throws IOException ;
 
-	public byte readByte() throws IOException ;
-	
-	public boolean ensureMarker (long marker, int nofBits) throws IOException ;
+	public boolean endOfStream() throws IOException;
+
+	public boolean putBack(long b, int numBits);
+
+	public void alignToByte() throws IOException;
+
+	public int readAlignedBytes(byte[] array) throws IOException;
+
+	public byte readByte() throws IOException;
+
+	public boolean ensureMarker(long marker, int nofBits) throws IOException;
 }

@@ -21,6 +21,5 @@ import net.sf.samtools.util.SeekableStream;
 
 public interface SeekableInputStreamFactory {
 
-	public SeekableStream createSeekableStream() throws IOException,
-			ExhaustedFactoryException;
+	public SeekableStream createSeekableStream() throws IOException, ExhaustedFactoryException;
 }

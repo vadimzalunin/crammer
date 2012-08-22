@@ -49,7 +49,7 @@ public class ByteArraySequenceBaseProvider implements SequenceBaseProvider {
 	public void copyBases(String sequenceName, long from, int len, byte[] dest) throws IOException {
 		try {
 			if (from + len > sequence.length) {
-				Arrays.fill(dest, (byte)'N') ;
+				Arrays.fill(dest, (byte) 'N');
 				System.arraycopy(sequence, (int) from, dest, 0, sequence.length - (int) from);
 			} else
 				System.arraycopy(sequence, (int) from, dest, 0, len);

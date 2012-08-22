@@ -87,8 +87,7 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 				break;
 
 			default:
-				throw new RuntimeException("Unknown read feature operator: "
-						+ (char) op);
+				throw new RuntimeException("Unknown read feature operator: " + (char) op);
 			}
 			list.add(feature);
 		}
@@ -97,16 +96,14 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 	}
 
 	@Override
-	public long write(BitOutputStream bos, List<ReadFeature> features)
-			throws IOException {
+	public long write(BitOutputStream bos, List<ReadFeature> features) throws IOException {
 
 		long len = 0L;
 		int prevPos = 0;
 		for (ReadFeature feature : features) {
 			len += featureOperationCodec.write(bos, feature.getOperator());
 
-			len += inReadPosCodec.write(bos, (long) feature.getPosition()
-					- prevPos);
+			len += inReadPosCodec.write(bos, (long) feature.getPosition() - prevPos);
 
 			prevPos = feature.getPosition();
 			switch (feature.getOperator()) {
@@ -115,8 +112,7 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 				break;
 			case SubstitutionVariation.operator:
 
-				len += substitutionCodec.write(bos,
-						(SubstitutionVariation) feature);
+				len += substitutionCodec.write(bos, (SubstitutionVariation) feature);
 				break;
 			case InsertionVariation.operator:
 				len += insertionCodec.write(bos, (InsertionVariation) feature);
@@ -132,8 +128,7 @@ public class ReadFeatureCodec implements BitCodec<List<ReadFeature>> {
 				break;
 
 			default:
-				throw new RuntimeException("Unknown read feature operator: "
-						+ (char) feature.getOperator());
+				throw new RuntimeException("Unknown read feature operator: " + (char) feature.getOperator());
 			}
 		}
 		len += featureOperationCodec.write(bos, ReadFeature.STOP_OPERATOR);

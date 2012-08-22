@@ -44,7 +44,7 @@ public class HuffmanByteCodecTest {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
 
-		codec.write(bos, (byte)1);
+		codec.write(bos, (byte) 1);
 		bos.flush();
 		byte[] buf = baos.toByteArray();
 
@@ -61,7 +61,7 @@ public class HuffmanByteCodecTest {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
 
-		codec.write(bos, (byte)2);
+		codec.write(bos, (byte) 2);
 		bos.flush();
 		byte[] buf = baos.toByteArray();
 
@@ -79,42 +79,38 @@ public class HuffmanByteCodecTest {
 		BitOutputStream bos = new DefaultBitOutputStream(baos);
 
 		// 110:
-		codec.write(bos, (byte)1);
+		codec.write(bos, (byte) 1);
 
 		// 111:
-		codec.write(bos, (byte)2);
+		codec.write(bos, (byte) 2);
 
 		// 1:
-		codec.write(bos, (byte)3);
+		codec.write(bos, (byte) 3);
 
 		// 0:
-		codec.write(bos, (byte)4);
+		codec.write(bos, (byte) 4);
 
 		bos.flush();
 		byte[] buf = baos.toByteArray();
 
 		// 1101111000000000:
-		assertThat(
-				buf,
-				equalTo(new byte[] {
-						(byte) (1 << 7 | 1 << 6 | 1 << 4 | 1 << 3 | 1 << 2 | 1 << 1),
-						0 }));
+		assertThat(buf, equalTo(new byte[] { (byte) (1 << 7 | 1 << 6 | 1 << 4 | 1 << 3 | 1 << 2 | 1 << 1), 0 }));
 	}
 
 	@Test
 	public void test_write_read_random() throws IOException {
 		int maxTests = 1000;
 		Random random = new Random();
-		Byte[] alphabet = new Byte[256] ;
+		Byte[] alphabet = new Byte[256];
 		int[] charFreqs = new int[alphabet.length];
-		for (int b = Byte.MIN_VALUE ; b<=Byte.MAX_VALUE; b++) { 
-			alphabet[b & 0xFF] = (byte)b ;
-			charFreqs[b & 0xFF] = b+128 ;
-		}		
-	
+		for (int b = Byte.MIN_VALUE; b <= Byte.MAX_VALUE; b++) {
+			alphabet[b & 0xFF] = (byte) b;
+			charFreqs[b & 0xFF] = b + 128;
+		}
+
 		Byte[] values = new Byte[maxTests];
 		for (int i = 0; i < maxTests; i++) {
-			values[i] = (byte)alphabet.length;
+			values[i] = (byte) alphabet.length;
 			for (int j = 0; j < random.nextInt(alphabet.length); j++)
 				if (random.nextBoolean())
 					values[i]--;
@@ -139,15 +135,15 @@ public class HuffmanByteCodecTest {
 			assertThat(codec.read(bis), equalTo(values[i]));
 
 	}
-	
-	@Test (timeout=450)
+
+	@Test(timeout = 450)
 	public void benchmark_write_read_random() throws IOException {
 		int maxTests = 1000000;
 		Random random = new Random();
 		Byte[] alphabet = new Byte[] { 1, 2, 3, 4 };
 		Byte[] values = new Byte[maxTests];
 		for (int i = 0; i < maxTests; i++) {
-			values[i] = (byte)alphabet.length;
+			values[i] = (byte) alphabet.length;
 			for (int j = 0; j < random.nextInt(alphabet.length); j++)
 				if (random.nextBoolean())
 					values[i]--;

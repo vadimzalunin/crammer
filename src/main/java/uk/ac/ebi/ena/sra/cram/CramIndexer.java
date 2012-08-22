@@ -187,7 +187,7 @@ public class CramIndexer {
 		CountingInputStream cis = new CountingInputStream(cramInputStream);
 		DataInputStream cramDIS = new DataInputStream(cis);
 		CramHeader cramHeader = CramHeaderIO.read(Utils.getNextChunk(cramDIS));
-		log.info("CRAM format version: " + cramHeader.getVersion()) ;
+		log.info("CRAM format version: " + cramHeader.getVersion());
 		long firstBlockStart = cis.getPosition();
 		int blockNumber = 0;
 		List<String> sequences = new ArrayList<String>();
@@ -254,8 +254,10 @@ public class CramIndexer {
 
 			if (provider == null || !seqName.equals(prevSeqName)) {
 				log.debug("Starting sequence: " + seqName);
-//				byte[] refBases = Utils.getReferenceSequenceBases(referenceSequenceFile, seqName);
-				provider = new FakeBaseProvider() ;
+				// byte[] refBases =
+				// Utils.getReferenceSequenceBases(referenceSequenceFile,
+				// seqName);
+				provider = new FakeBaseProvider();
 			}
 			reader.setReferenceBaseProvider(provider);
 

@@ -52,8 +52,7 @@ public class BitStreamIntegrationTest {
 			bos.write(value, 8);
 			bos.flush();
 
-			ByteArrayInputStream bais = new ByteArrayInputStream(
-					baos.toByteArray());
+			ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
 			int readBits = bis.readBits(8);
 
@@ -70,8 +69,7 @@ public class BitStreamIntegrationTest {
 			bos.write(value, bit);
 			bos.flush();
 
-			ByteArrayInputStream bais = new ByteArrayInputStream(
-					baos.toByteArray());
+			ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 			DefaultBitInputStream bis = new DefaultBitInputStream(bais);
 			int readBits = bis.readBits(bit);
 
@@ -147,7 +145,7 @@ public class BitStreamIntegrationTest {
 		assertThat(readBits, is(value));
 	}
 
-	@Test (timeout=1000)
+	@Test(timeout = 1000)
 	public void testWriteReadBenchmark() throws IOException {
 		int maxValues = 1000000;
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -159,7 +157,7 @@ public class BitStreamIntegrationTest {
 		bos.flush();
 
 		byte[] buf = baos.toByteArray();
-		assertThat(buf.length, is(maxValues*4)) ;
+		assertThat(buf.length, is(maxValues * 4));
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
 		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
 
@@ -169,8 +167,9 @@ public class BitStreamIntegrationTest {
 			assertThat(readBits, is(value));
 		}
 	}
-	
-	@Test// (timeout=1000)
+
+	@Test
+	// (timeout=1000)
 	public void testWriteReadLongBenchmark() throws IOException {
 		int maxValues = 1000000;
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -180,10 +179,10 @@ public class BitStreamIntegrationTest {
 			bos.write(value, 32);
 
 		bos.flush();
-		bos.close() ;
+		bos.close();
 
 		byte[] buf = baos.toByteArray();
-		assertThat(buf.length, is(maxValues*4)) ;
+		assertThat(buf.length, is(maxValues * 4));
 		ByteArrayInputStream bais = new ByteArrayInputStream(buf);
 		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
 
@@ -192,39 +191,41 @@ public class BitStreamIntegrationTest {
 			long readBits = bis.readLongBits(32);
 			assertThat(readBits, is(value));
 		}
-		bis.close() ;
+		bis.close();
 	}
-	
+
 	@Test
 	public void test_Align() throws IOException {
-		for (int bits=0; bits<64; bits++) {
-			for (int markerLen = 0; markerLen<64; markerLen++) {
+		for (int bits = 0; bits < 64; bits++) {
+			for (int markerLen = 0; markerLen < 64; markerLen++) {
 				long marker = ~(-1 << (markerLen / 2));
-				
+
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
-//				DebuggingBitOuputStream bos = new DebuggingBitOuputStream(System.err, '\n', new DefaultBitOutputStream(baos)) ; 
-				
-				bos.write(0L, bits) ;
-				bos.alignToByte() ;
-				bos.write(marker, markerLen) ;
-				bos.write(0L, bits) ;
-				bos.write(marker, markerLen) ;
-				
-				bos.close() ;
-//				bos.flush() ;
-				
+				// DebuggingBitOuputStream bos = new
+				// DebuggingBitOuputStream(System.err, '\n', new
+				// DefaultBitOutputStream(baos)) ;
+
+				bos.write(0L, bits);
+				bos.alignToByte();
+				bos.write(marker, markerLen);
+				bos.write(0L, bits);
+				bos.write(marker, markerLen);
+
+				bos.close();
+				// bos.flush() ;
+
 				ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 				DefaultBitInputStream bis = new DefaultBitInputStream(bais);
-				
-				assertThat(bis.readBits(bits), is(0)) ;
-				bis.alignToByte() ;
-				assertThat(bis.ensureMarker(marker, markerLen), is(true)) ;
-				assertThat(bis.readBits(bits), is(0)) ;
-				assertThat(bis.ensureMarker(marker, markerLen), is(true)) ;
-				
-				bis.close() ;
-				
+
+				assertThat(bis.readBits(bits), is(0));
+				bis.alignToByte();
+				assertThat(bis.ensureMarker(marker, markerLen), is(true));
+				assertThat(bis.readBits(bits), is(0));
+				assertThat(bis.ensureMarker(marker, markerLen), is(true));
+
+				bis.close();
+
 			}
 		}
 	}

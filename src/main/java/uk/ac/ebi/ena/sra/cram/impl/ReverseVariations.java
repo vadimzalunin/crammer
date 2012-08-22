@@ -23,8 +23,7 @@ import uk.ac.ebi.ena.sra.cram.format.ReadFeature;
 public class ReverseVariations {
 
 	public void reverse(CramRecord record) {
-		if (record.getReadFeatures() == null
-				|| record.getReadFeatures().isEmpty())
+		if (record.getReadFeatures() == null || record.getReadFeatures().isEmpty())
 			return;
 
 		for (ReadFeature f : record.getReadFeatures())

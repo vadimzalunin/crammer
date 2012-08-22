@@ -25,8 +25,7 @@ public class RandomAccessBitIO {
 	public static void main(String[] args) throws IOException {
 
 		byte[] data = "123".getBytes();
-		SeekableByteArrayInputStream sbis = new SeekableByteArrayInputStream(
-				data);
+		SeekableByteArrayInputStream sbis = new SeekableByteArrayInputStream(data);
 		DefaultBitInputStream dbis = new DefaultBitInputStream(sbis);
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -47,8 +46,7 @@ public class RandomAccessBitIO {
 					break;
 				}
 
-				System.out.printf("i=%d\tj=%d\tbuffered bits=%d\tbits=%d\n", i,
-						j, dbis.getNofBufferedBits(), bits);
+				System.out.printf("i=%d\tj=%d\tbuffered bits=%d\tbits=%d\n", i, j, dbis.getNofBufferedBits(), bits);
 				dbos.write(dbis.readBit());
 			}
 		}
@@ -84,8 +82,7 @@ public class RandomAccessBitIO {
 		}
 
 		@Override
-		public int read(byte[] buffer, int offset, int length)
-				throws IOException {
+		public int read(byte[] buffer, int offset, int length) throws IOException {
 			return 0;
 		}
 

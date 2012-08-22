@@ -26,8 +26,8 @@ public class CramProf {
 
 		Scanner scanner = new Scanner(file);
 		String paramLine = scanner.nextLine();
-		String[] params = paramLine.split("\\s+") ;
-		for (String param:params)
+		String[] params = paramLine.split("\\s+");
+		for (String param : params)
 			System.err.println(param);
 
 		CramTools.main(params);

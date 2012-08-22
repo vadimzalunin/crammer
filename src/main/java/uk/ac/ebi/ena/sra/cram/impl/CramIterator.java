@@ -50,16 +50,16 @@ public class CramIterator implements CloseableIterator<CramRecord> {
 	private ReferenceSequenceFile referenceSequenceFile;
 	private ReferenceSequence referenceSequence;
 
-	public CramIterator(InputStream is,
-			ReferenceSequenceFile referenceSequenceFile) throws IOException, CramFormatException {
+	public CramIterator(InputStream is, ReferenceSequenceFile referenceSequenceFile) throws IOException,
+			CramFormatException {
 		this(is, referenceSequenceFile, null);
 	}
 
-	public CramIterator(InputStream is,
-			ReferenceSequenceFile referenceSequenceFile, CramHeader header)
+	public CramIterator(InputStream is, ReferenceSequenceFile referenceSequenceFile, CramHeader header)
 			throws IOException, CramFormatException {
-		if (!Utils.isCRAM(is)) throw new RuntimeException("Not a valid CRAM format.") ;
-		
+		if (!Utils.isCRAM(is))
+			throw new RuntimeException("Not a valid CRAM format.");
+
 		if (is instanceof DataInputStream)
 			this.is = (DataInputStream) is;
 		else
@@ -68,13 +68,12 @@ public class CramIterator implements CloseableIterator<CramRecord> {
 		if (header == null)
 			readHeader();
 	}
-	
-	public CramHeader getCramHeader () {
-		return header ;
+
+	public CramHeader getCramHeader() {
+		return header;
 	}
 
-	private static InputStream uncompressNextChunk(InputStream is)
-			throws IOException {
+	private static InputStream uncompressNextChunk(InputStream is) throws IOException {
 		int len = 0;
 		for (int i = 0; i < 4; i++)
 			len = (len << 8) | is.read();
@@ -117,8 +116,7 @@ public class CramIterator implements CloseableIterator<CramRecord> {
 		header = CramHeaderIO.read(Utils.getNextChunk(is));
 	}
 
-	private void readNextBlock() throws CramFormatException, IOException,
-			CramCompressionException {
+	private void readNextBlock() throws CramFormatException, IOException, CramCompressionException {
 		DataInputStream dis = Utils.getNextChunk(is);
 		if (dis == null) {
 			eof = true;
@@ -130,24 +128,18 @@ public class CramIterator implements CloseableIterator<CramRecord> {
 		if (block == null)
 			eof = true;
 		else {
-			if (referenceSequence == null
-					|| !block.getSequenceName().equals(
-							referenceSequence.getName())) {
+			if (referenceSequence == null || !block.getSequenceName().equals(referenceSequence.getName())) {
 				if (referenceSequence == null)
-					referenceSequence = referenceSequenceFile.getSequence(block
-							.getSequenceName());
+					referenceSequence = referenceSequenceFile.getSequence(block.getSequenceName());
 
-				referenceSequence = referenceSequenceFile.getSubsequenceAt(
-						block.getSequenceName(), 1, referenceSequence.length());
-				referenceBaseProvider = new ByteArraySequenceBaseProvider(
-						referenceSequence.getBases());
+				referenceSequence = referenceSequenceFile.getSubsequenceAt(block.getSequenceName(), 1,
+						referenceSequence.length());
+				referenceBaseProvider = new ByteArraySequenceBaseProvider(referenceSequence.getBases());
 
 			}
 
-			recordCodec = recordCodecFactory.createRecordCodec(header, block,
-					referenceBaseProvider);
-			restoreBases = new RestoreBases(referenceBaseProvider,
-					block.getSequenceName());
+			recordCodec = recordCodecFactory.createRecordCodec(header, block, referenceBaseProvider);
+			restoreBases = new RestoreBases(referenceBaseProvider, block.getSequenceName());
 			bis = new DefaultBitInputStream(dis);
 		}
 	}
@@ -201,7 +193,7 @@ public class CramIterator implements CloseableIterator<CramRecord> {
 		CramRecord record;
 		try {
 			record = recordCodec.read(bis);
-			record.setSequenceName(block.getSequenceName()) ;
+			record.setSequenceName(block.getSequenceName());
 			recordCounter++;
 		} catch (IOException e) {
 			throw new RuntimeException(e);

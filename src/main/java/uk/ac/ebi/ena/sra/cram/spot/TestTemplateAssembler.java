@@ -25,10 +25,8 @@ import net.sf.samtools.SAMRecordIterator;
 class TestTemplateAssembler {
 
 	public static void main(String[] args) {
-		SAMFileReader
-				.setDefaultValidationStringency(ValidationStringency.SILENT);
-		SAMFileReader reader = new SAMFileReader(new File(
-				"y:/Data/SangerExample/paired/5120_1.bam"));
+		SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
+		SAMFileReader reader = new SAMFileReader(new File("y:/Data/SangerExample/paired/5120_1.bam"));
 
 		TemplateAssembler ta = new TemplateAssembler(1000, 1000);
 
@@ -45,8 +43,8 @@ class TestTemplateAssembler {
 			if (spot != null) {
 				System.out.printf("%s", spot.getName());
 				for (SAMRecordHolder holder : spot) {
-					System.out.printf("\t%s (%d)", holder == null ? "?" : holder
-							.getSamRecord().getAlignmentStart(), holder.getIndex());
+					System.out.printf("\t%s (%d)", holder == null ? "?" : holder.getSamRecord().getAlignmentStart(),
+							holder.getIndex());
 				}
 				System.out.println();
 			}
@@ -58,8 +56,8 @@ class TestTemplateAssembler {
 		while ((spot = ta.getNextTemplate()) != null) {
 			System.out.printf("%s", spot.getName());
 			for (SAMRecordHolder holder : spot) {
-				System.out.printf("\t%s (%d)", holder == null ? "?" : holder
-						.getSamRecord().getAlignmentStart(), holder == null ? -1 : holder.getIndex());
+				System.out.printf("\t%s (%d)", holder == null ? "?" : holder.getSamRecord().getAlignmentStart(),
+						holder == null ? -1 : holder.getIndex());
 			}
 			System.out.println();
 		}

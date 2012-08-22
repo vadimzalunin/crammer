@@ -22,10 +22,10 @@ import uk.ac.ebi.ena.sra.cram.io.BitInputStream;
 import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 import uk.ac.ebi.ena.sra.cram.io.NullBitOutputStream;
 
-public class SubstitutionVariationCodec implements
-		BitCodec<SubstitutionVariation> {
+public class SubstitutionVariationCodec implements BitCodec<SubstitutionVariation> {
 	public BitCodec<BaseChange> baseChangeCodec;
-//	public BitCodec<Byte> qualityScoreCodec;
+
+	// public BitCodec<Byte> qualityScoreCodec;
 
 	@Override
 	public SubstitutionVariation read(BitInputStream bis) throws IOException {
@@ -34,31 +34,30 @@ public class SubstitutionVariationCodec implements
 		// values read from the codec. See ReadFeatureCodec.
 		long position = -1L;
 		BaseChange baseChange = baseChangeCodec.read(bis);
-//		byte qualityScore = qualityScoreCodec.read(bis);
+		// byte qualityScore = qualityScoreCodec.read(bis);
 
 		v.setPosition((int) position);
 		v.setBaseChange(baseChange);
-//		v.setQualityScore(qualityScore);
+		// v.setQualityScore(qualityScore);
 
 		return v;
 	}
 
 	@Override
-	public long write(BitOutputStream bos, SubstitutionVariation v)
-			throws IOException {
+	public long write(BitOutputStream bos, SubstitutionVariation v) throws IOException {
 		long len = 0L;
 
 		BaseChange baseChange = v.getBaseChange();
 		if (baseChange == null)
 			baseChange = new BaseChange(v.getRefernceBase(), v.getBase());
-		
-		long baseChangeLen = 0L ;
-		baseChangeLen-= len ;
-		len += baseChangeCodec.write(bos, baseChange);
-		baseChangeLen+= len ;
 
-//		len += qualityScoreCodec.write(bos, v.getQualityScore());
-		
+		long baseChangeLen = 0L;
+		baseChangeLen -= len;
+		len += baseChangeCodec.write(bos, baseChange);
+		baseChangeLen += len;
+
+		// len += qualityScoreCodec.write(bos, v.getQualityScore());
+
 		return len;
 	}
 

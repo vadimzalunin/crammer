@@ -52,41 +52,36 @@ public class BAMFileQueryQueues {
 		this.bamFile = bamFile;
 	}
 
-	public Collection<BlockingQueue<SAMRecord>> getQueuesForQuery(
-			String sequenceName, int start, int end, boolean overlaping,
-			int nofQueues) {
+	public Collection<BlockingQueue<SAMRecord>> getQueuesForQuery(String sequenceName, int start, int end,
+			boolean overlaping, int nofQueues) {
 		List<BlockingQueue<SAMRecord>> list = new LinkedList<BlockingQueue<SAMRecord>>();
 		int step = (int) Math.ceil(((float) end - start) / nofQueues);
 		for (int i = 0; i < nofQueues; i++) {
-			BlockingQueue<SAMRecord> q = getBlockingQueueForQuery(sequenceName,
-					start + (step * i), start + (step * (i + 1)), overlaping);
+			BlockingQueue<SAMRecord> q = getBlockingQueueForQuery(sequenceName, start + (step * i), start
+					+ (step * (i + 1)), overlaping);
 			list.add(q);
 		}
 
 		return list;
 	}
 
-	public BlockingQueue<SAMRecord> getBlockingQueueForQuery(
-			String sequenceName, int start, int end, boolean overlapping) {
+	public BlockingQueue<SAMRecord> getBlockingQueueForQuery(String sequenceName, int start, int end,
+			boolean overlapping) {
 		SAMFileReader reader = new SAMFileReader(bamFile);
-		SAMRecordIterator iterator = reader.query(sequenceName, start, end,
-				overlapping);
+		SAMRecordIterator iterator = reader.query(sequenceName, start, end, overlapping);
 		return getBlockingQueue(iterator);
 	}
-	
-	public Queue<SAMRecord> getQueueForQuery(
-			String sequenceName, int start, int end, boolean overlapping) {
+
+	public Queue<SAMRecord> getQueueForQuery(String sequenceName, int start, int end, boolean overlapping) {
 		SAMFileReader reader = new SAMFileReader(bamFile);
-		SAMRecordIterator iterator = reader.query(sequenceName, start, end,
-				overlapping);
-		Queue<SAMRecord> queue = new ConcurrentLinkedQueue<SAMRecord>() ;
-		startQuery(iterator, queue) ;
-		return queue ;
+		SAMRecordIterator iterator = reader.query(sequenceName, start, end, overlapping);
+		Queue<SAMRecord> queue = new ConcurrentLinkedQueue<SAMRecord>();
+		startQuery(iterator, queue);
+		return queue;
 	}
 
 	public BlockingQueue<SAMRecord> getBlockingQueue(SAMRecordIterator iterator) {
-		BlockingQueue<SAMRecord> queue = new LinkedBlockingQueue<SAMRecord>(
-				defaultQueueCapacity);
+		BlockingQueue<SAMRecord> queue = new LinkedBlockingQueue<SAMRecord>(defaultQueueCapacity);
 
 		startQuery(iterator, queue);
 

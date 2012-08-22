@@ -39,8 +39,7 @@ public class ReadFeatures2CigarTest {
 	private String cigarString;
 	private int readLength;
 
-	public ReadFeatures2CigarTest(String readFeaturesString,
-			String cigarString, int readLength) {
+	public ReadFeatures2CigarTest(String readFeaturesString, String cigarString, int readLength) {
 		super();
 		this.readFeaturesString = readFeaturesString;
 		this.cigarString = cigarString;
@@ -49,26 +48,21 @@ public class ReadFeatures2CigarTest {
 
 	@Parameters
 	public static Collection<Object[]> data() {
-		Object[][] data = new Object[][] { 
-				{ "a c g t M70a ", "4S70M1I1M", 76 },
-				{ "M39t c c a c t c c a g c c a a c!", "39M15S", 54 },
-				{ "M36", "36M", 36 },
-				{ "M2y M19z M25y M5", "54M", 54 },
-				{ "M27x M6x M3ITCCACTCCAGCCAA.M1c ", "38M14I1M1S", 54 },
-				{ "z M2t M1x M48", "3M1I50M", 54 },
-				{ "M26D1M21y M4t M1", "26M1D26M1I1M", 54 },
+		Object[][] data = new Object[][] { { "a c g t M70a ", "4S70M1I1M", 76 },
+				{ "M39t c c a c t c c a g c c a a c!", "39M15S", 54 }, { "M36", "36M", 36 },
+				{ "M2y M19z M25y M5", "54M", 54 }, { "M27x M6x M3ITCCACTCCAGCCAA.M1c ", "38M14I1M1S", 54 },
+				{ "z M2t M1x M48", "3M1I50M", 54 }, { "M26D1M21y M4t M1", "26M1D26M1I1M", 54 },
 				{ "M85a M2g ", "85M1I2M1I1M", 90 },
 				{ "a c g t a c g t a c g t a c g t M23a c g t a c g t a c g t a c g ", "16S23M15S", 54 },
-				{ "M18D2D703M32", "18M705D32M", 50 },
-				{ "M18D703D2M32", "18M705D32M", 50 },
-				
-//				9M2D398N1D41M vs 9M401D
-//				4S3I43M vs 7S43M
-//				5S1I6M3177N38M vs 6S6M3177D38M
-//				22M2899N22M1I5S vs 22M2899D22M6S
-//				22M2899N22M1I5S vs 22M2899D22M6S
-//				31M1D2420N1D19M vs 31M2422D
-//				22M1D118N1D28M vs 22M120D
+				{ "M18D2D703M32", "18M705D32M", 50 }, { "M18D703D2M32", "18M705D32M", 50 },
+
+		// 9M2D398N1D41M vs 9M401D
+		// 4S3I43M vs 7S43M
+		// 5S1I6M3177N38M vs 6S6M3177D38M
+		// 22M2899N22M1I5S vs 22M2899D22M6S
+		// 22M2899N22M1I5S vs 22M2899D22M6S
+		// 31M1D2420N1D19M vs 31M2422D
+		// 22M1D118N1D28M vs 22M120D
 
 		};
 		return Arrays.asList(data);
@@ -77,8 +71,7 @@ public class ReadFeatures2CigarTest {
 	@Test
 	public void test() {
 		DefaultReadFeaturesFormat drfFormat = new DefaultReadFeaturesFormat();
-		List<ReadFeature> features = drfFormat
-				.asReadFeatureList(readFeaturesString);
+		List<ReadFeature> features = drfFormat.asReadFeatureList(readFeaturesString);
 
 		ReadFeatures2Cigar rf2Cigar = new ReadFeatures2Cigar();
 		Cigar cigar = rf2Cigar.getCigar2(features, readLength);

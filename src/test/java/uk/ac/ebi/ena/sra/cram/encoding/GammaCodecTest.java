@@ -41,8 +41,7 @@ public class GammaCodecTest {
 
 		for (long value = 2; value < 1000; value++) {
 			int betaCodeLength = 1 + (int) MathUtils.log(2, value);
-			assertThat(codec.numberOfBits(value),
-					is((long) betaCodeLength * 2 - 1));
+			assertThat(codec.numberOfBits(value), is((long) betaCodeLength * 2 - 1));
 		}
 	}
 
@@ -61,8 +60,7 @@ public class GammaCodecTest {
 
 		assertThat(bitString, equalTo("10000000"));
 
-		BitInputStream bis = new DefaultBitInputStream(
-				new ByteArrayInputStream(buf));
+		BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
 		assertThat(readValue, equalTo(value));
 	}
@@ -82,8 +80,7 @@ public class GammaCodecTest {
 
 		assertThat(bitString, equalTo("01000000"));
 
-		BitInputStream bis = new DefaultBitInputStream(
-				new ByteArrayInputStream(buf));
+		BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
 		assertThat(readValue, equalTo(value));
 	}
@@ -105,8 +102,7 @@ public class GammaCodecTest {
 		// to pad to whole bytes:
 		assertThat(bitString, equalTo("0000101000000000"));
 
-		BitInputStream bis = new DefaultBitInputStream(
-				new ByteArrayInputStream(buf));
+		BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
 		assertThat(readValue, equalTo(value));
 	}
@@ -129,8 +125,7 @@ public class GammaCodecTest {
 		// to pad to whole bytes:
 		assertThat(bitString, equalTo("0000000100000000"));
 
-		BitInputStream bis = new DefaultBitInputStream(
-				new ByteArrayInputStream(buf));
+		BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 		Long readValue = codec.read(bis);
 		assertThat(readValue, equalTo(value));
 	}
@@ -147,8 +142,7 @@ public class GammaCodecTest {
 			bos.flush();
 			byte[] buf = baos.toByteArray();
 
-			BitInputStream bis = new DefaultBitInputStream(
-					new ByteArrayInputStream(buf));
+			BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 			Long readValue = codec.read(bis);
 			assertThat(readValue, equalTo(i));
 		}
@@ -166,8 +160,7 @@ public class GammaCodecTest {
 			bos.flush();
 			byte[] buf = baos.toByteArray();
 
-			BitInputStream bis = new DefaultBitInputStream(
-					new ByteArrayInputStream(buf));
+			BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 			Long readValue = codec.read(bis);
 			assertThat(readValue, equalTo(i));
 		}
@@ -187,8 +180,7 @@ public class GammaCodecTest {
 		bos.flush();
 		byte[] buf = baos.toByteArray();
 
-		BitInputStream bis = new DefaultBitInputStream(
-				new ByteArrayInputStream(buf));
+		BitInputStream bis = new DefaultBitInputStream(new ByteArrayInputStream(buf));
 
 		for (long i = 0; i < maxValues; i++) {
 			codec.read(bis);

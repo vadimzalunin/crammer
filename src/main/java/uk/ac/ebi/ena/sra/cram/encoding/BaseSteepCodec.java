@@ -61,9 +61,7 @@ class BaseSteepCodec implements BitCodec<Byte> {
 
 	public BaseSteepCodec(byte[] order) {
 		if (order.length != 5)
-			throw new IllegalArgumentException(
-					"Expecting 5 bases order only but got: "
-							+ new String(order));
+			throw new IllegalArgumentException("Expecting 5 bases order only but got: " + new String(order));
 
 		this.order = order;
 		this.base2indexArray = new int[255];
@@ -104,7 +102,8 @@ class BaseSteepCodec implements BitCodec<Byte> {
 	@Override
 	public long numberOfBits(Byte base) {
 		int index = base2indexArray[base];
-		if (index < order.length) return index+1 ;
-		return index ;
+		if (index < order.length)
+			return index + 1;
+		return index;
 	}
 }

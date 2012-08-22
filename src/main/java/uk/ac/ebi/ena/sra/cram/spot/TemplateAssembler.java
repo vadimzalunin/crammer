@@ -49,8 +49,7 @@ class TemplateAssembler {
 		this.alignmentHorizon = alignmentHorizon;
 		this.recordHorizon = recordHorizon;
 
-		unassembledSpotsAlignmentQueue = new PriorityQueue<SAMSpot>(
-				recordHorizon, spotAlignmentStartComparator);
+		unassembledSpotsAlignmentQueue = new PriorityQueue<SAMSpot>(recordHorizon, spotAlignmentStartComparator);
 	}
 
 	private void addSpot(SAMSpot spot) {
@@ -70,15 +69,13 @@ class TemplateAssembler {
 
 	public void addSAMRecord(SAMRecord samRecord) {
 		counter++;
-		biggestAlignmentStart = Math.max(biggestAlignmentStart,
-				samRecord.getAlignmentStart());
+		biggestAlignmentStart = Math.max(biggestAlignmentStart, samRecord.getAlignmentStart());
 
 		if (!samRecord.getProperPairFlag()) {
 			addSingle(samRecord);
 			return;
 		}
-		if (Math.abs(samRecord.getAlignmentStart()
-				- samRecord.getMateAlignmentStart()) > alignmentHorizon) {
+		if (Math.abs(samRecord.getAlignmentStart() - samRecord.getMateAlignmentStart()) > alignmentHorizon) {
 			addSingle(samRecord);
 			return;
 		}

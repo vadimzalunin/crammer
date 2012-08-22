@@ -32,11 +32,11 @@ public interface BitOutputStream {
 	public void flush() throws IOException;
 
 	public void close() throws IOException;
-	
-	public int alignToByte () throws IOException;
 
-	public void write (byte[] data) throws IOException;
-	
-	public void write (byte b) throws IOException;
-	
+	public int alignToByte() throws IOException;
+
+	public void write(byte[] data) throws IOException;
+
+	public void write(byte b) throws IOException;
+
 }

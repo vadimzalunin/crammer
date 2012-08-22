@@ -44,7 +44,6 @@ public class ArrayCompressionReport {
 		// lzmaSize = lzmaBAOS.size();
 		// lzmaBAOS.close();
 		// lzmaBAOS = null;
-		
 
 		ByteArrayOutputStream gzipBAOS = new ByteArrayOutputStream();
 		GZIPOutputStream gzipOS = new GZIPOutputStream(gzipBAOS);
@@ -57,8 +56,7 @@ public class ArrayCompressionReport {
 		gzipBAOS = null;
 
 		ByteArrayOutputStream bzip2BAOS = new ByteArrayOutputStream();
-		CBZip2OutputStream bz2OS = new CBZip2OutputStream(
-				bzip2BAOS);
+		CBZip2OutputStream bz2OS = new CBZip2OutputStream(bzip2BAOS);
 		bz2OS.write(array);
 		bz2OS.close();
 		bz2OS = null;
@@ -87,8 +85,7 @@ public class ArrayCompressionReport {
 
 	@Override
 	public String toString() {
-		StringBuffer sb = new StringBuffer(
-				name == null ? "ArrayCompressionReport" : name);
+		StringBuffer sb = new StringBuffer(name == null ? "ArrayCompressionReport" : name);
 		sb.append(": [");
 		sb.append("array: ").append(arraySize).append("; ");
 		sb.append("bzip2: ").append(bzip2Size).append("; ");

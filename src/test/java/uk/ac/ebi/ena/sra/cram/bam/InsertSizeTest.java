@@ -171,4 +171,62 @@ public class InsertSizeTest {
 		Utils.setLooseMateInfo(record2, record1, reader.getFileHeader());
 		assertInsertSize(record1, record2);
 	}
+	
+	@Test
+	public void test5() {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(1024 * 1024);
+		PrintStream ps = new PrintStream(baos);
+		ps.println("@HD	VN:1.0	SO:coordinate");
+		ps.println("@SQ	SN:1	LN:135374737");
+		ps.println("43470	145	1	2575231	0	75M	=	2579143	3839	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	*");
+		ps.println("43470	97	1	2579143	0	75M	=	2575231	-3839	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	*");
+
+		ps.close();
+		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+
+		SAMFileReader reader = new SAMFileReader(bais);
+		SAMRecordIterator iterator = reader.iterator();
+
+		SAMRecord record1 = iterator.next();
+		SAMRecord record2 = iterator.next();
+
+		// account for the +/-1 bug:
+		record1.setInferredInsertSize(record1.getInferredInsertSize() + 1);
+		record2.setInferredInsertSize(record2.getInferredInsertSize() - 1);
+		assertInsertSize(record1, record2);
+
+		Utils.setLooseMateInfo(record1, record2, reader.getFileHeader());
+		assertInsertSize(record1, record2);
+		Utils.setLooseMateInfo(record2, record1, reader.getFileHeader());
+		assertInsertSize(record1, record2);
+	}
+	
+	@Test
+	public void test6() {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(1024 * 1024);
+		PrintStream ps = new PrintStream(baos);
+		ps.println("@HD	VN:1.0	SO:coordinate");
+		ps.println("@SQ	SN:1	LN:135374737");
+		ps.println("43767	145	1	2607608	0	75M	=	2614212	6531	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	*");
+		ps.println("43767	97	1	2614212	0	75M	=	2607608	-6531	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	*");
+
+		ps.close();
+		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+
+		SAMFileReader reader = new SAMFileReader(bais);
+		SAMRecordIterator iterator = reader.iterator();
+
+		SAMRecord record1 = iterator.next();
+		SAMRecord record2 = iterator.next();
+
+		// account for the +/-1 bug:
+		record1.setInferredInsertSize(record1.getInferredInsertSize() + 1);
+		record2.setInferredInsertSize(record2.getInferredInsertSize() - 1);
+		assertInsertSize(record1, record2);
+
+		Utils.setLooseMateInfo(record1, record2, reader.getFileHeader());
+		assertInsertSize(record1, record2);
+		Utils.setLooseMateInfo(record2, record1, reader.getFileHeader());
+		assertInsertSize(record1, record2);
+	}
 }

@@ -19,7 +19,7 @@ public class CramReadGroup {
 
 	private String id;
 	private String sample;
-	
+
 	public CramReadGroup(String id) {
 		this.id = id;
 	}

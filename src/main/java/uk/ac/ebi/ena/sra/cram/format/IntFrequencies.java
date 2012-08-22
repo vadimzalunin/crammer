@@ -51,7 +51,7 @@ public class IntFrequencies {
 	}
 
 	public int[] getValues() {
-		Set<?> uniqueSet = bag.uniqueSet() ;
+		Set<?> uniqueSet = bag.uniqueSet();
 		int[] collapsedValueArray = new int[uniqueSet.size()];
 
 		Iterator<?> iterator = uniqueSet.iterator();
@@ -59,15 +59,15 @@ public class IntFrequencies {
 		while (iterator.hasNext())
 			collapsedValueArray[valueIndex++] = ((Integer) iterator.next()).intValue();
 
-		Arrays.sort(collapsedValueArray) ;
+		Arrays.sort(collapsedValueArray);
 		return collapsedValueArray;
 	}
 
 	public int[] getFrequencies() {
-		int[] values = getValues () ;
-		int[] collapsedFrequencyArray = new int[values.length] ;
+		int[] values = getValues();
+		int[] collapsedFrequencyArray = new int[values.length];
 		int frequencyIndex = 0;
-		for (int value:values)
+		for (int value : values)
 			collapsedFrequencyArray[frequencyIndex++] = bag.getCount(value);
 
 		return collapsedFrequencyArray;

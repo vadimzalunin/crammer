@@ -34,11 +34,11 @@ public class HuffmanCodec<V> implements BitCodec<V> {
 		this.tree = tree;
 		codes = new TreeMap<V, HuffmanBitCode<V>>();
 		getBitCode(tree, new HuffmanBitCode<V>(), codes);
-//		System.out.println("Dumping Huffman codec: ");
-//		for (V v : codes.keySet())
-//			System.out.println(v + ": " + codes.get(v));
-//		for (byte i = 0; i < 100; i++)
-//			System.out.println(i + ": " + codes.get(i));
+		// System.out.println("Dumping Huffman codec: ");
+		// for (V v : codes.keySet())
+		// System.out.println(v + ": " + codes.get(v));
+		// for (byte i = 0; i < 100; i++)
+		// System.out.println(i + ": " + codes.get(i));
 	}
 
 	@Override
@@ -47,8 +47,7 @@ public class HuffmanCodec<V> implements BitCodec<V> {
 		return leaf.value;
 	}
 
-	private HuffmanTree<V> findLeaf(BitInputStream bis, HuffmanTree<V> tree)
-			throws IOException {
+	private HuffmanTree<V> findLeaf(BitInputStream bis, HuffmanTree<V> tree) throws IOException {
 		if (tree instanceof HuffmanLeaf)
 			return tree;
 
@@ -60,8 +59,7 @@ public class HuffmanCodec<V> implements BitCodec<V> {
 	public long write(BitOutputStream bos, V symbol) throws IOException {
 		HuffmanBitCode<V> bitCode = codes.get(symbol);
 		if (bitCode == null)
-			throw new RuntimeException("Huffman code not found for value: "
-					+ symbol);
+			throw new RuntimeException("Huffman code not found for value: " + symbol);
 		bos.write(bitCode.bitCode, bitCode.bitLentgh);
 		return bitCode.bitLentgh;
 	}
@@ -76,8 +74,7 @@ public class HuffmanCodec<V> implements BitCodec<V> {
 		int bitLentgh;
 	}
 
-	private static <T> void getBitCode(HuffmanTree<T> tree,
-			HuffmanBitCode<T> code, Map<T, HuffmanBitCode<T>> codes) {
+	private static <T> void getBitCode(HuffmanTree<T> tree, HuffmanBitCode<T> code, Map<T, HuffmanBitCode<T>> codes) {
 		if (tree instanceof HuffmanLeaf) {
 			HuffmanLeaf<T> leaf = (HuffmanLeaf<T>) tree;
 			HuffmanBitCode<T> readyCode = new HuffmanBitCode<T>();
@@ -110,10 +107,10 @@ public class HuffmanCodec<V> implements BitCodec<V> {
 	public HuffmanTree<V> getTree() {
 		return tree;
 	}
-	
-	public void clear () {
-		codes.clear() ;
-		codes = null ;
-		tree = null ;
+
+	public void clear() {
+		codes.clear();
+		codes = null;
+		tree = null;
 	}
 }

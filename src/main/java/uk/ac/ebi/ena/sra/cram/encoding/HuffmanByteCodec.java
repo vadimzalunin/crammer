@@ -28,16 +28,16 @@ import uk.ac.ebi.ena.sra.cram.io.BitOutputStream;
 public class HuffmanByteCodec implements BitCodec<Byte> {
 	private HuffmanTree<Byte> tree;
 	private TreeMap<Byte, HuffmanBitCode> codes;
-	private HuffmanBitCode[] bitCodes = new HuffmanBitCode[256] ;
+	private HuffmanBitCode[] bitCodes = new HuffmanBitCode[256];
 
 	public HuffmanByteCodec(HuffmanTree<Byte> tree) {
 		super();
 		this.tree = tree;
 		codes = new TreeMap<Byte, HuffmanBitCode>();
 		getBitCode(tree, new HuffmanBitCode(), codes);
-		
-		for (Map.Entry<Byte, HuffmanBitCode> entry: codes.entrySet()) 
-			bitCodes[entry.getKey() & 0xFF] = entry.getValue() ;
+
+		for (Map.Entry<Byte, HuffmanBitCode> entry : codes.entrySet())
+			bitCodes[entry.getKey() & 0xFF] = entry.getValue();
 	}
 
 	@Override
@@ -46,8 +46,7 @@ public class HuffmanByteCodec implements BitCodec<Byte> {
 		return leaf.value;
 	}
 
-	private HuffmanTree<Byte> findLeaf(BitInputStream bis, HuffmanTree<Byte> tree)
-			throws IOException {
+	private HuffmanTree<Byte> findLeaf(BitInputStream bis, HuffmanTree<Byte> tree) throws IOException {
 		if (tree instanceof HuffmanLeaf)
 			return tree;
 
@@ -57,10 +56,9 @@ public class HuffmanByteCodec implements BitCodec<Byte> {
 
 	@Override
 	public long write(BitOutputStream bos, Byte symbol) throws IOException {
-		HuffmanBitCode bitCode = bitCodes[symbol & 0xFF] ;
+		HuffmanBitCode bitCode = bitCodes[symbol & 0xFF];
 		if (bitCode == null)
-			throw new RuntimeException("Huffman code not found for value: "
-					+ symbol);
+			throw new RuntimeException("Huffman code not found for value: " + symbol);
 		bos.write(bitCode.bitCode, bitCode.bitLentgh);
 		return bitCode.bitLentgh;
 	}
@@ -75,8 +73,7 @@ public class HuffmanByteCodec implements BitCodec<Byte> {
 		int bitLentgh;
 	}
 
-	private static <T> void getBitCode(HuffmanTree<Byte> tree,
-			HuffmanBitCode code, Map<Byte, HuffmanBitCode> codes) {
+	private static <T> void getBitCode(HuffmanTree<Byte> tree, HuffmanBitCode code, Map<Byte, HuffmanBitCode> codes) {
 		if (tree instanceof HuffmanLeaf) {
 			HuffmanLeaf<Byte> leaf = (HuffmanLeaf<Byte>) tree;
 			HuffmanBitCode readyCode = new HuffmanBitCode();
@@ -109,10 +106,10 @@ public class HuffmanByteCodec implements BitCodec<Byte> {
 	public HuffmanTree<Byte> getTree() {
 		return tree;
 	}
-	
-	public void clear () {
-		codes.clear() ;
-		codes = null ;
-		tree = null ;
+
+	public void clear() {
+		codes.clear();
+		codes = null;
+		tree = null;
 	}
 }

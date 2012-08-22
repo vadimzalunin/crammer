@@ -21,6 +21,5 @@ public interface SequenceBaseProvider {
 
 	public byte getBaseAt(String sequenceName, long position) throws IOException;
 
-	public void copyBases(String sequenceName, long from, int len, byte[] dest)
-			throws IOException;
+	public void copyBases(String sequenceName, long from, int len, byte[] dest) throws IOException;
 }
