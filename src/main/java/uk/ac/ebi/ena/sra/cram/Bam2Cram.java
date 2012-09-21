@@ -85,12 +85,13 @@ public class Bam2Cram {
     private PrintStream tramPS;
 
     //TODO support for auto-names for these files
-    private final LinkedList<File> bamFileList = new LinkedList<File>();
-    private final Map<File, SAMFileReader> samReaderMap = new HashMap<File, SAMFileReader>();
-    private final Map<File, OutputStream> osMap = new HashMap<File, OutputStream>();
-    private final Map<File, CramWriter> cramWriterMap = new HashMap<File, CramWriter>();
-    //TODO private List<PrintStream> statsPSList = new LinkedList<PrintStream>();
-    //TODO private List<PrintStream> tramPSList = new LinkedList<PrintStream>();
+    private LinkedList<File> bamFileList = new LinkedList<File>();
+    private Map<File, SAMFileReader> samReaderMap = new HashMap<File, SAMFileReader>();
+    private Map<File, OutputStream> osMap = new HashMap<File, OutputStream>();
+    private Map<File, CramWriter> cramWriterMap = new HashMap<File, CramWriter>();
+    private Map<File, ReadAnnotationReader> readAnnoReaderMap = new HashMap<File, ReadAnnotationReader>(); 
+    private Map<File, PrintStream> statsPSMap = new HashMap<File, PrintStream>(); 
+    private Map<File, PrintStream> tramPSMap = new HashMap<File, PrintStream>();
     private class SAMQuery {
         public
             CramReferenceSequence sequence;
@@ -176,6 +177,12 @@ public class Bam2Cram {
         sequences = new ArrayList<CramReferenceSequence>();
         referenceSequenceFile = Utils.createIndexedFastaSequenceFile(params.referenceFasta);
 
+        //TODO Option to redistribute non-mapping reads.
+        if (params.inlcudeUnmappedReads) {
+            CramReferenceSequence unalignedReferenceSequence = new CramReferenceSequence(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, 1);
+            sequences.add(unalignedReferenceSequence);
+        }
+        
         if (!params.exlcudeMappedReads) {
             for (SAMSequenceRecord seq : referenceSequenceFile.getSequenceDictionary().getSequences()){
                 CramReferenceSequence cramSeq = new CramReferenceSequence(seq.getSequenceName(),
@@ -183,47 +190,37 @@ public class Bam2Cram {
                 sequences.add(cramSeq);
             }
         }
-        
-        //TODO If sequence not in reference fasta file, then separate scheme
-        //TODO separate partition for non-mapping sequences
-        if (params.inlcudeUnmappedReads) {
-            CramReferenceSequence unalignedReferenceSequence = new CramReferenceSequence(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, 1);
-            sequences.add(unalignedReferenceSequence);
-        }
 
         long totalSequenceLength = 0, cumulativeLength = 0;
         for (CramReferenceSequence seq : sequences){
             totalSequenceLength += seq.getLength();
         }
         for (CramReferenceSequence seq : sequences){
-            if (cumulativeLength + seq.getLength() <= (totalSequenceLength * params.workUnit / params.numWorkUnits)){
+            if (cumulativeLength + seq.getLength() <= (totalSequenceLength * params.workUnit) / params.numWorkUnits){
+                cumulativeLength += seq.getLength();
                 continue;
             }
-            if (cumulativeLength >= (totalSequenceLength * (params.workUnit + 1) / params.numWorkUnits)){
+            if (cumulativeLength >= (totalSequenceLength * (params.workUnit + 1)) / params.numWorkUnits){
                 break;
             }
             int startPos = 0, endPos = 0;
             if (cumulativeLength < (totalSequenceLength * params.workUnit) / params.numWorkUnits){
-                startPos = (int)((totalSequenceLength * params.workUnit) / params.numWorkUnits - cumulativeLength);
+                startPos = (int)((totalSequenceLength * params.workUnit) / params.numWorkUnits - cumulativeLength + 1);
             }
             if (cumulativeLength + seq.getLength() > (totalSequenceLength * (params.workUnit + 1)) / params.numWorkUnits){
                 endPos = (int)(totalSequenceLength * (params.workUnit + 1) / params.numWorkUnits - cumulativeLength);
             }
             queryList.add(new SAMQuery(seq, startPos, endPos));
-        }
-
-        List<CramReadGroup> cramReadGroups = new LinkedList<CramReadGroup>();
-        cramReadGroups.add(new CramReadGroup(null));
-        for (File bamFile: bamFileList){
-            for (SAMReadGroupRecord rgr : samReaderMap.get(bamFile).getFileHeader().getReadGroups()) {
-                readGroupIdToIndexMap.put(rgr.getReadGroupId(), readGroupIdToIndexMap.size() + 1);
-                cramReadGroups.add(new CramReadGroup(rgr.getReadGroupId(), rgr.getSample()));
-            }
+            cumulativeLength += seq.getLength();
         }
 
         // copy the whole header:
 
         assembler = new PairedTemplateAssembler(params.spotAssemblyAlignmentHorizon, params.spotAssemblyRecordsHorizon);
+
+        recordCount = 0;
+        unmappedRecordCount = 0;
+        baseCount = 0;
 
         if (params.readQualityMaskFile != null) {
             log.info("Using read quality mask file: " + params.readQualityMaskFile);
@@ -233,18 +230,62 @@ public class Bam2Cram {
                     rqmFactory);
         }
 
-        //TODO Check if changes needed for multi bamfile analysis.
         if (params.readAnnoFile != null) {
-            readAnnoReader = new ReadAnnotationReader(new BufferedReader(new FileReader(params.readAnnoFile)));
+            for (File bamFile: bamFileList) {
+                readAnnoReader = new ReadAnnotationReader(new BufferedReader(new FileReader(params.readAnnoFile)));
+                readAnnoReaderMap.put(bamFile, readAnnoReader);
+            }
+        } else if (params.readAnnoListFile != null) {
+            BufferedReader readAnnoListReader = new BufferedReader(new FileReader(params.readAnnoListFile));
+            String newReadAnnoFileName;
+            for (File bamFile: bamFileList) {
+                newReadAnnoFileName = readAnnoListReader.readLine();
+                if (newReadAnnoFileName == null) {
+                    System.out.println("BAM list and read annotation list files do not match.") ;
+                    System.exit(1);
+                }
+                readAnnoReader = new ReadAnnotationReader(new BufferedReader(new FileReader(new File(newReadAnnoFileName))));
+                readAnnoReaderMap.put(bamFile, readAnnoReader);
+            }
         }
 
-        recordCount = 0;
-        unmappedRecordCount = 0;
-        baseCount = 0;
+        if (params.statsOutFile != null) {
+            statsPS = new PrintStream(params.statsOutFile);
+            for (File bamFile: bamFileList) {
+                statsPSMap.put(bamFile, statsPS);
+            }
+        } else if (params.statsOutListFile != null) {
+            BufferedReader statsOutListReader = new BufferedReader(new FileReader(params.statsOutListFile));
+            String newStatsOutFileName;
+            for (File bamFile: bamFileList) {
+                newStatsOutFileName = statsOutListReader.readLine();
+                if (newStatsOutFileName == null) {
+                    System.out.println("BAM list and stats-outlist files do not match.") ;
+                    System.exit(1);
+                }
+                statsPS = new PrintStream(new File(newStatsOutFileName));
+                statsPSMap.put(bamFile, statsPS);
+            }
+        }
 
-        statsPS = params.statsOutFile == null ? null : new PrintStream(params.statsOutFile);
-
-        tramPS = params.tramOutFile == null ? null : new PrintStream(params.tramOutFile);
+        if (params.tramOutFile != null) {
+            tramPS = new PrintStream(params.tramOutFile);
+            for (File bamFile: bamFileList) {
+                tramPSMap.put(bamFile, tramPS);
+            }
+        } else if (params.tramOutListFile != null) {
+            BufferedReader tramOutListReader = new BufferedReader(new FileReader(params.tramOutListFile));
+            String newTramOutFileName;
+            for (File bamFile: bamFileList) {
+                newTramOutFileName = tramOutListReader.readLine();
+                if (newTramOutFileName == null) {
+                    System.out.println("BAM list and tram-outlist files do not match.") ;
+                    System.exit(1);
+                }
+                tramPS = new PrintStream(new File(newTramOutFileName));
+                tramPSMap.put(bamFile, tramPS);
+            }
+        }
 
         if (params.outputCramListFile != null){
             BufferedReader outputCramListReader = new BufferedReader(new FileReader(params.outputCramListFile));
@@ -268,9 +309,16 @@ public class Bam2Cram {
 
         for (File bamFile: bamFileList){
             List<CramHeaderRecord> headerRecords = Utils.getCramHeaderRecords(samReaderMap.get(bamFile).getFileHeader());
+            List<CramReadGroup> cramReadGroups = new LinkedList<CramReadGroup>();
+            cramReadGroups.add(new CramReadGroup(null));
+            for (SAMReadGroupRecord rgr : samReaderMap.get(bamFile).getFileHeader().getReadGroups()) {
+                readGroupIdToIndexMap.put(rgr.getReadGroupId(), readGroupIdToIndexMap.size() + 1);
+                cramReadGroups.add(new CramReadGroup(rgr.getReadGroupId(), rgr.getSample()));
+            }            
+            
             cramWriter = new CramWriter(osMap.get(bamFile), provider, sequences, params.roundTripCheck, params.maxBlockSize,
                     params.captureUnmappedQualityScore, params.captureSubstitutionQualityScore,
-                    params.captureMaskedQualityScore, readAnnoReader == null ? null : readAnnoReader.listUniqAnnotations(),
+                    params.captureMaskedQualityScore, readAnnoReader == null ? null : readAnnoReaderMap.get(bamFile).listUniqAnnotations(),
                     statsPS, cramReadGroups, params.captureAllQualityScore, headerRecords, params.preserveReadNames);
             cramWriter.setAutodump(log.isDebugEnabled());
             cramWriter.init();
@@ -662,8 +710,8 @@ public class Bam2Cram {
             cramRecord.setReadGroupID(readGroupIndex);
         }
 
-        if (readAnnoReader != null)
-            cramRecord.setAnnotations(readAnnoReader.nextReadAnnotations());
+        if (readAnnoReaderMap.get(bamFile) != null)
+            cramRecord.setAnnotations(readAnnoReaderMap.get(bamFile).nextReadAnnotations());
 
         if (!cramRecord.isReadMapped())
             unmappedRecordCount++;
@@ -842,6 +890,21 @@ public class Bam2Cram {
             System.out.println("Multiple work units not compatible with readAnnoFile");
             System.exit(1);
         }
+        
+        if (params.readAnnoFile != null && params.readAnnoListFile != null) {
+            System.out.println("State only 1 option --read-anno-file or --read-annolist-file");
+            System.exit(1);
+        }
+        
+        if (params.statsOutFile != null && params.statsOutListFile != null) {
+            System.out.println("State only 1 option --stats-out-file or --stats-outlist-file");
+            System.exit(1);
+        }
+        
+        if (params.tramOutFile != null && params.tramOutListFile != null) {
+            System.out.println("State only 1 option --tram-out-file or --tram-outlist-file");
+            System.exit(1);
+        }
 
         Bam2Cram b2c = new Bam2Cram(params);
         b2c.init();
@@ -916,12 +979,21 @@ public class Bam2Cram {
 
         @Parameter(names = { "--read-anno-file" }, converter = FileConverter.class, description = "Path to the read-level annotations file. ", hidden = true)
         File readAnnoFile;
+        
+        @Parameter(names = { "--read-annolist-file" }, converter = FileConverter.class, description = "File containing list of paths to the read-level annotations files. ", hidden = true)
+        File readAnnoListFile;
 
         @Parameter(names = { "--stats-out-file" }, converter = FileConverter.class, description = "Print detailed statistics to this file.")
         File statsOutFile;
+        
+        @Parameter(names = { "--stats-outlist-file" }, converter = FileConverter.class, description = "Print detailed statistics to to list of files mentioned in this file.")
+        File statsOutListFile;
 
         @Parameter(names = { "--tram-out-file" }, converter = FileConverter.class, description = "Print textual representation of CRAM records to this file.")
         File tramOutFile;
+        
+        @Parameter(names = { "--tram-outlist-file" }, converter = FileConverter.class, description = "Print textual representation of CRAM records to list of files mentioned in this file.")
+        File tramOutListFile;
 
         @Parameter(names = { "--quality-cutoff" }, description = "Preserve quality scores below this value.")
         int qualityCutoff = 0;

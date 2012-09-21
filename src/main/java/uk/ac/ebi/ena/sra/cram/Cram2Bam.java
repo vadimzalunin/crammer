@@ -328,10 +328,12 @@ public class Cram2Bam {
                     samRecord.setReadName(cramRecord.getReadName());
                 } else {
                     String readName = cramRecord.getReadName();
-                    //TODO add workunit prefix to readName
                     if (readName == null)
-                        readName = String.valueOf(counter);
-
+                        if ( params.readNamePrefix != null && params.readNamePrefix != "")
+                            readName = params.readNamePrefix + ":" + String.valueOf(counter);
+                        else 
+                            readName = String.valueOf(counter);
+                    
                     if (!cramRecord.isLastFragment())
                         indexes.put(counter + cramRecord.getRecordsToNextFragment(), readName);
 
@@ -517,6 +519,9 @@ public class Cram2Bam {
         @Parameter(names = { "--use-star-for-missing-quality-scores" }, description = "Calculate NM tag.")
         boolean useStarForMissingQualityScores = false;
 
+        @Parameter(names = { "--read-name-prefix" }, description = "Prefix for read name. If file is split in mutiple parts then recommended to have work_unit number in prefix")
+        String readNamePrefix; 
+        
         @Parameter()
         List<String> sequences;
 
