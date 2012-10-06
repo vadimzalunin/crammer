@@ -1,0 +1,705 @@
+Testsuite: uk.ac.ebi.ena.sra.cram.TestAll
+Tests run: 210, Failures: 2, Errors: 0, Time elapsed: 23.213 sec
+------------- Standard Output ---------------
+Expected: <3840>
+     got: <3839>
+)
+Expected: <6532>
+     got: <6531>
+)
+------------- ---------------- ---------------
+------------- Standard Error -----------------
+INFO  CramWriter - Block purged: 1	10000	529	1255359	125.54	2.3247	0.718s	7410	16
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	1248639 bits	10000 objects	124.86 bits/object
+	Heap bytes codec	281612 bits	89178 objects	3.16 bits/object
+	Mapping quality codec	10636 bits	9939 objects	1.07 bits/object
+	Rank codec	30197 bits	1287 objects	23.46 bits/object
+	Read flags codec	24338 bits	10000 objects	2.43 bits/object
+	Read name codec	754044 bits	7426 objects	101.54 bits/object
+	Record quality codec	10542 bits	6588 objects	1.60 bits/object
+	Refpos codec	10424 bits	10000 objects	1.04 bits/object
+	Variations codec	99587 bits	1634 objects	60.95 bits/object
+		Base QS codec	28105 bits	5579 objects	5.04 bits/object
+		Base change codec	4006 bits	2003 objects	2.00 bits/object
+		Base codec	15697 bits	6870 objects	2.28 bits/object
+		Deletion length codec	1 bits	1 objects	1.00 bits/object
+		Insert base codec	8438 bits	3576 objects	2.36 bits/object
+		Position in read	33757 bits	11159 objects	3.03 bits/object
+		Quality score codec	28105 bits	5579 objects	5.04 bits/object
+		Read feature operators	25280 bits	12793 objects	1.98 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 61
+INFO  Bam2Cram - Beyond horizon pairs: 7410, extra chromosomal pairs: 16
+INFO  Bam2Cram - Compressed bases: 540000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 545579
+INFO  Bam2Cram - Quality budget: 101.03%
+INFO  Bam2Cram - Total compression: 1.28
+INFO  Cram2Bam - CRAM format version: 0.9
+INFO  Cram2Bam - Using default quality score: ?
+INFO  Cram2Bam - Block read: sequence 1; records 10000; 0.190 seconds.
+INFO  Cram2Bam - Ref reading took 0 seconds.
+INFO  Cram2Bam - SAM/BAM writing took 0 seconds.
+INFO  Cram2Bam - Total time: 0 seconds.
+INFO  CramWriter - Block purged: 1	10000	529	1255359	125.54	2.3247	0.160s	7410	16
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	1248639 bits	10000 objects	124.86 bits/object
+	Heap bytes codec	281612 bits	89178 objects	3.16 bits/object
+	Mapping quality codec	10636 bits	9939 objects	1.07 bits/object
+	Rank codec	30197 bits	1287 objects	23.46 bits/object
+	Read flags codec	24338 bits	10000 objects	2.43 bits/object
+	Read name codec	754044 bits	7426 objects	101.54 bits/object
+	Record quality codec	10542 bits	6588 objects	1.60 bits/object
+	Refpos codec	10424 bits	10000 objects	1.04 bits/object
+	Variations codec	99587 bits	1634 objects	60.95 bits/object
+		Base QS codec	28105 bits	5579 objects	5.04 bits/object
+		Base change codec	4006 bits	2003 objects	2.00 bits/object
+		Base codec	15697 bits	6870 objects	2.28 bits/object
+		Deletion length codec	1 bits	1 objects	1.00 bits/object
+		Insert base codec	8438 bits	3576 objects	2.36 bits/object
+		Position in read	33757 bits	11159 objects	3.03 bits/object
+		Quality score codec	28105 bits	5579 objects	5.04 bits/object
+		Read feature operators	25280 bits	12793 objects	1.98 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 61
+INFO  Bam2Cram - Beyond horizon pairs: 7410, extra chromosomal pairs: 16
+INFO  Bam2Cram - Compressed bases: 540000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 545579
+INFO  Bam2Cram - Quality budget: 101.03%
+INFO  Bam2Cram - Total compression: 1.28
+INFO  CramWriter - Block purged: 1	10000	941	5742406	574.24	10.6341	0.666s	7410	16
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	5728230 bits	10000 objects	572.82 bits/object
+	Heap bytes codec	281612 bits	89178 objects	3.16 bits/object
+	Mapping quality codec	10636 bits	9939 objects	1.07 bits/object
+	Rank codec	30197 bits	1287 objects	23.46 bits/object
+	Read flags codec	24338 bits	10000 objects	2.43 bits/object
+	Read name codec	1010447 bits	10000 objects	101.04 bits/object
+	Record quality codec	1829413 bits	1080000 objects	1.69 bits/object
+	Refpos codec	10424 bits	10000 objects	1.04 bits/object
+	Tag key codec	401302 bits	109062 objects	3.68 bits/object
+	Variations codec	48782 bits	1634 objects	29.85 bits/object
+		Base change codec	4006 bits	2003 objects	2.00 bits/object
+		Base codec	16585 bits	6870 objects	2.41 bits/object
+		Deletion length codec	1 bits	1 objects	1.00 bits/object
+		Insert base codec	7892 bits	3576 objects	2.21 bits/object
+		Position in read	24396 bits	5580 objects	4.37 bits/object
+		Read feature operators	12487 bits	7214 objects	1.73 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 61
+INFO  Bam2Cram - Beyond horizon pairs: 7410, extra chromosomal pairs: 16
+INFO  Bam2Cram - Compressed bases: 540000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 540000
+INFO  Bam2Cram - Quality budget: 100.00%
+INFO  Bam2Cram - Total compression: 7.95
+INFO  Cram2Bam - CRAM format version: 0.9
+INFO  Cram2Bam - Using default quality score: ?
+INFO  Cram2Bam - Block read: sequence 1; records 10000; 0.266 seconds.
+INFO  Cram2Bam - Ref reading took 0 seconds.
+INFO  Cram2Bam - SAM/BAM writing took 0 seconds.
+INFO  Cram2Bam - Total time: 0 seconds.
+INFO  CramWriter - Block purged: 1	10000	988	5773641	577.36	10.6919	0.300s	7410	16
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	5758777 bits	10000 objects	575.88 bits/object
+	Heap bytes codec	281612 bits	89178 objects	3.16 bits/object
+	Mapping quality codec	10636 bits	9939 objects	1.07 bits/object
+	Rank codec	30197 bits	1287 objects	23.46 bits/object
+	Read flags codec	24338 bits	10000 objects	2.43 bits/object
+	Read name codec	1010447 bits	10000 objects	101.04 bits/object
+	Record quality codec	1829413 bits	1080000 objects	1.69 bits/object
+	Refpos codec	10424 bits	10000 objects	1.04 bits/object
+	Tag key codec	416279 bits	111514 objects	3.73 bits/object
+	Variations codec	48782 bits	1634 objects	29.85 bits/object
+		Base change codec	4006 bits	2003 objects	2.00 bits/object
+		Base codec	16585 bits	6870 objects	2.41 bits/object
+		Deletion length codec	1 bits	1 objects	1.00 bits/object
+		Insert base codec	7892 bits	3576 objects	2.21 bits/object
+		Position in read	24396 bits	5580 objects	4.37 bits/object
+		Read feature operators	12487 bits	7214 objects	1.73 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 61
+INFO  Bam2Cram - Beyond horizon pairs: 7410, extra chromosomal pairs: 16
+INFO  Bam2Cram - Compressed bases: 540000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 540000
+INFO  Bam2Cram - Quality budget: 100.00%
+INFO  Bam2Cram - Total compression: 8.00
+INFO  CramWriter - Block purged: gi|66043271|ref|NC_007005.1|	10000	329	102479	10.25	0.2847	0.068s	0	0
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	97991 bits	10000 objects	9.80 bits/object
+	Mapping quality codec	10000 bits	10000 objects	1.00 bits/object
+	Read flags codec	10000 bits	10000 objects	1.00 bits/object
+	Refpos codec	21994 bits	10000 objects	2.20 bits/object
+	Variations codec	35997 bits	1486 objects	24.22 bits/object
+		Base QS codec	7172 bits	1853 objects	3.87 bits/object
+		Base change codec	3704 bits	1852 objects	2.00 bits/object
+		Base codec	2 bits	1 objects	2.00 bits/object
+		Deletion length codec	8 bits	4 objects	2.00 bits/object
+		Insert base codec	2 bits	1 objects	2.00 bits/object
+		Position in read	15076 bits	3710 objects	4.06 bits/object
+		Quality score codec	7172 bits	1853 objects	3.87 bits/object
+		Read feature operators	10035 bits	5196 objects	1.93 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 0
+INFO  Bam2Cram - Beyond horizon pairs: 0, extra chromosomal pairs: 0
+INFO  Bam2Cram - Compressed bases: 360000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 361853
+INFO  Bam2Cram - Quality budget: 100.51%
+INFO  Bam2Cram - Total compression: 0.35
+INFO  Cram2Bam - CRAM format version: 0.9
+INFO  Cram2Bam - Using default quality score: ?
+INFO  Cram2Bam - Block read: sequence gi|66043271|ref|NC_007005.1|; records 10000; 0.091 seconds.
+INFO  Cram2Bam - Ref reading took 0 seconds.
+INFO  Cram2Bam - SAM/BAM writing took 0 seconds.
+INFO  Cram2Bam - Total time: 0 seconds.
+INFO  CramWriter - Block purged: gi|66043271|ref|NC_007005.1|	10000	329	102479	10.25	0.2847	0.041s	0	0
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	97991 bits	10000 objects	9.80 bits/object
+	Mapping quality codec	10000 bits	10000 objects	1.00 bits/object
+	Read flags codec	10000 bits	10000 objects	1.00 bits/object
+	Refpos codec	21994 bits	10000 objects	2.20 bits/object
+	Variations codec	35997 bits	1486 objects	24.22 bits/object
+		Base QS codec	7172 bits	1853 objects	3.87 bits/object
+		Base change codec	3704 bits	1852 objects	2.00 bits/object
+		Base codec	2 bits	1 objects	2.00 bits/object
+		Deletion length codec	8 bits	4 objects	2.00 bits/object
+		Insert base codec	2 bits	1 objects	2.00 bits/object
+		Position in read	15076 bits	3710 objects	4.06 bits/object
+		Quality score codec	7172 bits	1853 objects	3.87 bits/object
+		Read feature operators	10035 bits	5196 objects	1.93 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 0
+INFO  Bam2Cram - Beyond horizon pairs: 0, extra chromosomal pairs: 0
+INFO  Bam2Cram - Compressed bases: 360000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 361853
+INFO  Bam2Cram - Quality budget: 100.51%
+INFO  Bam2Cram - Total compression: 0.35
+INFO  CramWriter - Block purged: gi|66043271|ref|NC_007005.1|	10000	545	1955095	195.51	5.4308	0.132s	0	0
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	1947719 bits	10000 objects	194.77 bits/object
+	Mapping quality codec	10000 bits	10000 objects	1.00 bits/object
+	Read flags codec	10000 bits	10000 objects	1.00 bits/object
+	Read name codec	605057 bits	10000 objects	60.51 bits/object
+	Record quality codec	1060598 bits	720000 objects	1.47 bits/object
+	Refpos codec	21994 bits	10000 objects	2.20 bits/object
+	Tag key codec	160000 bits	60000 objects	2.67 bits/object
+	Variations codec	18581 bits	1486 objects	12.50 bits/object
+		Base change codec	3704 bits	1852 objects	2.00 bits/object
+		Base codec	2 bits	1 objects	2.00 bits/object
+		Deletion length codec	8 bits	4 objects	2.00 bits/object
+		Insert base codec	2 bits	1 objects	2.00 bits/object
+		Position in read	10028 bits	1857 objects	5.40 bits/object
+		Read feature operators	4839 bits	3343 objects	1.45 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 0
+INFO  Bam2Cram - Beyond horizon pairs: 0, extra chromosomal pairs: 0
+INFO  Bam2Cram - Compressed bases: 360000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 360000
+INFO  Bam2Cram - Quality budget: 100.00%
+INFO  Bam2Cram - Total compression: 4.51
+INFO  Cram2Bam - CRAM format version: 0.9
+INFO  Cram2Bam - Using default quality score: ?
+INFO  Cram2Bam - Block read: sequence gi|66043271|ref|NC_007005.1|; records 10000; 0.079 seconds.
+INFO  Cram2Bam - Ref reading took 0 seconds.
+INFO  Cram2Bam - SAM/BAM writing took 0 seconds.
+INFO  Cram2Bam - Total time: 0 seconds.
+INFO  CramWriter - Block purged: gi|66043271|ref|NC_007005.1|	10000	545	1955095	195.51	5.4308	0.137s	0	0
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	1947719 bits	10000 objects	194.77 bits/object
+	Mapping quality codec	10000 bits	10000 objects	1.00 bits/object
+	Read flags codec	10000 bits	10000 objects	1.00 bits/object
+	Read name codec	605057 bits	10000 objects	60.51 bits/object
+	Record quality codec	1060598 bits	720000 objects	1.47 bits/object
+	Refpos codec	21994 bits	10000 objects	2.20 bits/object
+	Tag key codec	160000 bits	60000 objects	2.67 bits/object
+	Variations codec	18581 bits	1486 objects	12.50 bits/object
+		Base change codec	3704 bits	1852 objects	2.00 bits/object
+		Base codec	2 bits	1 objects	2.00 bits/object
+		Deletion length codec	8 bits	4 objects	2.00 bits/object
+		Insert base codec	2 bits	1 objects	2.00 bits/object
+		Position in read	10028 bits	1857 objects	5.40 bits/object
+		Read feature operators	4839 bits	3343 objects	1.45 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 0
+INFO  Bam2Cram - Beyond horizon pairs: 0, extra chromosomal pairs: 0
+INFO  Bam2Cram - Compressed bases: 360000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 360000
+INFO  Bam2Cram - Quality budget: 100.00%
+INFO  Bam2Cram - Total compression: 4.51
+INFO  CramWriter - Block purged: chrY	10000	458	493182	49.32	1.5412	0.081s	0	0
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	487070 bits	10000 objects	48.71 bits/object
+	Mapping quality codec	34935 bits	10000 objects	3.49 bits/object
+	Read flags codec	10000 bits	10000 objects	1.00 bits/object
+	Refpos codec	91988 bits	10000 objects	9.20 bits/object
+	Variations codec	330147 bits	7781 objects	42.43 bits/object
+		Base QS codec	82841 bits	19496 objects	4.25 bits/object
+		Base change codec	38992 bits	19496 objects	2.00 bits/object
+		Position in read	134264 bits	38992 objects	3.44 bits/object
+		Quality score codec	82841 bits	19496 objects	4.25 bits/object
+		Read feature operators	74050 bits	46773 objects	1.58 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 0
+INFO  Bam2Cram - Beyond horizon pairs: 0, extra chromosomal pairs: 0
+INFO  Bam2Cram - Compressed bases: 320000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 339496
+INFO  Bam2Cram - Quality budget: 106.09%
+INFO  Bam2Cram - Total compression: 1.80
+INFO  Cram2Bam - CRAM format version: 0.9
+INFO  Cram2Bam - Using default quality score: ?
+INFO  Cram2Bam - Block read: sequence chrY; records 10000; 0.058 seconds.
+INFO  Cram2Bam - Ref reading took 0 seconds.
+INFO  Cram2Bam - SAM/BAM writing took 0 seconds.
+INFO  Cram2Bam - Total time: 0 seconds.
+INFO  CramWriter - Block purged: chrY	10000	458	493182	49.32	1.5412	0.070s	0	0
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	487070 bits	10000 objects	48.71 bits/object
+	Mapping quality codec	34935 bits	10000 objects	3.49 bits/object
+	Read flags codec	10000 bits	10000 objects	1.00 bits/object
+	Refpos codec	91988 bits	10000 objects	9.20 bits/object
+	Variations codec	330147 bits	7781 objects	42.43 bits/object
+		Base QS codec	82841 bits	19496 objects	4.25 bits/object
+		Base change codec	38992 bits	19496 objects	2.00 bits/object
+		Position in read	134264 bits	38992 objects	3.44 bits/object
+		Quality score codec	82841 bits	19496 objects	4.25 bits/object
+		Read feature operators	74050 bits	46773 objects	1.58 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 0
+INFO  Bam2Cram - Beyond horizon pairs: 0, extra chromosomal pairs: 0
+INFO  Bam2Cram - Compressed bases: 320000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 339496
+INFO  Bam2Cram - Quality budget: 106.09%
+INFO  Bam2Cram - Total compression: 1.80
+INFO  CramWriter - Block purged: chrY	10000	686	2563850	256.39	8.0120	0.145s	0	0
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	2554290 bits	10000 objects	255.43 bits/object
+	Mapping quality codec	34935 bits	10000 objects	3.49 bits/object
+	Read flags codec	10000 bits	10000 objects	1.00 bits/object
+	Read name codec	618530 bits	10000 objects	61.85 bits/object
+	Record quality codec	1400727 bits	640000 objects	2.19 bits/object
+	Refpos codec	91988 bits	10000 objects	9.20 bits/object
+	Tag key codec	80000 bits	40000 objects	2.00 bits/object
+	Variations codec	158154 bits	7781 objects	20.33 bits/object
+		Base change codec	38992 bits	19496 objects	2.00 bits/object
+		Position in read	91885 bits	19496 objects	4.71 bits/object
+		Read feature operators	27277 bits	27277 objects	1.00 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 0
+INFO  Bam2Cram - Beyond horizon pairs: 0, extra chromosomal pairs: 0
+INFO  Bam2Cram - Compressed bases: 320000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 320000
+INFO  Bam2Cram - Quality budget: 100.00%
+INFO  Bam2Cram - Total compression: 7.53
+INFO  Cram2Bam - CRAM format version: 0.9
+INFO  Cram2Bam - Using default quality score: ?
+INFO  Cram2Bam - Block read: sequence chrY; records 10000; 0.096 seconds.
+INFO  Cram2Bam - Ref reading took 0 seconds.
+INFO  Cram2Bam - SAM/BAM writing took 0 seconds.
+INFO  Cram2Bam - Total time: 0 seconds.
+INFO  CramWriter - Block purged: chrY	10000	686	2563850	256.39	8.0120	0.129s	0	0
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	2554290 bits	10000 objects	255.43 bits/object
+	Mapping quality codec	34935 bits	10000 objects	3.49 bits/object
+	Read flags codec	10000 bits	10000 objects	1.00 bits/object
+	Read name codec	618530 bits	10000 objects	61.85 bits/object
+	Record quality codec	1400727 bits	640000 objects	2.19 bits/object
+	Refpos codec	91988 bits	10000 objects	9.20 bits/object
+	Tag key codec	80000 bits	40000 objects	2.00 bits/object
+	Variations codec	158154 bits	7781 objects	20.33 bits/object
+		Base change codec	38992 bits	19496 objects	2.00 bits/object
+		Position in read	91885 bits	19496 objects	4.71 bits/object
+		Read feature operators	27277 bits	27277 objects	1.00 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 0
+INFO  Bam2Cram - Beyond horizon pairs: 0, extra chromosomal pairs: 0
+INFO  Bam2Cram - Compressed bases: 320000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 320000
+INFO  Bam2Cram - Quality budget: 100.00%
+INFO  Bam2Cram - Total compression: 7.53
+INFO  CramWriter - Block purged: 1	10000	529	1255359	125.54	2.3247	0.114s	7410	16
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	1248639 bits	10000 objects	124.86 bits/object
+	Heap bytes codec	281612 bits	89178 objects	3.16 bits/object
+	Mapping quality codec	10636 bits	9939 objects	1.07 bits/object
+	Rank codec	30197 bits	1287 objects	23.46 bits/object
+	Read flags codec	24338 bits	10000 objects	2.43 bits/object
+	Read name codec	754044 bits	7426 objects	101.54 bits/object
+	Record quality codec	10542 bits	6588 objects	1.60 bits/object
+	Refpos codec	10424 bits	10000 objects	1.04 bits/object
+	Variations codec	99587 bits	1634 objects	60.95 bits/object
+		Base QS codec	28105 bits	5579 objects	5.04 bits/object
+		Base change codec	4006 bits	2003 objects	2.00 bits/object
+		Base codec	15697 bits	6870 objects	2.28 bits/object
+		Deletion length codec	1 bits	1 objects	1.00 bits/object
+		Insert base codec	8438 bits	3576 objects	2.36 bits/object
+		Position in read	33757 bits	11159 objects	3.03 bits/object
+		Quality score codec	28105 bits	5579 objects	5.04 bits/object
+		Read feature operators	25280 bits	12793 objects	1.98 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 61
+INFO  Bam2Cram - Beyond horizon pairs: 7410, extra chromosomal pairs: 16
+INFO  Bam2Cram - Compressed bases: 540000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 545579
+INFO  Bam2Cram - Quality budget: 101.03%
+INFO  Bam2Cram - Total compression: 1.28
+INFO  Cram2Bam - CRAM format version: 0.9
+INFO  Cram2Bam - Using default quality score: ?
+INFO  Cram2Bam - Block read: sequence 1; records 10000; 0.060 seconds.
+INFO  Cram2Bam - Ref reading took 0 seconds.
+INFO  Cram2Bam - SAM/BAM writing took 0 seconds.
+INFO  Cram2Bam - Total time: 0 seconds.
+INFO  CramWriter - Block purged: 1	10000	529	1255359	125.54	2.3247	0.068s	7410	16
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	1248639 bits	10000 objects	124.86 bits/object
+	Heap bytes codec	281612 bits	89178 objects	3.16 bits/object
+	Mapping quality codec	10636 bits	9939 objects	1.07 bits/object
+	Rank codec	30197 bits	1287 objects	23.46 bits/object
+	Read flags codec	24338 bits	10000 objects	2.43 bits/object
+	Read name codec	754044 bits	7426 objects	101.54 bits/object
+	Record quality codec	10542 bits	6588 objects	1.60 bits/object
+	Refpos codec	10424 bits	10000 objects	1.04 bits/object
+	Variations codec	99587 bits	1634 objects	60.95 bits/object
+		Base QS codec	28105 bits	5579 objects	5.04 bits/object
+		Base change codec	4006 bits	2003 objects	2.00 bits/object
+		Base codec	15697 bits	6870 objects	2.28 bits/object
+		Deletion length codec	1 bits	1 objects	1.00 bits/object
+		Insert base codec	8438 bits	3576 objects	2.36 bits/object
+		Position in read	33757 bits	11159 objects	3.03 bits/object
+		Quality score codec	28105 bits	5579 objects	5.04 bits/object
+		Read feature operators	25280 bits	12793 objects	1.98 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 61
+INFO  Bam2Cram - Beyond horizon pairs: 7410, extra chromosomal pairs: 16
+INFO  Bam2Cram - Compressed bases: 540000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 545579
+INFO  Bam2Cram - Quality budget: 101.03%
+INFO  Bam2Cram - Total compression: 1.28
+INFO  CramWriter - Block purged: 1	10000	941	5742406	574.24	10.6341	0.256s	7410	16
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	5728230 bits	10000 objects	572.82 bits/object
+	Heap bytes codec	281612 bits	89178 objects	3.16 bits/object
+	Mapping quality codec	10636 bits	9939 objects	1.07 bits/object
+	Rank codec	30197 bits	1287 objects	23.46 bits/object
+	Read flags codec	24338 bits	10000 objects	2.43 bits/object
+	Read name codec	1010447 bits	10000 objects	101.04 bits/object
+	Record quality codec	1829413 bits	1080000 objects	1.69 bits/object
+	Refpos codec	10424 bits	10000 objects	1.04 bits/object
+	Tag key codec	401302 bits	109062 objects	3.68 bits/object
+	Variations codec	48782 bits	1634 objects	29.85 bits/object
+		Base change codec	4006 bits	2003 objects	2.00 bits/object
+		Base codec	16585 bits	6870 objects	2.41 bits/object
+		Deletion length codec	1 bits	1 objects	1.00 bits/object
+		Insert base codec	7892 bits	3576 objects	2.21 bits/object
+		Position in read	24396 bits	5580 objects	4.37 bits/object
+		Read feature operators	12487 bits	7214 objects	1.73 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 61
+INFO  Bam2Cram - Beyond horizon pairs: 7410, extra chromosomal pairs: 16
+INFO  Bam2Cram - Compressed bases: 540000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 540000
+INFO  Bam2Cram - Quality budget: 100.00%
+INFO  Bam2Cram - Total compression: 7.95
+INFO  Cram2Bam - CRAM format version: 0.9
+INFO  Cram2Bam - Using default quality score: ?
+INFO  Cram2Bam - Block read: sequence 1; records 10000; 0.212 seconds.
+INFO  Cram2Bam - Ref reading took 0 seconds.
+INFO  Cram2Bam - SAM/BAM writing took 0 seconds.
+INFO  Cram2Bam - Total time: 0 seconds.
+INFO  CramWriter - Block purged: 1	10000	988	5773641	577.36	10.6919	0.254s	7410	16
+INFO  Bam2Cram - Codec stats: 
+Cram record codec	5758777 bits	10000 objects	575.88 bits/object
+	Heap bytes codec	281612 bits	89178 objects	3.16 bits/object
+	Mapping quality codec	10636 bits	9939 objects	1.07 bits/object
+	Rank codec	30197 bits	1287 objects	23.46 bits/object
+	Read flags codec	24338 bits	10000 objects	2.43 bits/object
+	Read name codec	1010447 bits	10000 objects	101.04 bits/object
+	Record quality codec	1829413 bits	1080000 objects	1.69 bits/object
+	Refpos codec	10424 bits	10000 objects	1.04 bits/object
+	Tag key codec	416279 bits	111514 objects	3.73 bits/object
+	Variations codec	48782 bits	1634 objects	29.85 bits/object
+		Base change codec	4006 bits	2003 objects	2.00 bits/object
+		Base codec	16585 bits	6870 objects	2.41 bits/object
+		Deletion length codec	1 bits	1 objects	1.00 bits/object
+		Insert base codec	7892 bits	3576 objects	2.21 bits/object
+		Position in read	24396 bits	5580 objects	4.37 bits/object
+		Read feature operators	12487 bits	7214 objects	1.73 bits/object
+
+INFO  Bam2Cram - Found SAM records: 10000	unmapped: 61
+INFO  Bam2Cram - Beyond horizon pairs: 7410, extra chromosomal pairs: 16
+INFO  Bam2Cram - Compressed bases: 540000
+INFO  Bam2Cram - Landed ref masked qscores: 0
+INFO  Bam2Cram - Landed piled qscores: 0
+INFO  Bam2Cram - Landed total qscores: 540000
+INFO  Bam2Cram - Quality budget: 100.00%
+INFO  Bam2Cram - Total compression: 8.00
+------------- ---------------- ---------------
+
+Testcase: test1[0] took 1.855 sec
+Testcase: test1[1] took 2.088 sec
+Testcase: test1[2] took 0.427 sec
+Testcase: test1[3] took 0.675 sec
+Testcase: test1[4] took 0.604 sec
+Testcase: test1[5] took 0.776 sec
+Testcase: test1[6] took 0.495 sec
+Testcase: test1[7] took 1.403 sec
+Testcase: test_BaseChangeConstructorsWorkSimilar took 0.001 sec
+Testcase: test_A_to_C_change took 0 sec
+Testcase: test_all_possible_substituons took 0 sec
+Testcase: test[0] took 0.001 sec
+Testcase: test[1] took 0.001 sec
+Testcase: test[2] took 0 sec
+Testcase: test[3] took 0 sec
+Testcase: test[4] took 0 sec
+Testcase: test[5] took 0.001 sec
+Testcase: test[6] took 0 sec
+Testcase: test[7] took 0 sec
+Testcase: test[8] took 0 sec
+Testcase: test[9] took 0 sec
+Testcase: test[10] took 0 sec
+Testcase: test[11] took 0 sec
+Testcase: test[12] took 0 sec
+Testcase: test[13] took 0 sec
+Testcase: test[14] took 0 sec
+Testcase: test[15] took 0 sec
+Testcase: test[16] took 0 sec
+Testcase: test[17] took 0 sec
+Testcase: test[18] took 0 sec
+Testcase: test_ReadBits_8_bits took 0 sec
+Testcase: test_ReadBits_3_bits_of_00000100 took 0 sec
+Testcase: test_ReadBits_3_bits_of_01000000 took 0 sec
+Testcase: test_ReadBits_31_bits_of_00000000000000000000000000000010 took 0 sec
+Testcase: test_ReadBits_int_by_bit took 0.001 sec
+Testcase: becnhmar_ReadBits_32 took 0.038 sec
+Testcase: becnhmar_ReadLongBits_64 took 0.093 sec
+Testcase: becnhmar_ReadLongBits_32 took 0.041 sec
+Testcase: test_ReadBits_long_3_bits_of_01000000 took 0 sec
+Testcase: test_ReadBits_int_range took 0.165 sec
+Testcase: test_ReadBits_long_range took 0.173 sec
+Testcase: test_write_long_64bits took 0.001 sec
+Testcase: test_write_long_128_8_bits took 0 sec
+Testcase: test_write_long_10bits took 0 sec
+Testcase: test_write_long_2bits took 0 sec
+Testcase: test_write_long_8bits took 0 sec
+Testcase: benchmark_write_long took 0.071 sec
+Testcase: test_write_int_32bits took 0 sec
+Testcase: test_write_int_10bits took 0 sec
+Testcase: test_write_int_2bits took 0 sec
+Testcase: test_write_int_8bits took 0 sec
+Testcase: benchmark_write_int took 0.031 sec
+Testcase: test_write_byte_leftmost_bit took 0.001 sec
+Testcase: test_WriteByte_all_possible_bytes took 0 sec
+Testcase: test_write_long_higest_bit took 0 sec
+Testcase: test_write_long_lowest_bit took 0 sec
+Testcase: test_WriteBits_2_is_64_due_to_flush took 0 sec
+Testcase: test_Write_int_32_bits took 0.001 sec
+Testcase: benchmark_Write_int_32_bits took 0.032 sec
+Testcase: test_3_bits_of_byte took 0 sec
+Testcase: test_all_possible_bytes took 0.001 sec
+Testcase: test_bits_1_to_8 took 0 sec
+Testcase: testWrite_read_int_by_bit took 0 sec
+Testcase: testWrite_read_32_bits took 0 sec
+Testcase: testWrite_MaxInteger took 0 sec
+Testcase: testWrite_MinInteger took 0 sec
+Testcase: testWriteReadBenchmark took 0.092 sec
+Testcase: testWriteReadLongBenchmark took 0.107 sec
+Testcase: test_Align took 0.011 sec
+Testcase: test1[0] took 0.002 sec
+Testcase: test1[1] took 0.002 sec
+Testcase: testEmptyLine took 0.002 sec
+Testcase: failEmptyLineWithSlashN took 0 sec
+Testcase: test_1 took 0 sec
+Testcase: fail_1n took 0 sec
+Testcase: test_xyxxyyx took 0 sec
+Testcase: test_numberOfBits took 0 sec
+Testcase: test_write_read_1 took 0 sec
+Testcase: test_write_read_2 took 0 sec
+Testcase: test_write_read_20 took 0.001 sec
+Testcase: test_write_read_128 took 0 sec
+Testcase: test_write_read_1_to_1000_offset_0 took 0.002 sec
+Testcase: test_write_read_0_to_1000_offset_1 took 0.003 sec
+Testcase: benchmark_write_read took 0.183 sec
+Testcase: test_numberOfBits took 0 sec
+Testcase: test_write_read_1 took 0 sec
+Testcase: test_write_14_3 took 0 sec
+Testcase: test_read_14_3 took 0 sec
+Testcase: test_write_14_4 took 0 sec
+Testcase: test_read_14_43 took 0 sec
+Testcase: test_1 took 0 sec
+Testcase: test_numberOfBits took 0 sec
+Testcase: test_0 took 0 sec
+Testcase: test_20 took 0.001 sec
+Testcase: test_255 took 0 sec
+Testcase: benchmark_uniform_distr took 2.084 sec
+Testcase: benchmark_exponential_distr took 2.677 sec
+Testcase: benchmark_normal_distr took 6.17 sec
+Testcase: becnmark_Write took 0.103 sec
+Testcase: becnmark_Read took 0.043 sec
+Testcase: test_write_1 took 0 sec
+Testcase: test_write_2 took 0 sec
+Testcase: test_write_1_2_3_4 took 0 sec
+Testcase: test_write_read_random took 0.007 sec
+Testcase: benchmark_write_read_random took 0.149 sec
+Testcase: benchmark_read_random took 0.007 sec
+Testcase: test_write_1 took 0.001 sec
+Testcase: test_write_2 took 0 sec
+Testcase: test_write_1_2_3_4 took 0 sec
+Testcase: test_write_read_random took 0.003 sec
+Testcase: benchmark_write_read_random took 0.117 sec
+Testcase: test_write_1 took 0 sec
+Testcase: test_write_2 took 0 sec
+Testcase: test_write_1_2_3_4 took 0 sec
+Testcase: test_write_read_random took 0.001 sec
+Testcase: benchmark_write_read_random took 0.128 sec
+Testcase: test1 took 0.002 sec
+Testcase: test2 took 0.001 sec
+Testcase: test3 took 0.001 sec
+Testcase: test4 took 0 sec
+Testcase: test5 took 0.003 sec
+	FAILED
+
+Expected: <3840>
+     got: <3839>
+
+junit.framework.AssertionFailedError: 
+Expected: <3840>
+     got: <3839>
+
+Expected: <3840>
+     got: <3839>
+
+	at uk.ac.ebi.ena.sra.cram.bam.InsertSizeTest.assertInsertSize(InsertSizeTest.java:60)
+	at uk.ac.ebi.ena.sra.cram.bam.InsertSizeTest.test5(InsertSizeTest.java:196)
+
+Testcase: test6 took 0.001 sec
+	FAILED
+
+Expected: <6532>
+     got: <6531>
+
+junit.framework.AssertionFailedError: 
+Expected: <6532>
+     got: <6531>
+
+Expected: <6532>
+     got: <6531>
+
+	at uk.ac.ebi.ena.sra.cram.bam.InsertSizeTest.assertInsertSize(InsertSizeTest.java:60)
+	at uk.ac.ebi.ena.sra.cram.bam.InsertSizeTest.test6(InsertSizeTest.java:225)
+
+Testcase: testEmptyLine took 0 sec
+Testcase: failEmptyLineWithSlashN took 0 sec
+Testcase: test_1 took 0 sec
+Testcase: fail_1n took 0 sec
+Testcase: fail_non_digit took 0 sec
+Testcase: test_1_2 took 0 sec
+Testcase: test_1_3_15 took 0 sec
+Testcase: test_ReadBits_8_bits took 0.001 sec
+Testcase: test_ReadBits_3_bits_of_00000100 took 0 sec
+Testcase: test_ReadBits_3_bits_of_01000000 took 0 sec
+Testcase: test_ReadBits_31_bits_of_00000000000000000000000000000010 took 0 sec
+Testcase: test_ReadBits_int_by_bit took 0 sec
+Testcase: becnhmar_ReadBits_32 took 0.05 sec
+Testcase: becnhmar_ReadLongBits_64 took 0.399 sec
+Testcase: becnhmar_ReadLongBits_32 took 0.199 sec
+Testcase: test_ReadBits_long_3_bits_of_01000000 took 0 sec
+Testcase: test_ReadBits_int_range took 0.182 sec
+Testcase: test_ReadBits_long_range took 0.302 sec
+Testcase: test_3_bits_of_byte took 0 sec
+Testcase: test_all_possible_bytes took 0 sec
+Testcase: test_bits_1_to_8 took 0 sec
+Testcase: testWrite_read_int_by_bit took 0.001 sec
+Testcase: testWrite_read_32_bits took 0 sec
+Testcase: testWrite_MaxInteger took 0 sec
+Testcase: testWrite_MinInteger took 0 sec
+Testcase: testWriteReadBenchmark took 0.104 sec
+Testcase: test_all_encodings_have_codec took 0.001 sec
+Testcase: test_string_representation_round_trip took 0 sec
+Testcase: test1 took 0.001 sec
+Testcase: test[0] took 0 sec
+Testcase: test[1] took 0 sec
+Testcase: test[2] took 0 sec
+Testcase: test[3] took 0 sec
+Testcase: test[4] took 0 sec
+Testcase: test[5] took 0 sec
+Testcase: test[6] took 0 sec
+Testcase: test[7] took 0 sec
+Testcase: test[8] took 0 sec
+Testcase: test[9] took 0 sec
+Testcase: test[10] took 0 sec
+Testcase: test1 took 0 sec
+Testcase: test2 took 0 sec
+Testcase: test3 took 0 sec
+Testcase: test4 took 0.001 sec
+Testcase: test5 took 0 sec
+Testcase: test6 took 0 sec
+Testcase: test7 took 0 sec
+Testcase: test8 took 0 sec
+Testcase: test9 took 0 sec
+Testcase: test10 took 0.001 sec
+Testcase: test1 took 0 sec
+Testcase: test2 took 0.001 sec
+Testcase: test3 took 0 sec
+Testcase: test4 took 0 sec
+Testcase: test5 took 0.001 sec
+Testcase: test6 took 0 sec
+Testcase: test_Reversed_read took 0 sec
+Testcase: testIntegerListMaskFactory took 0 sec
+Testcase: testFastaByteArrayMaskFactory took 0 sec
+Testcase: test_numberOfBits took 0 sec
+Testcase: test_write_14_3 took 0.001 sec
+Testcase: test_read_14_3 took 0 sec
+Testcase: test_write_14_4 took 0 sec
+Testcase: test_write_0_3 took 0 sec
+Testcase: test_write_1_3 took 0 sec
+Testcase: test_read_14_4 took 0 sec
+Testcase: test1 took 0 sec
+Testcase: test1[0] took 0.002 sec
+Testcase: test1 took 0.005 sec
+Testcase: test2 took 0.006 sec
+Testcase: test3 took 0.006 sec
+Testcase: test4 took 0.006 sec
+Testcase: testSourceSize took 0 sec
+Testcase: testRestoredSize took 0 sec
+Testcase: testBases took 0.001 sec
+Testcase: testQualityScores took 0.001 sec
+Testcase: testFlags took 0 sec
+Testcase: testAlignmentStart took 0 sec
+Testcase: testReferenceName took 0 sec
+Testcase: testMateReferenceName took 0 sec
+Testcase: testMateAlignmentStart took 0 sec
+Testcase: testMateNegativeStrandFlag took 0 sec
+Testcase: testMateUnmappedFlag took 0 sec
+Testcase: test_numberOfBits took 0.001 sec
+Testcase: test_write_read_20 took 0 sec
+Testcase: benchmark_write_read took 0.291 sec
+Testcase: test_write_read_0 took 0 sec
+Testcase: test_write_read_0_to_1000 took 0.557 sec
